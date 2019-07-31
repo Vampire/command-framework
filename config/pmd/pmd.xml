@@ -1,0 +1,220 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright 2019 Björn Kautler
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ruleset name="Command Framework Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        PMD rules for Command Framework
+    </description>
+
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="GuardLogStatement"/>
+    </rule>
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (ancestor::MethodDeclaration/@MethodName = 'ensureInitializationAtStartup') and ancestor-or-self::FormalParameter[
+                            Annotation[typeIsExactly('javax.enterprise.event.Observes')]
+                                and Annotation[typeIsExactly('javax.enterprise.context.Initialized')]]
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod">
+        <properties>
+            <property name="ignoredAnnotations" value="
+                    javax.annotation.PostConstruct |
+                    javax.annotation.PreDestroy |
+                    javax.enterprise.inject.Produces |
+                    javax.inject.Inject
+            "/>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        descendant::FormalParameter/Annotation[typeIsExactly('javax.enterprise.event.Observes')]
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml">
+        <exclude name="AtLeastOneConstructor"/>
+        <exclude name="CallSuperInConstructor"/>
+        <exclude name="CommentDefaultAccessModifier"/>
+        <exclude name="LocalVariableCouldBeFinal"/>
+        <exclude name="MethodArgumentCouldBeFinal"/>
+        <exclude name="OnlyOneReturn"/>
+        <exclude name="TooManyStaticImports"/>
+        <exclude name="UselessParentheses"/>
+    </rule>
+    <rule ref="category/java/codestyle.xml/ClassNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/EmptyMethodInAbstractClassShouldBeAbstract">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        ((@MethodName = 'ensureInitializationAtStartup') and descendant::FormalParameter[
+                            Annotation[typeIsExactly('javax.enterprise.event.Observes')]
+                                and Annotation[typeIsExactly('javax.enterprise.context.Initialized')]])
+                        or (((@MethodName = 'expression')
+                            or (@MethodName = 'optional')
+                            or (@MethodName = 'placeholder')
+                            or (@MethodName = 'placeholderWithWhitespace')
+                            or (@MethodName = 'alternatives')
+                            or (@MethodName = 'literal'))
+                            and ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.usage.UsageParserRuleContext')])
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/FieldNamingConventions">
+        <properties>
+            <property name="publicConstantPattern" value="[a-z][a-zA-Z0-9]*|[A-Z][A-Z_0-9]*"/>
+            <property name="constantPattern" value="[a-z][a-zA-Z0-9]*|[A-Z][A-Z_0-9]*"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/LongVariable">
+        <properties>
+            <property name="minimum" value="45"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/ShortMethodName">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (@Image = 'or') and parent::MethodDeclaration/ResultType/Type[typeIsExactly('net.kautler.command.api.restriction.RestrictionChainElement')]
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml">
+        <exclude name="AvoidCatchingGenericException"/>
+        <exclude name="ExcessiveImports"/>
+        <exclude name="LawOfDemeter"/>
+        <exclude name="LoosePackageCoupling"/>
+    </rule>
+    <rule ref="category/java/design.xml/ClassWithOnlyPrivateConstructorsShouldBeFinal">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        ancestor::TypeDeclaration/Annotation[
+                            typeIsExactly('javax.enterprise.context.ApplicationScoped')
+                                or typeIsExactly('javax.enterprise.context.Dependent')]
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/DataClass">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        typeIsExactly('net.kautler.command.api.Version')
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/documentation.xml"/>
+    <rule ref="category/java/documentation.xml/CommentSize">
+        <properties>
+            <property name="maxLines" value="99999"/>
+            <property name="maxLineLength" value="120"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="BeanMembersShouldSerialize"/>
+    </rule>
+    <rule ref="category/java/errorprone.xml/AvoidFieldNameMatchingTypeName">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.Version')]
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition">
+        <properties>
+            <property name="ignoreMagicNumbers" value="-1, 0, 1"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/DataflowAnomalyAnalysis">
+        <properties>
+            <!-- false positives -->
+            <property name="violationSuppressRegex">
+                <value>(?x)
+                    \QFound 'UR'-anomaly for variable \E.* |
+                    \QFound 'DU'-anomaly for variable 'first' (lines '\E.* |
+                    \QFound 'DD'-anomaly for variable 'groupName' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'leftHasWhitespace' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'leftOptional' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'noneOf' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'outer' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'restrictionPolicy' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'result' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'usageTree' (lines '\E.*
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        ancestor::TypeDeclaration/Annotation[
+                            typeIsExactly('javax.enterprise.context.ApplicationScoped')
+                                or typeIsExactly('javax.enterprise.context.Dependent')]
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/NullAssignment">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        ancestor::ClassOrInterfaceDeclaration[
+                            typeIsExactly('net.kautler.command.api.Version')
+                                or typeIsExactly('net.kautler.command.api.restriction.RestrictionChainElement')]
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/multithreading.xml">
+        <exclude name="AvoidUsingVolatile"/>
+        <exclude name="DoNotUseThreads"/>
+        <exclude name="UseConcurrentHashMap"/>
+    </rule>
+    <rule ref="category/java/performance.xml"/>
+    <rule ref="category/java/security.xml"/>
+</ruleset>

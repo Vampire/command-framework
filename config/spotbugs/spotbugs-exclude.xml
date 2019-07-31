@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019 Björn Kautler
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<FindBugsFilter
+        xmlns="https://github.com/spotbugs/filter/3.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.11/spotbugs/etc/findbugsfilter.xsd">
+    <Match>
+        <Class name="net.kautler.command.api.CommandHandler"/>
+        <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
+        <Or>
+            <Bug pattern="ACEM_ABSTRACT_CLASS_EMPTY_METHODS"/>
+            <Bug pattern="UP_UNUSED_PARAMETER"/>
+        </Or>
+    </Match>
+    <!-- work-around for https://github.com/spotbugs/spotbugs/issues/947 -->
+    <Match>
+        <Or>
+            <And>
+                <Class name="net.kautler.command.LoggerProducer"/>
+                <Method name="getLogger" params="javax.enterprise.inject.spi.InjectionPoint" returns="org.apache.logging.log4j.Logger"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.CommandHandler"/>
+                <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.handler.CommandHandlerJavacord"/>
+                <Or>
+                    <Method name="setAvailableRestrictions" params="javax.enterprise.inject.Instance" returns="void"/>
+                    <Method name="setCommands" params="javax.enterprise.inject.Instance" returns="void"/>
+                    <Method name="setCustomPrefixProvider" params="javax.enterprise.inject.Instance" returns="void"/>
+                </Or>
+            </And>
+        </Or>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+    </Match>
+    <Match>
+        <Class name="net.kautler.command.api.ParameterParser"/>
+        <Method name="getParsedParameters" params="net.kautler.command.api.Command, java.lang.String, java.lang.String, java.lang.String" returns="java.util.Map"/>
+        <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
+    </Match>
+    <Match>
+        <Class name="net.kautler.command.usage.UsagePatternBuilder"/>
+        <Method name="getUsageContext" params="net.kautler.command.usage.UsageParserRuleContext" returns="net.kautler.command.usage.UsageParser$UsageContext"/>
+        <Local name="current"/>
+        <Bug pattern="BC_UNCONFIRMED_CAST"/>
+    </Match>
+</FindBugsFilter>
