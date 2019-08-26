@@ -3,7 +3,7 @@ Command Framework
 
 [![Version][Version Badge]][Latest Release]
 [![JavaDoc][JavaDoc Badge]][Latest JavaDoc]
-[![License][License Badge]](#)
+[![License][License Badge]][License File]
 [![Discord][Discord Badge]][Discord Invite]
 
 [![Supported Java Versions][Supported Java Versions Badge]](#)
@@ -451,11 +451,13 @@ limitations under the License.
 
 
 [Version Badge]:
-    https://img.shields.io/maven-central/v/net.kautler.discord/command-framework.svg?label=Version
+    https://img.shields.io/maven-central/v/net.kautler/command-framework.svg?label=Version
 [JavaDoc Badge]:
     https://img.shields.io/badge/JavaDoc-Latest-yellow.svg?style=flat
 [License Badge]:
     https://img.shields.io/github/license/Vampire/command-framework.svg?label=License
+[License File]:
+    https://github.com/Vampire/command-framework/blob/master/LICENSE
 [Discord Badge]:
     https://img.shields.io/discord/534420861294346255.svg?label=Discord
 [Supported Java Versions Badge]:
