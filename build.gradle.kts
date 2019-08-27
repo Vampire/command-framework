@@ -21,6 +21,8 @@ plugins {
     net.kautler.jars
     net.kautler.antlr
     net.kautler.osgi
+    net.kautler.tests
+    net.kautler.codenarc
     net.kautler.pmd
     net.kautler.spotbugs
     net.kautler.java9

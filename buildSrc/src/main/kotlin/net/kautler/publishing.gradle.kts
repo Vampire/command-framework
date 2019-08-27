@@ -293,6 +293,10 @@ val finishMilestone by tasks.registering {
     }
 }
 
+tasks.beforeReleaseBuild {
+    dependsOn(tasks.named("pitest"))
+}
+
 tasks.publish {
     dependsOn(tasks.closeRepository)
 }

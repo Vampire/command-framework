@@ -54,7 +54,9 @@ tasks.withType<JavaCompile>().configureEach {
 // delay this action to get the correct version for later configured compile tasks
 afterEvaluate {
     tasks.withType<JavaCompile>().configureEach {
-        if (JavaVersion.current().isJava9Compatible) {
+        // there is a bug in Java 9 that prevents usage of --release
+        // https://bugs.openjdk.java.net/browse/JDK-8139607
+        if (JavaVersion.current().isJava10Compatible) {
             options.compilerArgs.apply {
                 add("--release")
                 add(toVersion(targetCompatibility).majorVersion)

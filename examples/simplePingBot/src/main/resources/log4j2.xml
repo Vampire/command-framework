@@ -15,7 +15,7 @@
   ~ limitations under the License.
   -->
 
-<Configuration name="BetServer" status="INFO" monitorInterval="5" strict="true">
+<Configuration name="PingBot" status="INFO" monitorInterval="5" strict="true">
     <Appenders>
         <Console name="Console Appender">
             <PatternLayout>

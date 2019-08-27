@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    id("com.github.ben-manes.versions") version "0.22.0"
+    id("com.github.ben-manes.versions") version "0.25.0"
 }
 
 buildscript {
@@ -30,7 +30,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath("com.fasterxml.jackson.core:jackson-databind:2.9.9.3")
+        classpath("com.fasterxml.jackson.core:jackson-databind:2.10.0")
     }
 }
 
@@ -43,18 +43,20 @@ repositories {
 }
 
 dependencies {
-    implementation(gradlePlugin("com.github.ben-manes.versions:0.22.0"))
+    implementation(gradlePlugin("com.github.ben-manes.versions:0.25.0"))
     implementation(gradlePlugin("org.ajoberstar.grgit:3.1.1"))
     implementation(gradlePlugin("com.github.spotbugs:2.0.0"))
     implementation(gradlePlugin("biz.aQute.bnd.builder:4.2.0"))
-    implementation(gradlePlugin("de.marcphilipp.nexus-publish:0.3.1"))
-    implementation(gradlePlugin("io.codearte.nexus-staging:0.21.0"))
+    implementation(gradlePlugin("de.marcphilipp.nexus-publish:0.4.0"))
+    implementation(gradlePlugin("io.codearte.nexus-staging:0.21.1"))
     implementation(gradlePlugin("net.researchgate.release:2.8.1"))
     implementation(gradlePlugin("net.wooga.github:1.4.0"))
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.9.9.3")
-    implementation("com.github.javaparser:javaparser-core:3.14.11")
+    implementation(gradlePlugin("info.solidsoft.pitest:1.4.5"))
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.10.0")
+    implementation("com.github.javaparser:javaparser-core:3.14.159265359")
     implementation("org.kohsuke:github-api:1.95")
-    implementation("net.sf.saxon:Saxon-HE:9.9.1-4")
+    implementation("net.sf.saxon:Saxon-HE:9.9.1-5")
+    implementation("org.pitest:pitest:1.4.10")
 }
 
 kotlinDslPluginOptions {
@@ -70,26 +72,22 @@ tasks.withType<KotlinCompile>().configureEach {
 tasks.dependencyUpdates {
     checkForGradleUpdate = false
 
-    resolutionStrategy {
-        componentSelection {
-            all {
-                if (Regex("""(?i)[.-](?:${listOf(
-                                "alpha",
-                                "beta",
-                                "rc",
-                                "cr",
-                                "m",
-                                "preview",
-                                "test",
-                                "pr",
-                                "pre",
-                                "b",
-                                "ea"
-                        ).joinToString("|")})[.\d-]*""").containsMatchIn(candidate.version)) {
-                    reject("preliminary release")
-                }
-            }
-        }
+    rejectVersionIf {
+        val preliminaryReleaseRegex = Regex("""(?i)[.-](?:${listOf(
+                "alpha",
+                "beta",
+                "rc",
+                "cr",
+                "m",
+                "preview",
+                "test",
+                "pr",
+                "pre",
+                "b",
+                "ea"
+        ).joinToString("|")})[.\d-]*""")
+        preliminaryReleaseRegex.containsMatchIn(candidate.version)
+                && !preliminaryReleaseRegex.containsMatchIn(currentVersion)
     }
 
     outputFormatter = closureOf<Result> {

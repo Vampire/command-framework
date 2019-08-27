@@ -24,6 +24,7 @@ import javax.xml.transform.stream.StreamResult
 import javax.xml.transform.stream.StreamSource
 
 plugins {
+    `java-base`
     id("com.github.spotbugs")
 }
 
@@ -41,15 +42,12 @@ spotbugs {
 val spotbugsStylesheets by configurations.registering { isTransitive = false }
 
 dependencies {
-    "spotbugsStylesheets"("com.github.spotbugs:spotbugs:4.0.0-beta3")
+    "spotbugsStylesheets"("com.github.spotbugs:spotbugs:4.0.0-beta4")
     spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:${versions["findsecbugs"]}")
     spotbugsPlugins("com.mebigfatguy.sb-contrib:sb-contrib:${versions["sb-contrib"]}")
 }
 
-//TODO: tasks.register cannot be used within configureEach
-//      replace the following after the task supports multiple output formats natively
-//tasks.withType<SpotBugsTask>().configureEach {
-tasks.withType<SpotBugsTask> spotBugsTask@{
+tasks.named<SpotBugsTask>("spotbugsMain") {
     val excludedClasses = listOf(
             "UsageBaseListener",
             "UsageBaseVisitor",
@@ -65,6 +63,18 @@ tasks.withType<SpotBugsTask> spotBugsTask@{
             }
         }
     }
+}
+
+//TODO: replace the HTML report task after the task supports multiple output formats natively
+//      and change "all" to "configureEach"
+tasks.withType<SpotBugsTask>().all {
+    //TODO: Remove this after upgrading Spotbugs to 4.0.0+ which supports Java 13
+    enabled = JavaVersion.current().ordinal < 12
+
+    val sourceSetName = name.removePrefix("spotbugs").decapitalize()
+    classpath += sourceSets[sourceSetName].let {
+        it.compileClasspath + project.configurations[it.compileOnlyConfigurationName]
+    }
 
     reports {
         xml.isWithMessages = true
@@ -73,8 +83,6 @@ tasks.withType<SpotBugsTask> spotBugsTask@{
     }
 
     finalizedBy(tasks.register("${name}HtmlReport") {
-        dependsOn(this@spotBugsTask)
-
         val stylesheet = reports.html.let { it as CustomizableHtmlReport }.stylesheet!!
         // work-around for https://github.com/gradle/gradle/issues/9648
         //inputs.file(stylesheet.asFile()).withPropertyName("spotbugsStylesheet").withPathSensitivity(NONE)

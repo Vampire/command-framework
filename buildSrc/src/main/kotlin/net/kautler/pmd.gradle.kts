@@ -27,9 +27,10 @@ pmd {
     // necessary due to https://github.com/gradle/gradle/issues/8514
     ruleSets.clear()
     ruleSetConfig = resources.text.fromFile("config/pmd/pmd.xml")
+    incrementalAnalysis(true)
 }
 
-tasks.withType<Pmd>().configureEach {
+tasks.named<Pmd>("pmdMain") {
     exclude("net/kautler/command/usage/UsageBaseListener.java")
     exclude("net/kautler/command/usage/UsageBaseVisitor.java")
     exclude("net/kautler/command/usage/UsageLexer.java")

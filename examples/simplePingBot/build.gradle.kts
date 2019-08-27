@@ -26,13 +26,13 @@ dependencies {
     implementation("net.kautler:command-framework")
 
     implementation("javax.enterprise:cdi-api:2.0")
-    runtimeOnly("org.jboss.weld.se:weld-se-core:3.1.1.Final") { because("CDI implementation") }
+    runtimeOnly("org.jboss.weld.se:weld-se-core:3.1.2.Final") { because("CDI implementation") }
     runtimeOnly("org.jboss:jandex:2.1.1.Final") { because("faster CDI bean scanning") }
 
     implementation("org.javacord:javacord:3.0.4")
 
-    runtimeOnly("org.apache.logging.log4j:log4j-core:2.11.2")
-    runtimeOnly("org.fusesource.jansi:jansi:1.16") { because("ANSI colors on Windows") }
+    runtimeOnly("org.apache.logging.log4j:log4j-core:2.12.1")
+    runtimeOnly("org.fusesource.jansi:jansi:1.18") { because("ANSI colors on Windows") }
 }
 
 application {

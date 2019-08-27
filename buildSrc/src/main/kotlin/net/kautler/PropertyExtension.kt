@@ -16,7 +16,25 @@
 
 package net.kautler
 
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
+import org.gradle.api.provider.SetProperty
 
 @Suppress("UnstableApiUsage")
 operator fun <T> Property<T>.invoke(value: T) = set(value)
+
+@Suppress("UnstableApiUsage")
+operator fun <T> Property<T>.invoke(valueProvider: Provider<out T>) = set(valueProvider)
+
+@Suppress("UnstableApiUsage")
+operator fun <T> ListProperty<T>.invoke(value: Iterable<T>) = set(value)
+
+@Suppress("UnstableApiUsage")
+operator fun <T> ListProperty<T>.invoke(valueProvider: Provider<out Iterable<T>>) = set(valueProvider)
+
+@Suppress("UnstableApiUsage")
+operator fun <T> SetProperty<T>.invoke(value: Iterable<T>) = set(value)
+
+@Suppress("UnstableApiUsage")
+operator fun <T> SetProperty<T>.invoke(valueProvider: Provider<out Iterable<T>>) = set(valueProvider)

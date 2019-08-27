@@ -6,6 +6,9 @@ Command Framework
 [![License][License Badge]][License File]
 [![Discord][Discord Badge]][Discord Invite]
 
+![Branch Coverage Badge]
+![Mutant Coverage Badge]
+
 [![Supported Java Versions][Supported Java Versions Badge]](#)
 
 [![Supported Message Frameworks][Supported Message Frameworks Badge]](#supported-message-frameworks)
@@ -460,6 +463,10 @@ limitations under the License.
     https://github.com/Vampire/command-framework/blob/master/LICENSE
 [Discord Badge]:
     https://shields.javacord.org/discord/534420861294346255.svg?label=Discord
+[Branch Coverage Badge]:
+    https://shields.javacord.org/badge/Branch%20Coverage-100%25-brightgreen.svg?style=flat
+[Mutant Coverage Badge]:
+    https://shields.javacord.org/badge/PIT%20Mutant%20Coverage-100%25-brightgreen.svg?style=flat
 [Supported Java Versions Badge]:
     https://shields.javacord.org/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:

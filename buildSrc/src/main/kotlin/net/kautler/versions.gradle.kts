@@ -46,17 +46,34 @@ val versions by extra(mapOf(
         "antlr" to "4.7.2",
 
         // tool versions
+        "codenarc" to "1.4",
         "findsecbugs" to "1.9.0",
-        "pmd" to "6.17.0",
+        "jacoco" to "0.8.4",
+        "pitest" to "1.4.10",
+        "pmd" to "6.18.0",
         "sb-contrib" to "7.4.6",
-        "spotbugs" to "3.1.12"
+        "spotbugs" to "3.1.12",
+
+        // test versions
+        "spock" to "1.3-groovy-2.5",
+        "powermock" to "2.0.2",
+        "groovy" to "2.5.8",
+        "spock-global-unroll" to "0.5.1",
+        "byte-buddy" to "1.10.1",
+        "objenesis" to "3.0.1",
+        "weld-junit" to "2.0.0.Final",
+        "weld-se" to "3.1.2.Final"
 ))
 
 configurations.register("tools")
 
 // work-around for https://github.com/ben-manes/gradle-versions-plugin/issues/292
 dependencies {
+    "tools"("org.codehaus.groovy:groovy:${versions["groovy"]}")
+    "tools"("org.codenarc:CodeNarc:${versions["codenarc"]}")
     "tools"("com.h3xstream.findsecbugs:findsecbugs-plugin:${versions["findsecbugs"]}")
+    "tools"("org.jacoco:jacoco:${versions["jacoco"]}")
+    "tools"("org.pitest:pitest:${versions["pitest"]}")
     "tools"("net.sourceforge.pmd:pmd:${versions["pmd"]}")
     "tools"("com.mebigfatguy.sb-contrib:sb-contrib:${versions["sb-contrib"]}")
     "tools"("com.github.spotbugs:spotbugs:${versions["spotbugs"]}")
@@ -65,6 +82,16 @@ dependencies {
 normalization {
     runtimeClasspath {
         ignore("net/kautler/command/version.properties")
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy {
+        eachDependency {
+            if (requested.group == "org.codehaus.groovy") {
+                useVersion(versions["groovy"] ?: error("groovy version is missing"))
+            }
+        }
     }
 }
 
@@ -96,31 +123,23 @@ tasks.processResources {
 tasks.dependencyUpdates {
     gradleReleaseChannel = CURRENT.id
 
-    resolutionStrategy {
-        componentSelection {
-            all {
-                // work-around for https://github.com/ben-manes/gradle-versions-plugin/issues/311
-                val slf4jSimpleBeta = candidate.run {
-                    (group == "org.slf4j") && (module == "slf4j-simple") && (version == "1.8.0-beta4")
-                }
-
-                if (!slf4jSimpleBeta && Regex("""(?i)[.-](?:${listOf(
-                                "alpha",
-                                "beta",
-                                "rc",
-                                "cr",
-                                "m",
-                                "preview",
-                                "test",
-                                "pr",
-                                "pre",
-                                "b",
-                                "ea"
-                        ).joinToString("|")})[.\d-]*""").containsMatchIn(candidate.version)) {
-                    reject("preliminary release")
-                }
-            }
-        }
+    rejectVersionIf {
+        val preliminaryReleaseRegex = Regex("""(?i)[.-](?:${listOf(
+                "alpha",
+                "beta",
+                "rc",
+                "cr",
+                "m",
+                "preview",
+                "test",
+                "pr",
+                "pre",
+                "b",
+                "ea"
+        ).joinToString("|")})[.\d-]*""")
+        preliminaryReleaseRegex.containsMatchIn(candidate.version)
+                && (!preliminaryReleaseRegex.containsMatchIn(currentVersion)
+                    || ((candidate.group == "com.github.spotbugs") && (candidate.module == "spotbugs")))
     }
 
     outputFormatter = closureOf<Result> {
