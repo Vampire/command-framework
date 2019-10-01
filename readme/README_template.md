@@ -451,19 +451,19 @@ limitations under the License.
 
 
 [Version Badge]:
-    https://img.shields.io/maven-central/v/net.kautler/command-framework.svg?label=Version
+    https://shields.javacord.org/maven-central/v/net.kautler/command-framework.svg?label=Version
 [JavaDoc Badge]:
-    https://img.shields.io/badge/JavaDoc-Latest-yellow.svg?style=flat
+    https://shields.javacord.org/badge/JavaDoc-Latest-yellow.svg?style=flat
 [License Badge]:
-    https://img.shields.io/github/license/Vampire/command-framework.svg?label=License
+    https://shields.javacord.org/github/license/Vampire/command-framework.svg?label=License
 [License File]:
     https://github.com/Vampire/command-framework/blob/master/LICENSE
 [Discord Badge]:
-    https://img.shields.io/discord/534420861294346255.svg?label=Discord
+    https://shields.javacord.org/discord/534420861294346255.svg?label=Discord
 [Supported Java Versions Badge]:
-    https://img.shields.io/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
+    https://shields.javacord.org/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:
-    https://img.shields.io/badge/Supported%20Message%20Frameworks-Javacord-lightgrey.svg
+    https://shields.javacord.org/badge/Supported%20Message%20Frameworks-Javacord-lightgrey.svg
 [Weld SE Website]:
     https://docs.jboss.org/weld/reference/latest/en-US/html/environments.html#weld-se
 [Semantic Versioning Website]:
