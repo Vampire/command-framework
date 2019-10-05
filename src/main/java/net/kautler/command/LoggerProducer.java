@@ -24,7 +24,7 @@ import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 
 /**
- * A CDI producer that produces log4j loggers for the bean class of the injection point.
+ * A CDI producer that produces log4j loggers for the declaring class of the injection point.
  */
 @ApplicationScoped
 class LoggerProducer {
@@ -35,14 +35,14 @@ class LoggerProducer {
     }
 
     /**
-     * Returns a newly produced log4j logger for the bean class of the given injection point.
+     * Returns a newly produced log4j logger for the declaring class of the injection point.
      *
      * @param injectionPoint the injection point for which to produce a log4j logger
-     * @return a newly produced log4j logger for the bean class of the given injection point
+     * @return a newly produced log4j logger for the injection point
      */
     @Produces
     @Internal
     private Logger getLogger(InjectionPoint injectionPoint) {
-        return LogManager.getLogger(injectionPoint.getBean().getBeanClass());
+        return LogManager.getLogger(injectionPoint.getMember().getDeclaringClass());
     }
 }
