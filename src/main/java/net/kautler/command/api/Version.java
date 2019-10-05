@@ -19,6 +19,7 @@ package net.kautler.command.api;
 import javax.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.time.Instant;
 import java.util.Properties;
 import java.util.StringJoiner;
@@ -30,6 +31,12 @@ import static java.lang.String.format;
  */
 @ApplicationScoped
 public class Version {
+    /**
+     * The resource from which the version properties are read.
+     */
+    private static final URL versionPropertiesResource =
+            Version.class.getResource("../version.properties");
+
     /**
      * The version of this library.
      *
@@ -69,13 +76,14 @@ public class Version {
      */
     public Version() {
         Properties versionProperties = new Properties();
-        try (InputStream versionPropertiesStream = Version.class.getResourceAsStream("../version.properties")) {
+        try (InputStream versionPropertiesStream = versionPropertiesResource.openStream()) {
             versionProperties.load(versionPropertiesStream);
         } catch (IOException ignored) {
         }
 
         String version = versionProperties.getProperty("version", "$version");
-        this.version = "$version".equals(version) ? "<unknown>" : version;
+        version = "$version".equals(version) ? "<unknown>" : version;
+        this.version = version;
 
         String commitId = versionProperties.getProperty("commitId", "$commitId");
         this.commitId = "$commitId".equals(commitId) ? "<unknown>" : commitId;

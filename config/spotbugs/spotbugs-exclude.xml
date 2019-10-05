@@ -77,4 +77,11 @@
         </Or>
         <Bug pattern="MDM_WAIT_WITHOUT_TIMEOUT"/>
     </Match>
+
+    <!-- work-around for https://github.com/find-sec-bugs/find-sec-bugs/issues/505 -->
+    <Match>
+        <Class name="net.kautler.command.api.Version"/>
+        <Method name="&lt;init&gt;" params="" returns="void"/>
+        <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
 </FindBugsFilter>
