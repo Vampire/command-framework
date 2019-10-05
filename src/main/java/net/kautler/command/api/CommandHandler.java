@@ -39,6 +39,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -105,14 +108,28 @@ public abstract class CommandHandler<M> {
     private final RestrictionLookup<M> availableRestrictions = new RestrictionLookup<>();
 
     /**
-     * A lock for lazy initialization of the executor service.
+     * A read lock for lazy initialization of the executor service.
      */
-    private final Object executorServiceInitializationLock = new Object();
+    private final Lock readLock;
+
+    /**
+     * A write lock for lazy initialization of the executor service.
+     */
+    private final Lock writeLock;
 
     /**
      * An executor service for asynchronous command execution.
      */
-    private volatile ExecutorService executorService;
+    private ExecutorService executorService;
+
+    /**
+     * Constructs a new command handler.
+     */
+    public CommandHandler() {
+        ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+        readLock = readWriteLock.readLock();
+        writeLock = readWriteLock.writeLock();
+    }
 
     /**
      * Ensures the implementing command handlers are initialized on startup.
@@ -345,19 +362,26 @@ public abstract class CommandHandler<M> {
      * @return the executor service that is used for asynchronous command execution
      */
     private ExecutorService getExecutorService() {
-        // Use a local variable here to not query
-        // the volatile field twice in the most common case
-        // where the value is already calculated
-        ExecutorService executorService = this.executorService;
-        if (executorService == null) {
-            synchronized (executorServiceInitializationLock) {
-                executorService = this.executorService;
-                if (executorService == null) {
-                    executorService = newCachedThreadPool();
-                    this.executorService = executorService;
+        readLock.lock();
+        try {
+            if (executorService == null) {
+                readLock.unlock();
+                try {
+                    writeLock.lock();
+                    try {
+                        if (executorService == null) {
+                            executorService = newCachedThreadPool();
+                        }
+                    } finally {
+                        writeLock.unlock();
+                    }
+                } finally {
+                    readLock.lock();
                 }
             }
+            return executorService;
+        } finally {
+            readLock.unlock();
         }
-        return executorService;
     }
 }

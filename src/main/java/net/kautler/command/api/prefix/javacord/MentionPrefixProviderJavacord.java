@@ -21,6 +21,9 @@ import org.javacord.api.entity.message.Message;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.util.StringJoiner;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.lang.String.format;
 
@@ -31,31 +34,52 @@ import static java.lang.String.format;
  */
 public abstract class MentionPrefixProviderJavacord implements PrefixProvider<Message> {
     /**
-     * A lock for lazy initialization of the prefix string from a message.
+     * A read lock for lazy initialization of the prefix string from a message.
      */
-    private final Object prefixInitializationLock = new Object();
+    private final Lock readLock;
+
+    /**
+     * A write lock for lazy initialization of the prefix string from a message.
+     */
+    private final Lock writeLock;
 
     /**
      * The mention string that is used as prefix.
      */
-    private volatile String prefix;
+    private String prefix;
+
+    /**
+     * Constructs a new mention prefix provider for Javacord.
+     */
+    public MentionPrefixProviderJavacord() {
+        ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+        readLock = readWriteLock.readLock();
+        writeLock = readWriteLock.writeLock();
+    }
 
     @Override
     public String getCommandPrefix(Message message) {
-        // Use a local variable here to not query
-        // the volatile field twice in the most common case
-        // where the value is already calculated
-        String prefix = this.prefix;
-        if (prefix == null) {
-            synchronized (prefixInitializationLock) {
-                prefix = this.prefix;
-                if (prefix == null) {
-                    prefix = format("%s ", message.getApi().getYourself().getMentionTag());
-                    this.prefix = prefix;
+        readLock.lock();
+        try {
+            if (prefix == null) {
+                readLock.unlock();
+                try {
+                    writeLock.lock();
+                    try {
+                        if (prefix == null) {
+                            prefix = format("%s ", message.getApi().getYourself().getMentionTag());
+                        }
+                    } finally {
+                        writeLock.unlock();
+                    }
+                } finally {
+                    readLock.lock();
                 }
             }
+            return prefix;
+        } finally {
+            readLock.unlock();
         }
-        return prefix;
     }
 
     @Override
