@@ -20,9 +20,12 @@ import net.kautler.command.api.restriction.Restriction;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+
+import static java.util.Comparator.comparingInt;
 
 /**
  * A directory of restrictions that can be looked up by their type.
@@ -33,7 +36,7 @@ public class RestrictionLookup<M> {
     /**
      * The restrictions.
      */
-    private final Collection<Restriction<? super M>> restrictions = new CopyOnWriteArrayList<>();
+    private final Set<Restriction<? super M>> restrictions = new CopyOnWriteArraySet<>();
 
     /**
      * The restrictions by class. As the actual restriction instances are proxied by CDI, this map cannot be
@@ -48,6 +51,7 @@ public class RestrictionLookup<M> {
      */
     public void addAllRestrictions(Collection<Restriction<? super M>> restrictions) {
         this.restrictions.addAll(restrictions);
+        restrictionByClass.clear();
     }
 
     /**
@@ -62,8 +66,18 @@ public class RestrictionLookup<M> {
                         key -> restrictions.stream()
                                 // we cannot use a map as the classes are proxied by CDI
                                 .filter(key::isInstance)
-                                .findAny()
+                                .min(comparingInt(restriction -> getInheritanceDistance(restriction, key)))
                                 .orElse(null));
+    }
+
+    private static int getInheritanceDistance(Restriction<?> restriction, Class<?> restrictionClass) {
+        int distance = 0;
+        for (Class<?> clazz = restriction.getClass();
+             !clazz.equals(restrictionClass) && restrictionClass.isAssignableFrom(clazz);
+             clazz = clazz.getSuperclass()) {
+            distance++;
+        }
+        return distance;
     }
 
     @Override
