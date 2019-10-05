@@ -343,7 +343,7 @@ public abstract class RoleJavacord implements Restriction<Message> {
                         roleStream = server.getRolesByNameIgnoreCase(roleName).stream();
                     }
                     return roleStream
-                            .max(naturalOrder())
+                            .min(naturalOrder())
                             .flatMap(role -> message.getUserAuthor()
                                             .flatMap(server::getHighestRole)
                                             .map(highestAuthorRole -> highestAuthorRole.compareTo(role) >= 0)
