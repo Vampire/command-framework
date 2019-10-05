@@ -22,9 +22,11 @@ import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.message.Message;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
 import static java.lang.Boolean.FALSE;
+import static java.lang.String.format;
 
 /**
  * A restriction that allows a command for certain users and is evaluated by the Javacord command handler.
@@ -101,16 +103,89 @@ public abstract class UserJavacord implements Restriction<Message> {
      * @param userPattern   the pattern against which the user name is matched
      *                      to determine for whom a command should be allowed
      */
-    private UserJavacord(long userId, String userName, boolean caseSensitive, Pattern userPattern) {
+    private UserJavacord(long userId, String userName,
+                         boolean caseSensitive, Pattern userPattern) {
         this.userId = userId;
         this.userName = userName;
         this.caseSensitive = caseSensitive;
         this.userPattern = userPattern;
+        ensureInvariants();
+    }
+
+    /**
+     * Checks the invariants of this instance and raises
+     * an {@link IllegalStateException} if they are violated.
+     */
+    private void ensureInvariants() {
+        ensureAtMostOneConditionIsSet();
+        ensureAtLeastOneConditionIsSet();
+        ensureCaseSensitiveIfNameIsNotSet();
+    }
+
+    /**
+     * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureAtMostOneConditionIsSet() {
+        boolean userIdSet = userId != 0;
+        boolean userNameSet = userName != null;
+        boolean userPatternSet = userPattern != null;
+
+        boolean userNamelySet = userNameSet || userPatternSet;
+        boolean userIdAndNamelySet = userIdSet && userNamelySet;
+        boolean bothUserNamelySet = userNameSet && userPatternSet;
+        boolean multipleConditionsSet = userIdAndNamelySet || bothUserNamelySet;
+
+        if (multipleConditionsSet) {
+            StringJoiner stringJoiner = new StringJoiner(", ");
+            if (userIdSet) {
+                stringJoiner.add("userId");
+            }
+            if (userNameSet) {
+                stringJoiner.add("userName");
+            }
+            if (userPatternSet) {
+                stringJoiner.add("userPattern");
+            }
+            throw new IllegalStateException(format(
+                    "Only one of userId, userName and userPattern should be given (%s)",
+                    stringJoiner));
+        }
+    }
+
+    /**
+     * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureAtLeastOneConditionIsSet() {
+        boolean userIdSet = userId != 0;
+        boolean userNameSet = userName != null;
+        boolean userPatternSet = userPattern != null;
+
+        boolean userNamelySet = userNameSet || userPatternSet;
+
+        boolean atLeastOneConditionSet = userIdSet || userNamelySet;
+
+        if (!atLeastOneConditionSet) {
+            throw new IllegalStateException(
+                    "One of userId, userName and userPattern should be given");
+        }
+    }
+
+    /**
+     * Checks that {@link #caseSensitive} is {@code true} if {@link #channelName}
+     * is not set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureCaseSensitiveIfNameIsNotSet() {
+        if ((userName == null) && !caseSensitive) {
+            throw new IllegalStateException(
+                    "If userName is not set, caseSensitive should be true");
+        }
     }
 
     @Override
     public boolean allowCommand(Message message) {
-        return userName == null && userPattern == null ? allowCommandByUserId(message) : allowCommandByUserName(message);
+        return ((userName == null) && (userPattern == null))
+                ? allowCommandByUserId(message)
+                : allowCommandByUserName(message);
     }
 
     /**

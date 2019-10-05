@@ -66,6 +66,20 @@
 
     <Match>
         <Or>
+            <Class name="net.kautler.command.api.restriction.javacord.ChannelJavacord"/>
+            <Class name="net.kautler.command.api.restriction.javacord.RoleJavacord"/>
+            <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord"/>
+            <Class name="net.kautler.command.api.restriction.javacord.UserJavacord"/>
+        </Or>
+        <Or>
+            <Method name="ensureAtLeastOneConditionIsSet" params="" returns="void"/>
+            <Method name="ensureCaseSensitiveIfNameIsNotSet" params="" returns="void"/>
+        </Or>
+        <Bug pattern="WEM_WEAK_EXCEPTION_MESSAGING"/>
+    </Match>
+
+    <Match>
+        <Or>
             <And>
                 <Class name="net.kautler.command.api.CommandHandler"/>
                 <Method name="getExecutorService" params="" returns="java.util.concurrent.ExecutorService"/>

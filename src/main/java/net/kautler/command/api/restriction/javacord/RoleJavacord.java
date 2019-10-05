@@ -24,10 +24,12 @@ import org.javacord.api.entity.permission.Role;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.util.Collection;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.lang.Boolean.FALSE;
+import static java.lang.String.format;
 import static java.util.Comparator.naturalOrder;
 
 /**
@@ -166,11 +168,83 @@ public abstract class RoleJavacord implements Restriction<Message> {
         this.roleName = roleName;
         this.caseSensitive = caseSensitive;
         this.rolePattern = rolePattern;
+        ensureInvariants();
+    }
+
+    /**
+     * Checks the invariants of this instance and raises
+     * an {@link IllegalStateException} if they are violated.
+     */
+    private void ensureInvariants() {
+        ensureAtMostOneConditionIsSet();
+        ensureAtLeastOneConditionIsSet();
+        ensureCaseSensitiveIfNameIsNotSet();
+    }
+
+    /**
+     * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureAtMostOneConditionIsSet() {
+        boolean roleIdSet = roleId != 0;
+        boolean roleNameSet = roleName != null;
+        boolean rolePatternSet = rolePattern != null;
+
+        boolean roleNamelySet = roleNameSet || rolePatternSet;
+        boolean roleIdAndNamelySet = roleIdSet && roleNamelySet;
+        boolean bothRoleNamelySet = roleNameSet && rolePatternSet;
+        boolean multipleConditionsSet = roleIdAndNamelySet || bothRoleNamelySet;
+
+        if (multipleConditionsSet) {
+            StringJoiner stringJoiner = new StringJoiner(", ");
+            if (roleIdSet) {
+                stringJoiner.add("roleId");
+            }
+            if (roleNameSet) {
+                stringJoiner.add("roleName");
+            }
+            if (rolePatternSet) {
+                stringJoiner.add("rolePattern");
+            }
+            throw new IllegalStateException(format(
+                    "Only one of roleId, roleName and rolePattern should be given (%s)",
+                    stringJoiner));
+        }
+    }
+
+    /**
+     * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureAtLeastOneConditionIsSet() {
+        boolean roleIdSet = roleId != 0;
+        boolean roleNameSet = roleName != null;
+        boolean rolePatternSet = rolePattern != null;
+
+        boolean roleNamelySet = roleNameSet || rolePatternSet;
+
+        boolean atLeastOneConditionSet = roleIdSet || roleNamelySet;
+
+        if (!atLeastOneConditionSet) {
+            throw new IllegalStateException(
+                    "One of roleId, roleName and rolePattern should be given");
+        }
+    }
+
+    /**
+     * Checks that {@link #caseSensitive} is {@code true} if {@link #roleName}
+     * is not set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureCaseSensitiveIfNameIsNotSet() {
+        if ((roleName == null) && !caseSensitive) {
+            throw new IllegalStateException(
+                    "If roleName is not set, caseSensitive should be true");
+        }
     }
 
     @Override
     public boolean allowCommand(Message message) {
-        return roleName == null && rolePattern == null ? allowCommandByRoleId(message) : allowCommandByRoleName(message);
+        return ((roleName == null) && (rolePattern == null))
+                ? allowCommandByRoleId(message)
+                : allowCommandByRoleName(message);
     }
 
     /**

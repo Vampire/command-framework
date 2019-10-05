@@ -22,9 +22,11 @@ import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.message.Message;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
 import static java.lang.Boolean.FALSE;
+import static java.lang.String.format;
 
 /**
  * A restriction that allows a command in certain servers and is evaluated by the Javacord command handler.
@@ -101,16 +103,89 @@ public abstract class ServerJavacord implements Restriction<Message> {
      * @param serverPattern the pattern against which the server name is matched
      *                      to determine where a command should be allowed
      */
-    private ServerJavacord(long serverId, String serverName, boolean caseSensitive, Pattern serverPattern) {
+    private ServerJavacord(long serverId, String serverName,
+                           boolean caseSensitive, Pattern serverPattern) {
         this.serverId = serverId;
         this.serverName = serverName;
         this.caseSensitive = caseSensitive;
         this.serverPattern = serverPattern;
+        ensureInvariants();
+    }
+
+    /**
+     * Checks the invariants of this instance and raises
+     * an {@link IllegalStateException} if they are violated.
+     */
+    private void ensureInvariants() {
+        ensureAtMostOneConditionIsSet();
+        ensureAtLeastOneConditionIsSet();
+        ensureCaseSensitiveIfNameIsNotSet();
+    }
+
+    /**
+     * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureAtMostOneConditionIsSet() {
+        boolean serverIdSet = serverId != 0;
+        boolean serverNameSet = serverName != null;
+        boolean serverPatternSet = serverPattern != null;
+
+        boolean serverNamelySet = serverNameSet || serverPatternSet;
+        boolean serverIdAndNamelySet = serverIdSet && serverNamelySet;
+        boolean bothServerNamelySet = serverNameSet && serverPatternSet;
+        boolean multipleConditionsSet = serverIdAndNamelySet || bothServerNamelySet;
+
+        if (multipleConditionsSet) {
+            StringJoiner stringJoiner = new StringJoiner(", ");
+            if (serverIdSet) {
+                stringJoiner.add("serverId");
+            }
+            if (serverNameSet) {
+                stringJoiner.add("serverName");
+            }
+            if (serverPatternSet) {
+                stringJoiner.add("serverPattern");
+            }
+            throw new IllegalStateException(format(
+                    "Only one of serverId, serverName and serverPattern should be given (%s)",
+                    stringJoiner));
+        }
+    }
+
+    /**
+     * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureAtLeastOneConditionIsSet() {
+        boolean serverIdSet = serverId != 0;
+        boolean serverNameSet = serverName != null;
+        boolean serverPatternSet = serverPattern != null;
+
+        boolean serverNamelySet = serverNameSet || serverPatternSet;
+
+        boolean atLeastOneConditionSet = serverIdSet || serverNamelySet;
+
+        if (!atLeastOneConditionSet) {
+            throw new IllegalStateException(
+                    "One of serverId, serverName and serverPattern should be given");
+        }
+    }
+
+    /**
+     * Checks that {@link #caseSensitive} is {@code true} if {@link #serverName}
+     * is not set and raises an {@link IllegalStateException} otherwise.
+     */
+    private void ensureCaseSensitiveIfNameIsNotSet() {
+        if ((serverName == null) && !caseSensitive) {
+            throw new IllegalStateException(
+                    "If serverName is not set, caseSensitive should be true");
+        }
     }
 
     @Override
     public boolean allowCommand(Message message) {
-        return serverName == null && serverPattern == null ? allowCommandByServerId(message) : allowCommandByServerName(message);
+        return ((serverName == null) && (serverPattern == null))
+                ? allowCommandByServerId(message)
+                : allowCommandByServerName(message);
     }
 
     /**
