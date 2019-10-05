@@ -40,6 +40,13 @@ options {
     contextSuperClass = UsageParserRuleContext;
 }
 
+@members {
+    {
+        removeErrorListeners();
+        addErrorListener(new UsageErrorListener());
+    }
+}
+
 usage
     : expression+ EOF
     ;
