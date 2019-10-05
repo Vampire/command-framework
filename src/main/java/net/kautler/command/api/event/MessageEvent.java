@@ -84,10 +84,15 @@ public class MessageEvent<M> {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", getClass().getSimpleName() + "[", "]")
+        Class<? extends MessageEvent> clazz = getClass();
+        String className = clazz.getSimpleName();
+        if (className.isEmpty()) {
+            className = clazz.getTypeName().substring(clazz.getPackage().getName().length() + 1);
+        }
+        return new StringJoiner(", ", className + "[", "]")
                 .add("message=" + message)
-                .add("prefix=" + prefix)
-                .add("usedAlias=" + usedAlias)
+                .add("prefix='" + prefix + "'")
+                .add("usedAlias='" + usedAlias + "'")
                 .toString();
     }
 }

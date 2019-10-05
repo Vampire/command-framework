@@ -84,7 +84,12 @@ public abstract class MentionPrefixProviderJavacord implements PrefixProvider<Me
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", getClass().getSimpleName() + "[", "]")
+        Class<? extends MentionPrefixProviderJavacord> clazz = getClass();
+        String className = clazz.getSimpleName();
+        if (className.isEmpty()) {
+            className = clazz.getTypeName().substring(clazz.getPackage().getName().length() + 1);
+        }
+        return new StringJoiner(", ", className + "[", "]")
                 .add("prefix='" + prefix + "'")
                 .toString();
     }

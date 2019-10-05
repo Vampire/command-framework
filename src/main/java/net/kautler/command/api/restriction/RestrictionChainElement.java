@@ -53,7 +53,7 @@ public class RestrictionChainElement {
      *
      * @param message               the message that triggered the command
      * @param availableRestrictions the look up to find the actual restriction implementations
-     * @param <M> the class of the message
+     * @param <M>                   the class of the message
      * @return whether the command triggered by the given message should be allowed or not
      */
     public <M> boolean isCommandAllowed(M message, RestrictionLookup<? super M> availableRestrictions) {
@@ -97,7 +97,7 @@ public class RestrictionChainElement {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", getClass().getSimpleName() + "[", "]")
+        return new StringJoiner(", ", RestrictionChainElement.class.getSimpleName() + "[", "]")
                 .add("restriction=" + restriction)
                 .toString();
     }
