@@ -69,8 +69,10 @@ public interface Command<M> {
      * @see Alias @Alias
      */
     default List<String> getAliases() {
+        Class<? extends Command> clazz = getClass();
+
         List<String> annotatedAliases = Arrays
-                .stream(getClass().getAnnotationsByType(Alias.class))
+                .stream(clazz.getAnnotationsByType(Alias.class))
                 .map(Alias::value)
                 .collect(toList());
 
@@ -78,7 +80,10 @@ public interface Command<M> {
             return annotatedAliases;
         }
 
-        String className = getClass().getSimpleName();
+        String className = clazz.getSimpleName();
+        if (className.isEmpty()) {
+            className = clazz.getTypeName().substring(clazz.getPackage().getName().length() + 1);
+        }
         String defaultAlias = className
                 .replaceFirst("(?i)(?:Command|Cmd)$", "")
                 .replaceFirst("^.", Character.toString(toLowerCase(className.charAt(0))));
@@ -187,7 +192,7 @@ public interface Command<M> {
                                     ? restrictionChainElement.negate()
                                     : restrictionChainElement)
                     .findAny()
-                    .orElseThrow(AbstractMethodError::new);
+                    .orElseThrow(AssertionError::new);
         }
 
         // multiple restrictions, but no policy
@@ -202,18 +207,18 @@ public interface Command<M> {
                         .reduce(RestrictionChainElement::and)
                         .orElseThrow(AssertionError::new);
 
+            case ANY_OF:
+                return restrictions.stream()
+                        .map(RestrictionChainElement::new)
+                        .reduce(RestrictionChainElement::or)
+                        .orElseThrow(AssertionError::new);
+
             case NONE_OF:
                 return restrictions.stream()
                         .map(RestrictionChainElement::new)
                         .reduce(RestrictionChainElement::or)
                         .orElseThrow(AssertionError::new)
                         .negate();
-
-            case ANY_OF:
-                return restrictions.stream()
-                        .map(RestrictionChainElement::new)
-                        .reduce(RestrictionChainElement::or)
-                        .orElseThrow(AssertionError::new);
 
             default:
                 throw new AssertionError(format("Unhandled switch case for policy '%s'", restrictionPolicy.value()));
