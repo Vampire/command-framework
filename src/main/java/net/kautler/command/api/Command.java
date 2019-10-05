@@ -284,6 +284,6 @@ public interface Command<M> {
         if (parameterString.chars().allMatch(Character::isWhitespace)) {
             return new String[0];
         }
-        return PARAMETER_SEPARATOR_PATTERN.split(parameterString, maxParameters + 1);
+        return PARAMETER_SEPARATOR_PATTERN.split(parameterString, maxParameters);
     }
 }
