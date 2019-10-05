@@ -19,6 +19,7 @@ package net.kautler.command.api.restriction;
 import net.kautler.command.restriction.RestrictionLookup;
 
 import java.util.StringJoiner;
+import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -35,7 +36,7 @@ public class RestrictionChainElement {
     /**
      * Constructs a new restriction chain element.
      */
-    private RestrictionChainElement() {
+    RestrictionChainElement() {
         this.restriction = null;
     }
 
@@ -76,6 +77,17 @@ public class RestrictionChainElement {
     }
 
     /**
+     * Returns a restriction chain element that combines this restriction chain element with the given restriction class
+     * using boolean short-circuit "and" logic.
+     *
+     * @param other the restriction class to be combined with this restriction chain element
+     * @return a restriction chain element that represents the boolean combination
+     */
+    public RestrictionChainElement and(Class<? extends Restriction<?>> other) {
+        return new AndCombination(this, new RestrictionChainElement(other));
+    }
+
+    /**
      * Returns a restriction chain element that combines this restriction chain element with the given one using boolean
      * short-circuit "or" logic.
      *
@@ -84,6 +96,17 @@ public class RestrictionChainElement {
      */
     public RestrictionChainElement or(RestrictionChainElement other) {
         return new OrCombination(this, other);
+    }
+
+    /**
+     * Returns a restriction chain element that combines this restriction chain element with the given restriction class
+     * using boolean short-circuit "or" logic.
+     *
+     * @param other the restriction class to be combined with this restriction chain element
+     * @return a restriction chain element that represents the boolean combination
+     */
+    public RestrictionChainElement or(Class<? extends Restriction<?>> other) {
+        return new OrCombination(this, new RestrictionChainElement(other));
     }
 
     /**
@@ -130,7 +153,8 @@ public class RestrictionChainElement {
 
         @Override
         public <M> boolean isCommandAllowed(M message, RestrictionLookup<? super M> availableRestrictions) {
-            return left.isCommandAllowed(message, availableRestrictions) && right.isCommandAllowed(message, availableRestrictions);
+            return Stream.of(left, right)
+                    .allMatch(chainElement -> chainElement.isCommandAllowed(message, availableRestrictions));
         }
 
         @Override
@@ -170,7 +194,8 @@ public class RestrictionChainElement {
 
         @Override
         public <M> boolean isCommandAllowed(M message, RestrictionLookup<? super M> availableRestrictions) {
-            return left.isCommandAllowed(message, availableRestrictions) || right.isCommandAllowed(message, availableRestrictions);
+            return Stream.of(left, right)
+                    .anyMatch(chainElement -> chainElement.isCommandAllowed(message, availableRestrictions));
         }
 
         @Override
