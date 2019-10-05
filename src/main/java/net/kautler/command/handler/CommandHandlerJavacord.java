@@ -27,7 +27,6 @@ import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.event.message.MessageCreateEvent;
-import org.javacord.api.util.logging.ExceptionLogger;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -159,6 +158,10 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     @Override
     protected void executeAsync(Message message, Runnable commandExecutor) {
         runAsync(commandExecutor, message.getApi().getThreadPool().getExecutorService())
-                .exceptionally(ExceptionLogger.get());
+                .whenComplete((result, throwable) -> {
+                    if (throwable != null) {
+                        logger.error("Exception while executing command asynchronously", throwable);
+                    }
+                });
     }
 }
