@@ -24,20 +24,20 @@ import net.kautler.command.usage.UsageParser.PlaceholderContext;
 import net.kautler.command.usage.UsageParser.PlaceholderWithWhitespaceContext;
 import net.kautler.command.usage.UsageParser.UsageContext;
 import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
 
 import static java.lang.String.format;
-import static java.util.regex.Matcher.quoteReplacement;
 import static java.util.stream.Collectors.joining;
-import static net.kautler.command.api.Command.PARAMETER_SEPARATOR_PATTERN;
+import static net.kautler.command.api.Command.PARAMETER_SEPARATOR_CHARACTER;
 
 /**
  * A usage visitor that constructs a regular expression pattern to parse command arguments according to the defined
@@ -46,10 +46,22 @@ import static net.kautler.command.api.Command.PARAMETER_SEPARATOR_PATTERN;
 @ApplicationScoped
 public class UsagePatternBuilder extends UsageBaseVisitor<String> {
     /**
-     * A regular expression part that matches a parameter separator or the end of string.
+     * A regular expression part that matches a parameter separator that is not preceded by start or end of input.
      */
     private static final String PARAMETER_BOUNDARY_PATTERN_PART =
-            format("(?:%s|$)", PARAMETER_SEPARATOR_PATTERN.pattern());
+            format("(?:(?<!^)%s++(?!$))?", PARAMETER_SEPARATOR_CHARACTER);
+
+    /**
+     * A regular expression part that matches a parameter separator character as lookbehind.
+     */
+    private static final String PRECEDED_BY_PARAMETER_SEPARATOR_CHARACTER =
+            format("(?<=^|(?<!^)%s)", PARAMETER_SEPARATOR_CHARACTER);
+
+    /**
+     * A regular expression part that matches a parameter separator character as lookahead.
+     */
+    private static final String FOLLOWED_BY_PARAMETER_SEPARATOR_CHARACTER =
+            format("(?=%s(?!$)|$)", PARAMETER_SEPARATOR_CHARACTER);
 
     /**
      * A cache for regular expression patterns for usage specifications, so that the usage string does not need to be
@@ -136,49 +148,17 @@ public class UsagePatternBuilder extends UsageBaseVisitor<String> {
      * @return the visitor result
      */
     private String visitParentParserRuleContext(UsageParserRuleContext ctx) {
-        boolean hasSingleChild = (ctx.placeholder() != null)
-                || (ctx.placeholderWithWhitespace() != null)
-                || (ctx.literal() != null)
-                || (ctx.optional() != null)
-                || (ctx.alternatives() != null);
-        if (hasSingleChild) {
-            return ctx.getChild(0).accept(this);
+        Optional<ParseTree> singleChild = ctx.getSingleChild();
+        if (singleChild.isPresent()) {
+            return singleChild.get().accept(this);
         } else {
             List<ExpressionContext> expressions = ctx.expression();
             if (expressions.isEmpty()) {
                 throw new AssertionError("Unhandled case");
             } else {
-                boolean[] first = { true };
-                boolean[] leftOptional = { false };
-                boolean[] leftHasWhitespace = { false };
                 return expressions.stream()
                         .map(this::visitParentParserRuleContext)
-                        .collect(Collector.of(
-                                StringBuilder::new,
-                                (left, right) -> {
-                                    boolean rightOptional = right.endsWith(")?");
-                                    if (first[0]) {
-                                        left.append(right);
-                                        first[0] = false;
-                                        leftHasWhitespace[0] = false;
-                                    } else if (leftOptional[0] && !leftHasWhitespace[0]) {
-                                        left.insert(left.length() - 2, PARAMETER_BOUNDARY_PATTERN_PART);
-                                        left.append(right);
-                                        leftHasWhitespace[0] = false;
-                                    } else if (rightOptional) {
-                                        left.append(right.replaceFirst(
-                                                "^\\(\\?(?::|<[^>]++>)",
-                                                "$0" + quoteReplacement(PARAMETER_BOUNDARY_PATTERN_PART)));
-                                        leftHasWhitespace[0] = true;
-                                    } else {
-                                        left.append(PARAMETER_BOUNDARY_PATTERN_PART);
-                                        left.append(right);
-                                        leftHasWhitespace[0] = false;
-                                    }
-                                    leftOptional[0] = rightOptional;
-                                },
-                                (left, right) -> { throw new UnsupportedOperationException(); },
-                                Object::toString));
+                        .collect(joining(PARAMETER_BOUNDARY_PATTERN_PART));
             }
         }
     }
@@ -187,21 +167,33 @@ public class UsagePatternBuilder extends UsageBaseVisitor<String> {
     public String visitPlaceholder(PlaceholderContext ctx) {
         String tokenText = ctx.getText();
         String tokenName = tokenText.substring(1, tokenText.length() - 1);
-        return format("(?<%s>\\S+)", getGroupName(ctx, tokenName));
+        return format(
+                "%s(?<%s>\\S+)%s",
+                PRECEDED_BY_PARAMETER_SEPARATOR_CHARACTER,
+                getGroupName(ctx, tokenName),
+                FOLLOWED_BY_PARAMETER_SEPARATOR_CHARACTER);
     }
 
     @Override
     public String visitPlaceholderWithWhitespace(PlaceholderWithWhitespaceContext ctx) {
         String tokenText = ctx.getText();
         String tokenName = tokenText.substring(1, tokenText.length() - 4);
-        return format("(?<%s>.+)", getGroupName(ctx, tokenName));
+        return format(
+                "%s(?<%s>.+)$",
+                PRECEDED_BY_PARAMETER_SEPARATOR_CHARACTER,
+                getGroupName(ctx, tokenName));
     }
 
     @Override
     public String visitLiteral(LiteralContext ctx) {
         String tokenText = ctx.getText();
         String tokenName = tokenText.substring(1, tokenText.length() - 1);
-        return format("(?<%s>%s)", getGroupName(ctx, tokenName, "Literal"), Pattern.quote(tokenName));
+        return format(
+                "%s(?<%s>%s)%s",
+                PRECEDED_BY_PARAMETER_SEPARATOR_CHARACTER,
+                getGroupName(ctx, tokenName, "Literal"),
+                Pattern.quote(tokenName),
+                FOLLOWED_BY_PARAMETER_SEPARATOR_CHARACTER);
     }
 
     /**
@@ -264,7 +256,7 @@ public class UsagePatternBuilder extends UsageBaseVisitor<String> {
      */
     private UsageContext getUsageContext(UsageParserRuleContext ctx) {
         RuleContext current = ctx;
-        while (current.getParent() != null) {
+        while (!(current instanceof UsageContext)) {
             current = current.getParent();
         }
         return (UsageContext) current;

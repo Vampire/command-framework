@@ -52,9 +52,14 @@ import static net.kautler.command.api.annotation.RestrictionPolicy.Policy.NONE_O
  */
 public interface Command<M> {
     /**
+     * The regex pattern string for one parameter separator character. It matches one whitespaces except newline.
+     */
+    String PARAMETER_SEPARATOR_CHARACTER = "[\\s&&[^\\n]]";
+
+    /**
      * The pattern that is used to split parameters. It matches an arbitrary amount of whitespaces except newlines.
      */
-    Pattern PARAMETER_SEPARATOR_PATTERN = Pattern.compile("[\\s&&[^\\n]]++");
+    Pattern PARAMETER_SEPARATOR_PATTERN = Pattern.compile(PARAMETER_SEPARATOR_CHARACTER + "++");
 
     /**
      * Returns the aliases for this command.

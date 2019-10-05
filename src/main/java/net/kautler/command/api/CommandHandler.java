@@ -50,6 +50,7 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static net.kautler.command.api.Command.PARAMETER_SEPARATOR_CHARACTER;
 import static net.kautler.command.api.Command.getParameters;
 
 /**
@@ -209,7 +210,9 @@ public abstract class CommandHandler<M> {
         commandPattern = Pattern.compile(
                 commandByAlias.keySet().stream()
                         .map(Pattern::quote)
-                        .collect(joining("|", "(?s)^(?<alias>", ")(?=\\s|$)[\\s&&[^\\n]]*+(?<parameterString>.*+)$")));
+                        .collect(joining("|", "(?s)^(?<alias>", ")(?=\\s|$)"
+                                + "\\s?+" + PARAMETER_SEPARATOR_CHARACTER + "*+"
+                                + "(?<parameterString>.*+)$")));
     }
 
     /**

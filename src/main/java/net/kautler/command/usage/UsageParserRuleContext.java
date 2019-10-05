@@ -24,8 +24,10 @@ import net.kautler.command.usage.UsageParser.OptionalContext;
 import net.kautler.command.usage.UsageParser.PlaceholderContext;
 import net.kautler.command.usage.UsageParser.PlaceholderWithWhitespaceContext;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 
@@ -36,8 +38,8 @@ public abstract class UsageParserRuleContext extends ParserRuleContext {
     /**
      * Constructs a new usage parser rule context.
      */
-    UsageParserRuleContext(ParserRuleContext parent, int invokingState) {
-        super(parent, invokingState);
+    UsageParserRuleContext(ParserRuleContext parent, int invokingStateNumber) {
+        super(parent, invokingStateNumber);
     }
 
     /**
@@ -108,5 +110,23 @@ public abstract class UsageParserRuleContext extends ParserRuleContext {
     @Nullable
     public LiteralContext literal() {
         return null;
+    }
+
+    /**
+     * Returns the single child of this usage parser rule context or
+     * an empty optional if there are no or multiple children.
+     *
+     * @return the single child if present
+     */
+    public Optional<ParseTree> getSingleChild() {
+        if ((placeholder() == null)
+                && (placeholderWithWhitespace() == null)
+                && (literal() == null)
+                && (optional() == null)
+                && (alternatives() == null)) {
+            return Optional.empty();
+        } else {
+            return Optional.of(getChild(0));
+        }
     }
 }
