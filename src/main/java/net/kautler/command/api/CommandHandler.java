@@ -36,7 +36,6 @@ import javax.inject.Inject;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
@@ -51,6 +50,7 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static net.kautler.command.api.Command.getParameters;
 
 /**
  * A base class for command handlers that does the common logic.
@@ -90,7 +90,7 @@ public abstract class CommandHandler<M> {
     /**
      * The pattern to match all possible commands.
      */
-    private volatile Pattern commandPattern;
+    private volatile Pattern commandPattern = Pattern.compile("[^\\w\\W]");
 
     /**
      * The custom prefix provider that was provided.
@@ -199,7 +199,10 @@ public abstract class CommandHandler<M> {
                         Map.Entry::getKey,
                         Map.Entry::getValue,
                         (cmd1, cmd2) -> {
-                            throw new IllegalStateException(format("The same alias was defined for the two commands '%s' and '%s'", cmd1, cmd2));
+                            throw new IllegalStateException(format(
+                                    "The same alias was defined for the two commands '%s' and '%s'",
+                                    cmd1,
+                                    cmd2));
                         })));
 
         // build the command matching pattern
@@ -278,11 +281,9 @@ public abstract class CommandHandler<M> {
                     "If you do not care, just configure your logging framework to ignore this warning, as it also " +
                     "costs additional performance and might hide other important log messages. ;-)");
         }
-        if (emptyPrefix || messageContent.startsWith(prefix)) {
+        if (messageContent.startsWith(prefix)) {
             String messageContentWithoutPrefix = messageContent.substring(prefix.length()).trim();
-            Matcher commandMatcher = Optional.ofNullable(commandPattern)
-                    .orElseThrow(AssertionError::new)
-                    .matcher(messageContentWithoutPrefix);
+            Matcher commandMatcher = commandPattern.matcher(messageContentWithoutPrefix);
             if (commandMatcher.find()) {
                 String usedAlias = commandMatcher.group("alias");
                 Command<? super M> command = commandByAlias.get(usedAlias);
@@ -299,7 +300,8 @@ public abstract class CommandHandler<M> {
                 }
             } else {
                 logger.debug("No matching command found");
-                fireCommandNotFoundEvent(message, prefix, Command.getParameters(messageContentWithoutPrefix, 2)[0]);
+                String[] parameters = getParameters(messageContentWithoutPrefix, 2);
+                fireCommandNotFoundEvent(message, prefix, parameters.length == 0 ? "" : parameters[0]);
             }
         }
     }
