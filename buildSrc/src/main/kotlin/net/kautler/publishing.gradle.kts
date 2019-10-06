@@ -24,7 +24,17 @@ import org.kohsuke.github.GHIssueState.OPEN
 import org.kohsuke.github.GitHub
 import wooga.gradle.github.publish.PublishMethod.update
 import wooga.gradle.github.publish.tasks.GithubPublish
+import java.awt.GraphicsEnvironment.isHeadless
+import java.util.concurrent.CompletableFuture
 import javax.naming.ConfigurationException
+import javax.swing.JFrame
+import javax.swing.JOptionPane.DEFAULT_OPTION
+import javax.swing.JOptionPane.OK_OPTION
+import javax.swing.JOptionPane.QUESTION_MESSAGE
+import javax.swing.JOptionPane.showOptionDialog
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.SwingUtilities
 import kotlin.LazyThreadSafetyMode.NONE
 
 plugins {
@@ -236,13 +246,45 @@ val github by lazy(NONE) {
 }
 
 val releaseBody by lazy(NONE) {
-    grgit?.let {
+    val releaseBody = grgit?.let {
         it.log {
-            github.getRepository(githubRepositoryName).latestRelease?.run { excludes.add(tagName) }
+            github.getRepository(githubRepositoryName).latestRelease?.apply { excludes.add(tagName) }
+        }.filter { commit ->
+            !commit.shortMessage.startsWith("[Gradle Release Plugin] ")
+        }.joinToString("\n") { commit ->
+            "- ${commit.shortMessage} [${commit.id}]"
         }
-                .filter { !it.shortMessage.startsWith("[Gradle Release Plugin] ") }
-                .joinToString("\n") { "- ${it.shortMessage} [${it.id}]" }
     } ?: ""
+
+    if (isHeadless()) {
+        return@lazy releaseBody
+    }
+
+    val result = CompletableFuture<String>()
+
+    SwingUtilities.invokeLater {
+        val textArea = JTextArea(releaseBody)
+
+        val parentFrame = JFrame().apply {
+            isUndecorated = true
+            setLocationRelativeTo(null)
+            isVisible = true
+        }
+
+        result.complete(try {
+            when (showOptionDialog(
+                    parentFrame, JScrollPane(textArea), "Release Body",
+                    DEFAULT_OPTION, QUESTION_MESSAGE, null, null, null
+            )) {
+                OK_OPTION -> textArea.text!!
+                else -> releaseBody
+            }
+        } finally {
+            parentFrame.dispose()
+        })
+    }
+
+    result.join()!!
 }
 
 tasks.withType<GithubPublish>().configureEach {
