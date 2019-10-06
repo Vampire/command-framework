@@ -160,8 +160,8 @@ call the methods on the command implementation.
 
 By overwriting the `Command#getAliases()` method or applying one or multiple [`@Alias`][@Alias JavaDoc] annotations the
 aliases to which the command reacts can be configured. If at least one alias is configured, only the explicitly
-configured ones are available. If no alias is configured, the class name, stripped by `Command` or `Cmd` suffix
-and the first letter lowercased is used as default.
+configured ones are available. If no alias is configured, the class name, stripped by `Command` or `Cmd`
+suffix and / or prefix and the first letter lowercased is used as default.
 
 #### Asynchronous Command Execution
 

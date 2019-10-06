@@ -18,7 +18,6 @@ package net.kautler.test.pitest;
 
 import org.pitest.mutationtest.engine.MutationDetails;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.StringJoiner;

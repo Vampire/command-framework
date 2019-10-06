@@ -29,8 +29,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * An annotation with which one or more aliases for a command can be configured.
  * If at least one alias is configured, only the explicitly configured ones are available.
- * If no alias is configured, the class name, stripped by {@code Command} or {@code Cmd} suffix if present
- * and the first letter lowercased is used as default.
+ * If no alias is configured, the class name, stripped by {@code Command} or {@code Cmd}
+ * suffix and / or prefix if present and the first letter lowercased is used as default.
  *
  * <p>Alternatively to using this annotation the {@link Command#getAliases()} method can be overwritten.
  * If that method is overwritten and this annotation is used, the method overwrite takes precedence.

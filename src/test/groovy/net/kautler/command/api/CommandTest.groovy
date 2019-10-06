@@ -53,7 +53,10 @@ class CommandTest extends Specification {
             new Test4()           || ['test']
             new Test5()           || ['test1', 'test2']
             new Test6()           || ['Test1', 'Test2']
-            new BaseCommand() { } || [testee.getClass().typeName[(testee.getClass().package.name.length() + 1)..-1].uncapitalize()]
+            new CommandTest7()    || ['test7']
+            new CmdTest8()        || ['test8']
+            new CommandTest9Cmd() || ['test9']
+            new BaseCommand() { } || [testee.getClass().typeName[(testee.getClass().package.name.length() + 8)..-1].uncapitalize()]
 
         and:
             aliases = expectedAliases.size() == 1 ? 'alias' : 'aliases'
@@ -182,7 +185,7 @@ class CommandTest extends Specification {
 
     def 'multiple restrictions with ALL_OF policy should require all those restrictions'() {
         given:
-            def testee = new Test7()
+            def testee = new CommandTest7()
             def testeeClass = testee.getClass()
 
         expect:
@@ -211,7 +214,7 @@ class CommandTest extends Specification {
 
     def 'multiple restrictions with ANY_OF policy should require one of those restrictions'() {
         given:
-            def testee = new Test8()
+            def testee = new CmdTest8()
             def testeeClass = testee.getClass()
 
         expect:
@@ -240,7 +243,7 @@ class CommandTest extends Specification {
 
     def 'multiple restrictions with NONE_OF policy should require all those restrictions negated'() {
         given:
-            def testee = new Test9()
+            def testee = new CommandTest9Cmd()
             def testeeClass = testee.getClass()
 
         expect:
@@ -295,7 +298,7 @@ class CommandTest extends Specification {
             }
 
         and:
-            def testee = new Test9()
+            def testee = new CommandTest9Cmd()
             def testeeClass = testee.getClass()
 
         expect:
@@ -379,19 +382,19 @@ class CommandTest extends Specification {
     @RestrictedTo(Restriction2)
     @RestrictedTo(Restriction3)
     @RestrictionPolicy(ALL_OF)
-    static class Test7 extends BaseCommand { }
+    static class CommandTest7 extends BaseCommand { }
 
     @RestrictedTo(Restriction1)
     @RestrictedTo(Restriction2)
     @RestrictedTo(Restriction3)
     @RestrictionPolicy(ANY_OF)
-    static class Test8 extends BaseCommand { }
+    static class CmdTest8 extends BaseCommand { }
 
     @RestrictedTo(Restriction1)
     @RestrictedTo(Restriction2)
     @RestrictedTo(Restriction3)
     @RestrictionPolicy(NONE_OF)
-    static class Test9 extends BaseCommand { }
+    static class CommandTest9Cmd extends BaseCommand { }
 
     static class BaseRestriction implements Restriction<Object> {
         @Override

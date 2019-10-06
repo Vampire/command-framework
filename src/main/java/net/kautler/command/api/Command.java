@@ -66,7 +66,7 @@ public interface Command<M> {
      *
      * <p>The default implementation of this method returns the aliases configured using the {@link Alias @Alias}
      * annotation. If no alias is configured by annotation, the class name, stripped by {@code Command} or {@code Cmd}
-     * suffix if present and the first letter lowercased is used as default.
+     * suffix and / or prefix if present and the first letter lowercased is used as default.
      *
      * <p>If this method is overwritten and there are annotations, the method overwrite takes precedence.
      *
@@ -89,9 +89,8 @@ public interface Command<M> {
         if (className.isEmpty()) {
             className = clazz.getTypeName().substring(clazz.getPackage().getName().length() + 1);
         }
-        String defaultAlias = className
-                .replaceFirst("(?i)(?:Command|Cmd)$", "")
-                .replaceFirst("^.", Character.toString(toLowerCase(className.charAt(0))));
+        String defaultAlias = className.replaceAll("(?i)^(?:Command|Cmd)|(?:Command|Cmd)$", "");
+        defaultAlias = defaultAlias.replaceFirst("^.", Character.toString(toLowerCase(defaultAlias.charAt(0))));
         return singletonList(defaultAlias);
     }
 
