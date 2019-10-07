@@ -6,6 +6,9 @@ Command Framework
 [![License][License Badge]][License File]
 [![Discord][Discord Badge]][Discord Invite]
 
+![Branch Coverage Badge]
+![Mutant Coverage Badge]
+
 [![Supported Java Versions][Supported Java Versions Badge]](#)
 
 [![Supported Message Frameworks][Supported Message Frameworks Badge]](#supported-message-frameworks)
@@ -72,7 +75,7 @@ Setup
 
 ```gradle
 repositories { mavenCentral() }
-dependencies { implementation 'net.kautler:command-framework:0.1.0' }
+dependencies { implementation 'net.kautler:command-framework:0.2.0' }
 ```
 
 ### Maven
@@ -81,7 +84,7 @@ dependencies { implementation 'net.kautler:command-framework:0.1.0' }
 <dependency>
   <groupId>net.kautler</groupId>
   <artifactId>command-framework</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
@@ -157,8 +160,8 @@ call the methods on the command implementation.
 
 By overwriting the `Command#getAliases()` method or applying one or multiple [`@Alias`][@Alias JavaDoc] annotations the
 aliases to which the command reacts can be configured. If at least one alias is configured, only the explicitly
-configured ones are available. If no alias is configured, the class name, stripped by `Command` or `Cmd` suffix
-and the first letter lowercased is used as default.
+configured ones are available. If no alias is configured, the class name, stripped by `Command` or `Cmd`
+suffix and / or prefix and the first letter lowercased is used as default.
 
 #### Asynchronous Command Execution
 
@@ -460,6 +463,10 @@ limitations under the License.
     https://github.com/Vampire/command-framework/blob/master/LICENSE
 [Discord Badge]:
     https://shields.javacord.org/discord/534420861294346255.svg?label=Discord
+[Branch Coverage Badge]:
+    https://shields.javacord.org/badge/Branch%20Coverage-100%25-brightgreen.svg?style=flat
+[Mutant Coverage Badge]:
+    https://shields.javacord.org/badge/PIT%20Mutant%20Coverage-100%25-brightgreen.svg?style=flat
 [Supported Java Versions Badge]:
     https://shields.javacord.org/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:
