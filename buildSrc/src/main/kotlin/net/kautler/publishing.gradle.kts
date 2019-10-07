@@ -27,6 +27,7 @@ import wooga.gradle.github.publish.tasks.GithubPublish
 import java.awt.GraphicsEnvironment.isHeadless
 import java.util.concurrent.CompletableFuture
 import javax.naming.ConfigurationException
+import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JOptionPane.DEFAULT_OPTION
 import javax.swing.JOptionPane.OK_OPTION
@@ -263,7 +264,15 @@ val releaseBody by lazy(NONE) {
     val result = CompletableFuture<String>()
 
     SwingUtilities.invokeLater {
-        val textArea = JTextArea(releaseBody)
+        val initialReleaseBody = """
+            # Highlights
+            - 
+
+            # Details
+
+        """.trimIndent() + releaseBody
+
+        val textArea = JTextArea(initialReleaseBody)
 
         val parentFrame = JFrame().apply {
             isUndecorated = true
@@ -271,10 +280,17 @@ val releaseBody by lazy(NONE) {
             isVisible = true
         }
 
+        val resetButton = JButton("Reset").apply {
+            addActionListener {
+                textArea.text = initialReleaseBody
+            }
+        }
+
         result.complete(try {
             when (showOptionDialog(
                     parentFrame, JScrollPane(textArea), "Release Body",
-                    DEFAULT_OPTION, QUESTION_MESSAGE, null, null, null
+                    DEFAULT_OPTION, QUESTION_MESSAGE, null,
+                    arrayOf("OK", resetButton), null
             )) {
                 OK_OPTION -> textArea.text!!
                 else -> releaseBody
