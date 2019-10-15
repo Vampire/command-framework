@@ -56,4 +56,15 @@ class NsfwChannelJavacordTest extends Specification {
             true  || true    | 'be'
             false || false   | 'not be'
     }
+
+    def 'non-server channel should not be allowed'() {
+        given:
+            message.channel.with {
+                it.asServerChannel() >> Optional.empty()
+                it.asServerTextChannel() >> Optional.empty()
+            }
+
+        expect:
+            !nsfwChannelJavacord.allowCommand(message)
+    }
 }

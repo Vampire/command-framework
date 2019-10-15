@@ -14,17 +14,28 @@
  * limitations under the License.
  */
 
-package net.kautler.command.example.ping;
+package net.kautler.command.api.restriction.jda;
 
-import net.kautler.command.api.Command;
-import org.javacord.api.entity.message.Message;
+import net.dv8tion.jda.api.entities.Message;
+import net.kautler.command.api.restriction.Restriction;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import static net.dv8tion.jda.api.entities.ChannelType.PRIVATE;
+
+/**
+ * A restriction that allows a command for private messages and is evaluated by the JDA command handler.
+ */
 @ApplicationScoped
-public class PingCommand implements Command<Message> {
+public class PrivateMessageJda implements Restriction<Message> {
+    /**
+     * Constructs a new private message restriction.
+     */
+    private PrivateMessageJda() {
+    }
+
     @Override
-    public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
-        incomingMessage.getChannel().sendMessage("pong: " + parameterString);
+    public boolean allowCommand(Message message) {
+        return message.isFromType(PRIVATE);
     }
 }

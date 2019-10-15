@@ -355,7 +355,7 @@ public abstract class CommandHandler<M> {
      */
     protected void executeAsync(M message, Runnable commandExecutor) {
         runAsync(commandExecutor, getExecutorService())
-                .whenComplete((result, throwable) -> {
+                .whenComplete((nothing, throwable) -> {
                     if (throwable != null) {
                         logger.error("Exception while executing command asynchronously", throwable);
                     }

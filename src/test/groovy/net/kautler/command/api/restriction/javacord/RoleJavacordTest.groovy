@@ -59,17 +59,9 @@ class RoleJavacordTest extends Specification {
         getRoleById(higherRoleId) >> Optional.of(higherRole)
         getRoleById(lowerRoleId) >> Optional.of(lowerRole)
         getRolesByName(higherRoleName) >> [higherRole]
-        getRolesByName(higherRoleName.toUpperCase()) >> []
-        getRolesByName(higherRoleName.capitalize()) >> []
         getRolesByName(lowerRoleName) >> [lowerRole]
-        getRolesByName(lowerRoleName.toUpperCase()) >> []
-        getRolesByName(lowerRoleName.capitalize()) >> []
-        getRolesByNameIgnoreCase(higherRoleName) >> [higherRole]
-        getRolesByNameIgnoreCase(higherRoleName.toUpperCase()) >> [higherRole]
-        getRolesByNameIgnoreCase(higherRoleName.capitalize()) >> [higherRole]
-        getRolesByNameIgnoreCase(lowerRoleName) >> [lowerRole]
-        getRolesByNameIgnoreCase(lowerRoleName.toUpperCase()) >> [lowerRole]
-        getRolesByNameIgnoreCase(lowerRoleName.capitalize()) >> [lowerRole]
+        getRolesByNameIgnoreCase { it.equalsIgnoreCase(higherRoleName) } >> [higherRole]
+        getRolesByNameIgnoreCase { it.equalsIgnoreCase(lowerRoleName) } >> [lowerRole]
     }
 
     Message serverMessage = Stub(Message) {

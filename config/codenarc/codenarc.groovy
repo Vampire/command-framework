@@ -270,7 +270,10 @@ ruleset {
     ExplicitArrayListInstantiation
     ExplicitCallToAndMethod
     ExplicitCallToCompareToMethod {
-        doNotApplyToClassNames = 'net.kautler.command.api.restriction.javacord.RoleJavacordTest'
+        doNotApplyToClassNames = [
+                'net.kautler.command.api.restriction.javacord.RoleJavacordTest',
+                'net.kautler.command.api.restriction.jda.RoleJdaTest'
+        ].join(', ')
     }
     ExplicitCallToDivMethod
     ExplicitCallToEqualsMethod

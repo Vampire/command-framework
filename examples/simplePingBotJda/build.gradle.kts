@@ -20,6 +20,7 @@ plugins {
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
@@ -29,8 +30,13 @@ dependencies {
     runtimeOnly("org.jboss.weld.se:weld-se-core:3.1.2.Final") { because("CDI implementation") }
     runtimeOnly("org.jboss:jandex:2.1.1.Final") { because("faster CDI bean scanning") }
 
-    implementation("org.javacord:javacord:3.0.4")
+    implementation("net.dv8tion:JDA:4.0.0_52") {
+        exclude("club.minnced", "opus-java")
+        exclude("com.google.code.findbugs", "jsr305")
+    }
+    implementation("org.apache.logging.log4j:log4j-api:2.12.1")
 
+    runtimeOnly("org.apache.logging.log4j:log4j-slf4j-impl:2.12.1")
     runtimeOnly("org.apache.logging.log4j:log4j-core:2.12.1")
     runtimeOnly("org.fusesource.jansi:jansi:1.18") { because("ANSI colors on Windows") }
 }

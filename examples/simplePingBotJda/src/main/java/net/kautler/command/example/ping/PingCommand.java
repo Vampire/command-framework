@@ -16,33 +16,23 @@
 
 package net.kautler.command.example.ping;
 
-import org.javacord.api.DiscordApi;
-import org.javacord.api.DiscordApiBuilder;
-import org.javacord.api.util.logging.ExceptionLogger;
+import net.dv8tion.jda.api.entities.Message;
+import net.kautler.command.api.Command;
+import org.apache.logging.log4j.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Disposes;
-import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
-import javax.inject.Named;
 
 @ApplicationScoped
-public class JavacordProducer {
+public class PingCommand implements Command<Message> {
     @Inject
-    @Named
-    private String discordToken;
+    private volatile Logger logger;
 
-    @Produces
-    @ApplicationScoped
-    private DiscordApi produceDiscordApi() {
-        return new DiscordApiBuilder()
-                .setToken(discordToken)
-                .login()
-                .exceptionally(ExceptionLogger.get())
-                .join();
-    }
-
-    private void disposeDiscordApi(@Disposes DiscordApi discordApi) {
-        discordApi.disconnect();
+    @Override
+    public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
+        incomingMessage
+                .getChannel()
+                .sendMessage("pong: " + parameterString)
+                .queue(null, throwable -> logger.error("Exception while executing ping command", throwable));
     }
 }

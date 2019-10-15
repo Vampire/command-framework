@@ -30,6 +30,9 @@ java {
     registerFeature("javacordSupport") {
         usingSourceSet(main)
     }
+    registerFeature("jdaSupport") {
+        usingSourceSet(main)
+    }
 }
 
 dependencies {
@@ -45,6 +48,11 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-api:${versions["log4j"]}")
 
     "javacordSupportImplementation"("org.javacord:javacord-api:${versions["javacord"]}")
+
+    "jdaSupportImplementation"("net.dv8tion:JDA:${versions["jda"]}") {
+        exclude("club.minnced", "opus-java")
+        exclude("com.google.code.findbugs", "jsr305")
+    }
 }
 
 tasks.withType<JavaCompile>().configureEach {

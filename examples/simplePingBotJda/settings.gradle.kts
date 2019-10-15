@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-rootProject.name = "simplePingBot"
+rootProject.name = "simplePingBotJda"
 includeBuild("../..")

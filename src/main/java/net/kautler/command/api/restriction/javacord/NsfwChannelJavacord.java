@@ -38,6 +38,10 @@ public class NsfwChannelJavacord implements Restriction<Message> {
 
     @Override
     public boolean allowCommand(Message message) {
-        return message.getChannel().asServerTextChannel().map(ServerTextChannel::isNsfw).orElse(FALSE);
+        return message
+                .getChannel()
+                .asServerTextChannel()
+                .map(ServerTextChannel::isNsfw)
+                .orElse(FALSE);
     }
 }

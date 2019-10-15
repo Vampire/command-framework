@@ -407,10 +407,10 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, command.aliases[0])
+            commandHandler.doHandleMessage(this, command.aliases.first())
 
         then:
-            1 * command.execute(this, '', command.aliases[0], '')
+            1 * command.execute(this, '', command.aliases.first(), '')
             commandsInstance.each {
                 0 * it.ci().execute(*_)
             }
@@ -428,7 +428,7 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, ".${command.aliases[0]}")
+            commandHandler.doHandleMessage(this, ".${command.aliases.first()}")
 
         then:
             commandsInstance.each {
@@ -448,10 +448,10 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases[0]}")
+            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
 
         then:
-            1 * command.execute(this, '!', command.aliases[0], '')
+            1 * command.execute(this, '!', command.aliases.first(), '')
             commandsInstance.each {
                 0 * it.ci().execute(*_)
             }
@@ -469,10 +469,10 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(this, "!${command1.aliases[0]}")
+            commandHandler.doHandleMessage(this, "!${command1.aliases.first()}")
 
         then:
-            1 * command1.execute(this, '!', command1.aliases[0], '')
+            1 * command1.execute(this, '!', command1.aliases.first(), '')
             commandsInstance.each {
                 0 * it.ci().execute(*_)
             }
@@ -484,7 +484,7 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(this, "!${command1.aliases[0]}\n  \tfoo \n bar ")
+            commandHandler.doHandleMessage(this, "!${command1.aliases.first()}\n  \tfoo \n bar ")
 
         then:
             1 * command1.execute(_, _, _, 'foo \n bar')
@@ -516,7 +516,7 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases[0]}")
+            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
 
         then:
             commandsInstance.each {
@@ -570,7 +570,7 @@ class CommandHandlerTest extends Specification {
             }
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases[0]}")
+            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
 
         then:
             (asynchronous ? 1 : 0) * commandHandlerDelegate.executeAsync(*_)
@@ -598,11 +598,11 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases[0]}")
+            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
 
         then:
             if (restricted) {
-                1 * commandHandlerDelegate.fireCommandNotAllowedEvent(this, '!', command.aliases[0])
+                1 * commandHandlerDelegate.fireCommandNotAllowedEvent(this, '!', command.aliases.first())
             } else {
                 0 * commandHandlerDelegate.fireCommandNotAllowedEvent(*_)
             }
@@ -626,7 +626,7 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases[0]}")
+            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
 
         then:
             def expectedMessage = "Command $command was not allowed by restrictions"
@@ -678,7 +678,7 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases[0]}")
+            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
 
         then:
             0 * commandHandlerDelegate.fireCommandNotAllowedEvent(*_)

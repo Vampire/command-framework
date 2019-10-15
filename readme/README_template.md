@@ -31,6 +31,7 @@ Table of Contents
 * [Usage](#usage)
   * [Message Framework](#message-framework)
     * [Javacord](#javacord)
+    * [JDA](#jda)
   * [Creating Commands](#creating-commands)
     * [Command Aliases](#command-aliases)
     * [Asynchronous Command Execution](#asynchronous-command-execution)
@@ -63,6 +64,7 @@ Supported Message Frameworks
 The following message frameworks are currently supported:
 
 * [Javacord](#javacord)
+* [JDA](#jda)
 
 If you want to have support for an additional, do not hesitate to open a PR or feature request issue.
 
@@ -103,12 +105,16 @@ Usage
 
 For the [Javacord][Javacord Website] support, include Javacord as implementation dependency and create a CDI producer
 that produces either one `DiscordApi`, or if you use sharding a `Collection<DiscordApi>` with all shards where you want
-commands to be handled.
+commands to be handled. You should also have a disposer method that properly disconnects the produced `DiscordApi`
+instances.
 
 _**Example:**_
 ```java
 @ApplicationScoped
 public class JavacordProducer {
+    @Inject
+    private volatile Logger logger;
+
     @Inject
     @Named
     private String discordToken;
@@ -119,12 +125,53 @@ public class JavacordProducer {
         return new DiscordApiBuilder()
                 .setToken(discordToken)
                 .login()
-                .exceptionally(ExceptionLogger.get())
+                .whenComplete((discordApi, throwable) -> {
+                    if (throwable != null) {
+                        logger.error("Exception while logging in to Discord", throwable);
+                    }
+                })
                 .join();
     }
 
     private void disposeDiscordApi(@Disposes DiscordApi discordApi) {
         discordApi.disconnect();
+    }
+}
+```
+
+#### JDA
+
+For the [JDA][JDA Website] support, include JDA as implementation dependency and create a CDI producer that produces
+either one `JDA`, of if you use sharding a `Collection<JDA>`, a `ShardManager` or a `Collection<ShardManager>` with all
+shards where you want commands to be handled. You should also have a disposer method that properly shuts down the
+produced `JDA` and / or `ShardManager` instances.
+
+_**Example:**_
+```java
+@ApplicationScoped
+public class JdaProducer {
+    @Inject
+    private volatile Logger logger;
+
+    @Inject
+    @Named
+    private String discordToken;
+
+    @Produces
+    @ApplicationScoped
+    private JDA produceJda() {
+        try {
+            return new JDABuilder(discordToken)
+                    .build()
+                    .awaitReady();
+        } catch (InterruptedException | LoginException e) {
+            logger.error("Exception while logging in to Discord", e);
+            return null;
+        }
+    }
+
+    private void disposeJda(@Disposes JDA jda) {
+        jda.shutdown();
     }
 }
 ```
@@ -470,7 +517,7 @@ limitations under the License.
 [Supported Java Versions Badge]:
     https://shields.javacord.org/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:
-    https://shields.javacord.org/badge/Supported%20Message%20Frameworks-Javacord-lightgrey.svg
+    https://shields.javacord.org/badge/Supported%20Message%20Frameworks-Javacord%20%7C%20JDA-lightgrey.svg
 [Weld SE Website]:
     https://docs.jboss.org/weld/reference/latest/en-US/html/environments.html#weld-se
 [Semantic Versioning Website]:
@@ -485,6 +532,8 @@ limitations under the License.
 
 [Javacord Website]:
     https://javacord.org
+[JDA Website]:
+    https://github.com/DV8FromTheWorld/JDA
 
 [@Alias JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/annotation/Alias.html

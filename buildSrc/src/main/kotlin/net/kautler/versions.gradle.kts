@@ -42,6 +42,7 @@ val versions by extra(mapOf(
         "javacord" to "3.0.4",
         "javax.annotation-api" to "1.3.2",
         "javax.inject" to "1",
+        "jda" to "4.0.0_52",
         "log4j" to "2.12.1",
         "antlr" to "4.7.2",
 

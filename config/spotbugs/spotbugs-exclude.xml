@@ -44,7 +44,10 @@
                 <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
             </And>
             <And>
-                <Class name="net.kautler.command.handler.CommandHandlerJavacord"/>
+                <Or>
+                    <Class name="net.kautler.command.handler.CommandHandlerJavacord"/>
+                    <Class name="net.kautler.command.handler.CommandHandlerJda"/>
+                </Or>
                 <Or>
                     <Method name="setAvailableRestrictions" params="javax.enterprise.inject.Instance" returns="void"/>
                     <Method name="setCommands" params="javax.enterprise.inject.Instance" returns="void"/>
@@ -74,6 +77,10 @@
             <Class name="net.kautler.command.api.restriction.javacord.RoleJavacord"/>
             <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord"/>
             <Class name="net.kautler.command.api.restriction.javacord.UserJavacord"/>
+            <Class name="net.kautler.command.api.restriction.jda.ChannelJda"/>
+            <Class name="net.kautler.command.api.restriction.jda.RoleJda"/>
+            <Class name="net.kautler.command.api.restriction.jda.ServerJda"/>
+            <Class name="net.kautler.command.api.restriction.jda.UserJda"/>
         </Or>
         <Or>
             <Method name="ensureAtLeastOneConditionIsSet" params="" returns="void"/>
@@ -92,8 +99,17 @@
                 <Class name="net.kautler.command.api.prefix.javacord.MentionPrefixProviderJavacord"/>
                 <Method name="getCommandPrefix" params="org.javacord.api.entity.message.Message" returns="java.lang.String"/>
             </And>
+            <And>
+                <Class name="net.kautler.command.api.prefix.jda.MentionPrefixProviderJda"/>
+                <Method name="getCommandPrefix" params="net.dv8tion.jda.api.entities.Message" returns="java.lang.String"/>
+            </And>
         </Or>
         <Bug pattern="MDM_WAIT_WITHOUT_TIMEOUT"/>
+    </Match>
+
+    <Match>
+        <Class name="net.kautler.command.api.restriction.jda.BotOwnerJda"/>
+        <Bug pattern="IMC_IMMATURE_CLASS_NO_TOSTRING"/>
     </Match>
 
     <!-- work-around for https://github.com/find-sec-bugs/find-sec-bugs/issues/505 -->
@@ -101,5 +117,19 @@
         <Class name="net.kautler.command.api.Version"/>
         <Method name="&lt;init&gt;" params="" returns="void"/>
         <Bug pattern="URLCONNECTION_SSRF_FD"/>
+    </Match>
+
+    <!-- false positive -->
+    <Match>
+        <Class name="net.kautler.command.handler.CommandHandlerJda"/>
+        <Method name="addListener" params="" returns="void"/>
+        <Bug pattern="CRLF_INJECTION_LOGS"/>
+    </Match>
+
+    <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/372 -->
+    <Match>
+        <Class name="net.kautler.command.handler.CommandHandlerJda"/>
+        <Method name="onEvent" params="net.dv8tion.jda.api.events.GenericEvent" returns="void"/>
+        <Bug pattern="ITC_INHERITANCE_TYPE_CHECKING"/>
     </Match>
 </FindBugsFilter>

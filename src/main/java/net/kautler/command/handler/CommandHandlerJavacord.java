@@ -119,14 +119,14 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     @PostConstruct
     private void addListener() {
         if (discordApis.isUnsatisfied() && discordApiCollections.isUnsatisfied()) {
-            logger.info("No DiscordApi or Collection<DiscordApi> injected, JavacordCommandHandler will not be used.");
+            logger.info("No DiscordApi or Collection<DiscordApi> injected, CommandHandlerJavacord will not be used.");
         } else {
             if (discordApis.isUnsatisfied()) {
-                logger.info("Collection<DiscordApi> injected, JavacordCommandHandler will be used.");
+                logger.info("Collection<DiscordApi> injected, CommandHandlerJavacord will be used.");
             } else if (discordApiCollections.isUnsatisfied()) {
-                logger.info("DiscordApi injected, JavacordCommandHandler will be used.");
+                logger.info("DiscordApi injected, CommandHandlerJavacord will be used.");
             } else {
-                logger.info("DiscordApi and Collection<DiscordApi> injected, JavacordCommandHandler will be used.");
+                logger.info("DiscordApi and Collection<DiscordApi> injected, CommandHandlerJavacord will be used.");
             }
             Stream.concat(
                     discordApis.stream(),
@@ -136,7 +136,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     }
 
     /**
-     * Handles the actual messages retrieved.
+     * Handles the actual messages received.
      *
      * @param messageCreateEvent the message create event
      */
@@ -158,7 +158,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     @Override
     protected void executeAsync(Message message, Runnable commandExecutor) {
         runAsync(commandExecutor, message.getApi().getThreadPool().getExecutorService())
-                .whenComplete((result, throwable) -> {
+                .whenComplete((nothing, throwable) -> {
                     if (throwable != null) {
                         logger.error("Exception while executing command asynchronously", throwable);
                     }

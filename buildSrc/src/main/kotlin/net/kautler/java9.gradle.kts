@@ -64,6 +64,7 @@ if (JavaVersion.current().isJava9Compatible) {
                     .addDirective("requires static com.github.spotbugs.annotations;")
                     .addDirective("requires static org.antlr.antlr4.runtime;")
                     .addDirective("requires static org.javacord.api;")
+                    .addDirective("requires static net.dv8tion.jda;")
 
             apiPackages.forEach { module.addDirective("exports $it;") }
 

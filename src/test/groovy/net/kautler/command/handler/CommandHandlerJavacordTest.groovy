@@ -61,9 +61,9 @@ import static org.apache.logging.log4j.test.appender.ListAppender.getListAppende
 class CommandHandlerJavacordTest extends Specification {
     DiscordApi discordApi = Mock()
 
-    DiscordApi discordApiInCollection1 = Stub()
+    DiscordApi discordApiInCollection1 = Mock()
 
-    DiscordApi discordApiInCollection2 = Stub()
+    DiscordApi discordApiInCollection2 = Mock()
 
     Restriction<Object> restriction = Stub {
         allowCommand(_) >> false
@@ -159,7 +159,7 @@ class CommandHandlerJavacordTest extends Specification {
             restrictionsInjectors.size() == 1
 
         when:
-            restrictionsInjectors[0].invoke(commandHandlerJavacord, availableRestrictions)
+            restrictionsInjectors.first().invoke(commandHandlerJavacord, availableRestrictions)
 
         then:
             1 * commandHandlerJavacord.doSetAvailableRestrictions(availableRestrictions) >> { }
@@ -184,7 +184,7 @@ class CommandHandlerJavacordTest extends Specification {
             commandsInjectors.size() == 1
 
         when:
-            commandsInjectors[0].invoke(commandHandlerJavacord, commands)
+            commandsInjectors.first().invoke(commandHandlerJavacord, commands)
 
         then:
             1 * commandHandlerJavacord.doSetCommands(commands) >> { }
@@ -209,7 +209,7 @@ class CommandHandlerJavacordTest extends Specification {
             prefixProvidersInjectors.size() == 1
 
         when:
-            prefixProvidersInjectors[0].invoke(commandHandlerJavacord, customPrefixProvider)
+            prefixProvidersInjectors.first().invoke(commandHandlerJavacord, customPrefixProvider)
 
         then:
             1 * commandHandlerJavacord.doSetCustomPrefixProvider(customPrefixProvider) >> { }
@@ -230,10 +230,16 @@ class CommandHandlerJavacordTest extends Specification {
                     }
 
         then:
-            1 * discordApi.addMessageCreateListener(_) >> { MessageCreateListener listener ->
-                listener.onMessageCreate(messageCreateEvent)
+            [
+                    discordApi,
+                    discordApiInCollection1,
+                    discordApiInCollection2
+            ].each {
+                1 * it.addMessageCreateListener(_) >> { MessageCreateListener listener ->
+                    listener.onMessageCreate(messageCreateEvent)
+                }
             }
-            1 * commandHandlerJavacord.doHandleMessage(message, message.content) >> { }
+            3 * commandHandlerJavacord.doHandleMessage(message, message.content) >> { }
             0 * commandHandlerJavacord.doHandleMessage(*_)
     }
 
@@ -271,10 +277,10 @@ class CommandHandlerJavacordTest extends Specification {
 
         where:
             discordApisUnsatisfied | discordApiCollectionsUnsatisfied || expectedMessage
-            true                   | true                             || 'No DiscordApi or Collection<DiscordApi> injected, JavacordCommandHandler will not be used.'
-            true                   | false                            || 'Collection<DiscordApi> injected, JavacordCommandHandler will be used.'
-            false                  | true                             || 'DiscordApi injected, JavacordCommandHandler will be used.'
-            false                  | false                            || 'DiscordApi and Collection<DiscordApi> injected, JavacordCommandHandler will be used.'
+            true                   | true                             || 'No DiscordApi or Collection<DiscordApi> injected, CommandHandlerJavacord will not be used.'
+            true                   | false                            || 'Collection<DiscordApi> injected, CommandHandlerJavacord will be used.'
+            false                  | true                             || 'DiscordApi injected, CommandHandlerJavacord will be used.'
+            false                  | false                            || 'DiscordApi and Collection<DiscordApi> injected, CommandHandlerJavacord will be used.'
     }
 
     @Use(ContextualInstanceCategory)
@@ -292,7 +298,7 @@ class CommandHandlerJavacordTest extends Specification {
                 1 * handleCommandNotAllowedEvent {
                     it.message == this.message
                     it.prefix == '!'
-                    it.usedAlias == this.command.aliases[0]
+                    it.usedAlias == this.command.aliases.first()
                 } >> { countDownLatch.countDown() }
                 0 * _
             }

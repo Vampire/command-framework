@@ -31,6 +31,10 @@ tasks.jar {
                                 "org.javacord.*",
                                 "resolution:=optional"
                         ).joinToString(";"),
+                        listOf(
+                                "net.dv8tion.jda.*",
+                                "resolution:=optional"
+                        ).joinToString(";"),
                         "*"
                 ).joinToString(),
                 "Export-Package" to listOf(

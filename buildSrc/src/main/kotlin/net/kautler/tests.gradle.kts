@@ -43,6 +43,10 @@ dependencies {
     testImplementation("org.antlr:antlr4-runtime:${versions["antlr"]}")
     testImplementation("org.javacord:javacord-api:${versions["javacord"]}")
     testImplementation("org.javacord:javacord-core:${versions["javacord"]}")
+    testImplementation("net.dv8tion:JDA:${versions["jda"]}") {
+        exclude("club.minnced", "opus-java")
+        exclude("com.google.code.findbugs", "jsr305")
+    }
 
     testRuntimeOnly("info.solidsoft.spock:spock-global-unroll:${versions["spock-global-unroll"]}")
     testRuntimeOnly("net.bytebuddy:byte-buddy:${versions["byte-buddy"]}")

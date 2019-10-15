@@ -171,7 +171,7 @@ public abstract class UserJavacord implements Restriction<Message> {
     }
 
     /**
-     * Checks that {@link #caseSensitive} is {@code true} if {@link #channelName}
+     * Checks that {@link #caseSensitive} is {@code true} if {@link #userName}
      * is not set and raises an {@link IllegalStateException} otherwise.
      */
     private void ensureCaseSensitiveIfNameIsNotSet() {
