@@ -49,7 +49,7 @@ val versions by extra(mapOf(
         // tool versions
         "codenarc" to "1.4",
         "findsecbugs" to "1.9.0",
-        "jacoco" to "0.8.4",
+        "jacoco" to "0.8.5",
         "pitest" to "1.4.10",
         "pmd" to "6.18.0",
         "sb-contrib" to "7.4.6",
@@ -61,9 +61,8 @@ val versions by extra(mapOf(
         "groovy" to "2.5.8",
         "spock-global-unroll" to "0.5.1",
         "byte-buddy" to "1.10.1",
-        "objenesis" to "3.0.1",
-        "weld-junit" to "2.0.0.Final",
-        "weld-se" to "3.1.2.Final"
+        "objenesis" to "3.1",
+        "weld-junit" to "2.0.1.Final"
 ))
 
 configurations.register("tools")
@@ -123,6 +122,7 @@ tasks.processResources {
 
 tasks.dependencyUpdates {
     gradleReleaseChannel = CURRENT.id
+    checkConstraints = true
 
     rejectVersionIf {
         val preliminaryReleaseRegex = Regex("""(?i)[.-](?:${listOf(

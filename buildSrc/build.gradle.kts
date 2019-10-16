@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    id("com.github.ben-manes.versions") version "0.25.0"
+    id("com.github.ben-manes.versions") version "0.27.0"
 }
 
 buildscript {
@@ -43,7 +43,7 @@ repositories {
 }
 
 dependencies {
-    implementation(gradlePlugin("com.github.ben-manes.versions:0.25.0"))
+    implementation(gradlePlugin("com.github.ben-manes.versions:0.27.0"))
     implementation(gradlePlugin("org.ajoberstar.grgit:3.1.1"))
     implementation(gradlePlugin("com.github.spotbugs:2.0.0"))
     implementation(gradlePlugin("biz.aQute.bnd.builder:4.2.0"))
@@ -53,7 +53,7 @@ dependencies {
     implementation(gradlePlugin("net.wooga.github:1.4.0"))
     implementation(gradlePlugin("info.solidsoft.pitest:1.4.5"))
     implementation("com.fasterxml.jackson.core:jackson-databind:2.10.0")
-    implementation("com.github.javaparser:javaparser-core:3.14.159265359")
+    implementation("com.github.javaparser:javaparser-core:3.15.1")
     implementation("org.kohsuke:github-api:1.95")
     implementation("net.sf.saxon:Saxon-HE:9.9.1-5")
     implementation("org.pitest:pitest:1.4.10")
@@ -71,6 +71,7 @@ tasks.withType<KotlinCompile>().configureEach {
 
 tasks.dependencyUpdates {
     checkForGradleUpdate = false
+    checkConstraints = true
 
     rejectVersionIf {
         val preliminaryReleaseRegex = Regex("""(?i)[.-](?:${listOf(

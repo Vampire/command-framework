@@ -60,12 +60,6 @@ dependencies {
 
     "spockCompileOnly"("org.codehaus.groovy:groovy:${versions["groovy"]}")
     "spockCompileOnly"("org.spockframework:spock-core:${versions["spock"]}")
-
-    constraints {
-        testImplementation( "org.jboss.weld.se:weld-se-core:${versions["weld-se"]}") {
-            because("work-around for https://github.com/weld/weld-junit/issues/80")
-        }
-    }
 }
 
 jacoco {
