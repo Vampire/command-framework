@@ -342,7 +342,7 @@ val finishMilestone by tasks.registering {
             listMilestones(OPEN)
                     .find { it.title == "Next Version" }!!
                     .run {
-                        updateTitle(releaseTagName)
+                        setTitle(releaseTagName)
                         close()
                     }
 
