@@ -17,42 +17,149 @@
 package net.kautler
 
 import org.gradle.api.Project
+import org.gradle.api.Task
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-abstract class Property<out T>(
-        private val project: Project,
-        private var propertyName: String?,
-        private val default: T
-) : ReadOnlyProperty<Any, T> {
+sealed class Property<out T> constructor(
+        private val default: () -> T,
+        private var propertyName: String,
+        private var project: Project
+) : ReadOnlyProperty<Any?, T> {
     protected abstract fun doGetValue(project: Project, propertyName: String): T?
 
-    fun getValue() = doGetValue(project, propertyName!!) ?: default
+    fun getValue() = doGetValue(project, propertyName) ?: default.invoke()
 
-    override fun getValue(thisRef: Any, property: KProperty<*>) = doGetValue(project, propertyName!!) ?: default
+    override fun getValue(thisRef: Any?, property: KProperty<*>) = getValue()
 
-    operator fun provideDelegate(thisRef: Any, property: KProperty<*>) = this.apply {
-        propertyName = propertyName ?: property.name
+    companion object {
+        fun boolean(
+                default: () -> Boolean = { false },
+                propertyName: String? = null,
+                project: Project? = null
+        ) = PropertyDelegateProvider(
+                default,
+                propertyName,
+                project,
+                ::BooleanProperty
+        )
+
+        fun boolean(
+                default: Boolean,
+                propertyName: String? = null,
+                project: Project? = null
+        ) = boolean({ default }, propertyName, project)
+
+        fun boolean(
+                project: Project,
+                propertyName: String,
+                default: () -> Boolean = { false }
+        ): Property<Boolean> = BooleanProperty(default, propertyName, project)
+
+        fun boolean(
+                project: Project,
+                propertyName: String,
+                default: Boolean
+        ) = boolean(project, propertyName) { default }
+
+        fun string(
+                default: () -> String,
+                propertyName: String? = null,
+                project: Project? = null
+        ) = PropertyDelegateProvider(
+                default,
+                propertyName,
+                project,
+                ::StringProperty
+        )
+
+        fun string(
+                default: String,
+                propertyName: String? = null,
+                project: Project? = null
+        ) = string({ default }, propertyName, project)
+
+        fun string(
+                project: Project,
+                propertyName: String,
+                default: () -> String
+        ): Property<String> = StringProperty(default, propertyName, project)
+
+        fun string(
+                project: Project,
+                propertyName: String,
+                default: String
+        ) = string(project, propertyName) { default }
+
+        fun optionalString(
+                propertyName: String? = null,
+                project: Project? = null
+        ) = PropertyDelegateProvider(
+                { null },
+                propertyName,
+                project,
+                ::OptionalStringProperty
+        )
+
+        fun optionalString(
+                project: Project,
+                propertyName: String
+        ): Property<String?> = OptionalStringProperty(propertyName, project)
     }
 }
 
-class StringProperty(
-        project: Project,
-        propertyName: String? = null,
-        default: String? = null
-) : Property<String?>(project, propertyName, default) {
-    override fun doGetValue(project: Project, propertyName: String) = findProperty(project, propertyName)
+class PropertyDelegateProvider<out T>(
+        private val default: () -> T,
+        private val propertyName: String? = null,
+        private val project: Project? = null,
+        private val delegateFactory: (() -> T, String, Project) -> Property<T>
+) {
+    operator fun provideDelegate(thisRef: Project, property: KProperty<*>) =
+            delegateFactory(default, propertyName ?: property.name, project ?: thisRef)
+
+    operator fun provideDelegate(thisRef: Task, property: KProperty<*>) =
+            provideDelegate(thisRef.project, property)
+
+    operator fun provideDelegate(thisRef: Any?, property: KProperty<*>) =
+            project?.let {
+                provideDelegate(it, property)
+            } ?: error("Property '${property.name}' must be declared on 'Project' or 'Task', " +
+                    "or 'Project' must be given explicitly")
 }
 
-class BooleanProperty(
-        project: Project,
-        propertyName: String? = null,
-        default: Boolean = false
-) : Property<Boolean>(project, propertyName, default) {
-    override fun doGetValue(project: Project, propertyName: String) = findProperty(project, propertyName)?.toBoolean()
+private class OptionalStringProperty(
+        default: () -> String?,
+        propertyName: String,
+        project: Project
+) : Property<String?>(default, propertyName, project) {
+    constructor(propertyName: String, project: Project) : this({ null }, propertyName, project)
+
+    override fun doGetValue(project: Project, propertyName: String) =
+            findProperty(project, propertyName)
 }
 
-private fun findProperty(project: Project, propertyName: String) = (
-        project.findProperty("${project.rootProject.name}.$propertyName")
-                ?: project.findProperty(propertyName))
-        as String?
+private class StringProperty(
+        default: () -> String,
+        propertyName: String,
+        project: Project
+) : Property<String>(default, propertyName, project) {
+    override fun doGetValue(project: Project, propertyName: String) =
+            findProperty(project, propertyName)
+}
+
+private class BooleanProperty(
+        default: () -> Boolean = { false },
+        propertyName: String,
+        project: Project
+) : Property<Boolean>(default, propertyName, project) {
+    override fun doGetValue(project: Project, propertyName: String) =
+            findProperty(project, propertyName)?.toBoolean()
+}
+
+private fun findProperty(project: Project, propertyName: String): String? {
+    var result = project.findProperty("${project.rootProject.name}.$propertyName") as String?
+    if (result.isNullOrBlank()) {
+        result = project.findProperty(propertyName) as String?
+    }
+    return if (result.isNullOrBlank()) null else result
+}

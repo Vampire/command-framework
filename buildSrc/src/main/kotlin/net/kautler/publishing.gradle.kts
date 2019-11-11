@@ -18,6 +18,8 @@ package net.kautler
 
 import io.codearte.gradle.nexus.BaseStagingTask
 import io.codearte.gradle.nexus.GetStagingProfileTask
+import net.kautler.Property.Companion.boolean
+import net.kautler.Property.Companion.optionalString
 import net.researchgate.release.ReleasePlugin
 import org.ajoberstar.grgit.Grgit
 import org.kohsuke.github.GHIssueState.OPEN
@@ -48,27 +50,27 @@ plugins {
 }
 
 val releaseVersion = !version.toString().endsWith("-SNAPSHOT")
-val useGpgAgent by BooleanProperty(project, "signing.useGpgAgent")
-val sonatypeUsername by StringProperty(project, "sonatype.username")
-val sonatypePassword by StringProperty(project, "sonatype.password")
-val sonatypeStagingProfileId by StringProperty(project, "sonatype.stagingProfileId")
+val useGpgAgent by boolean(propertyName = "signing.useGpgAgent")
+val sonatypeUsername by optionalString("sonatype.username")
+val sonatypePassword by optionalString("sonatype.password")
+val sonatypeStagingProfileId by optionalString("sonatype.stagingProfileId")
 
-extra["release.useAutomaticVersion"] = BooleanProperty(project, "release.useAutomaticVersion").getValue()
-extra["release.releaseVersion"] = StringProperty(project, "release.releaseVersion").getValue()
-extra["release.newVersion"] = StringProperty(project, "release.newVersion").getValue()
+extra["release.useAutomaticVersion"] = boolean(project, "release.useAutomaticVersion").getValue()
+extra["release.releaseVersion"] = optionalString(project, "release.releaseVersion").getValue()
+extra["release.newVersion"] = optionalString(project, "release.newVersion").getValue()
 if (useGpgAgent) {
-    extra["signing.gnupg.executable"] = StringProperty(project, "signing.gnupg.executable").getValue()
-    extra["signing.gnupg.useLegacyGpg"] = StringProperty(project, "signing.gnupg.useLegacyGpg").getValue()
-    extra["signing.gnupg.homeDir"] = StringProperty(project, "signing.gnupg.homeDir").getValue()
-    extra["signing.gnupg.optionsFile"] = StringProperty(project, "signing.gnupg.optionsFile").getValue()
-    extra["signing.gnupg.keyName"] = StringProperty(project, "signing.gnupg.keyName").getValue()
-    extra["signing.gnupg.passphrase"] = StringProperty(project, "signing.gnupg.passphrase").getValue()
+    extra["signing.gnupg.executable"] = optionalString(project, "signing.gnupg.executable").getValue()
+    extra["signing.gnupg.useLegacyGpg"] = optionalString(project, "signing.gnupg.useLegacyGpg").getValue()
+    extra["signing.gnupg.homeDir"] = optionalString(project, "signing.gnupg.homeDir").getValue()
+    extra["signing.gnupg.optionsFile"] = optionalString(project, "signing.gnupg.optionsFile").getValue()
+    extra["signing.gnupg.keyName"] = optionalString(project, "signing.gnupg.keyName").getValue()
+    extra["signing.gnupg.passphrase"] = optionalString(project, "signing.gnupg.passphrase").getValue()
 } else {
-    extra["signing.secretKeyRingFile"] = StringProperty(project, "signing.secretKeyRingFile").getValue()
-    extra["signing.password"] = StringProperty(project, "signing.password").getValue()
-    extra["signing.keyId"] = StringProperty(project, "signing.keyId").getValue()
+    extra["signing.secretKeyRingFile"] = optionalString(project, "signing.secretKeyRingFile").getValue()
+    extra["signing.password"] = optionalString(project, "signing.password").getValue()
+    extra["signing.keyId"] = optionalString(project, "signing.keyId").getValue()
 }
-extra["github.token"] = StringProperty(project, "github.token").getValue()
+extra["github.token"] = optionalString(project, "github.token").getValue()
 
 tasks.withType<PublishToMavenRepository>().configureEach {
     doFirst("verify username and password are set") {

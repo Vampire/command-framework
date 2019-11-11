@@ -16,25 +16,31 @@
 
 package net.kautler
 
-import org.gradle.api.provider.ListProperty
+import org.gradle.api.file.FileSystemLocation
+import org.gradle.api.file.FileSystemLocationProperty
+import org.gradle.api.provider.HasMultipleValues
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
-import org.gradle.api.provider.SetProperty
+import java.io.File
 
 @Suppress("UnstableApiUsage")
 operator fun <T> Property<T>.invoke(value: T) = set(value)
 
 @Suppress("UnstableApiUsage")
-operator fun <T> Property<T>.invoke(valueProvider: Provider<out T>) = set(valueProvider)
+operator fun <T> Property<T>.invoke(provider: Provider<out T>) = set(provider)
 
 @Suppress("UnstableApiUsage")
-operator fun <T> ListProperty<T>.invoke(value: Iterable<T>) = set(value)
+operator fun <T> HasMultipleValues<T>.invoke(elements: Iterable<T>) = set(elements)
 
 @Suppress("UnstableApiUsage")
-operator fun <T> ListProperty<T>.invoke(valueProvider: Provider<out Iterable<T>>) = set(valueProvider)
+operator fun <T> HasMultipleValues<T>.invoke(provider: Provider<out Iterable<T>>) = set(provider)
 
 @Suppress("UnstableApiUsage")
-operator fun <T> SetProperty<T>.invoke(value: Iterable<T>) = set(value)
+operator fun <K, V> MapProperty<K, V>.invoke(entries: Map<K, V>) = set(entries)
 
 @Suppress("UnstableApiUsage")
-operator fun <T> SetProperty<T>.invoke(valueProvider: Provider<out Iterable<T>>) = set(valueProvider)
+operator fun <K, V> MapProperty<K, V>.invoke(provider: Provider<out Map<K, V>>) = set(provider)
+
+@Suppress("UnstableApiUsage")
+operator fun <T : FileSystemLocation> FileSystemLocationProperty<T>.invoke(file: File) = set(file)

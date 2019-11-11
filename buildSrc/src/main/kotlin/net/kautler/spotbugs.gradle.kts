@@ -17,6 +17,7 @@
 package net.kautler
 
 import com.github.spotbugs.SpotBugsTask
+import net.kautler.Property.Companion.string
 import net.sf.saxon.TransformerFactoryImpl
 import org.gradle.api.tasks.PathSensitivity.NONE
 import javax.xml.transform.TransformerFactory
@@ -32,7 +33,7 @@ val versions: Map<String, String> by project
 
 spotbugs {
     toolVersion = versions["spotbugs"] ?: error("spotbugs version is missing")
-    reportLevel = StringProperty(project, "spotbugs.reportLevel", "low").getValue()
+    reportLevel = string(project, "spotbugs.reportLevel", "low").getValue()
     @Suppress("UnstableApiUsage")
     excludeFilterConfig = resources.text.fromFile("config/spotbugs/spotbugs-exclude.xml")
 }
