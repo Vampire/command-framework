@@ -57,7 +57,7 @@ tasks.withType<Javadoc>().configureEach {
             add("https://static.javadoc.io/javax.enterprise/cdi-api/${versions["cdi"]}/")
             add("https://static.javadoc.io/javax.inject/javax.inject/${versions["javax.inject"]}/")
             add("https://static.javadoc.io/org.javacord/javacord-api/${versions["javacord"]}/")
-            add("https://jitpack.io/com/github/DV8FromTheWorld/JDA/v${(versions["jda"] ?: error("jda version is missing")).split('_').first()}/javadoc/")
+            add("https://static.javadoc.io/net.dv8tion/JDA/${versions["jda"]}/")
         }
         isUse = true
         isVersion = true
