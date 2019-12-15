@@ -373,6 +373,24 @@ class CommandHandlerJdaTest extends Specification {
             }
     }
 
+    @Use(ContextualInstanceCategory)
+    def 'shutting down the container should remove the listeners'() {
+        when:
+            weld.shutdown()
+
+        then:
+            [
+                    jda,
+                    jdaInCollection1,
+                    jdaInCollection2,
+                    shardManager,
+                    shardManagerInCollection1,
+                    shardManagerInCollection2
+            ].each {
+                1 * it.removeEventListener(commandHandlerJda.ci())
+            }
+    }
+
     @ApplicationScoped
     static class TestEventReceiver {
         @Inject

@@ -34,6 +34,7 @@ import net.kautler.command.api.restriction.Restriction;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.Instance;
@@ -137,7 +138,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     }
 
     /**
-     * Adds this command handler to the injected {@code DiscordApi} instances as message create listener.
+     * Adds this command handler to the injected {@code JDA} and {@code ShardManager} instances as event listener.
      */
     @PostConstruct
     private void addListener() {
@@ -171,6 +172,21 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
                     shardManagerCollections.stream().flatMap(Collection::stream)
             ).forEach(shardManager -> shardManager.addEventListener(this));
         }
+    }
+
+    /**
+     * Removes this command handler from the injected {@code JDA} and {@code ShardManager} instances as event listener.
+     */
+    @PreDestroy
+    private void removeListener() {
+        Stream.concat(
+                jdas.stream(),
+                jdaCollections.stream().flatMap(Collection::stream)
+        ).forEach(jda -> jda.removeEventListener(this));
+        Stream.concat(
+                shardManagers.stream(),
+                shardManagerCollections.stream().flatMap(Collection::stream)
+        ).forEach(shardManager -> shardManager.removeEventListener(this));
     }
 
     @Override
