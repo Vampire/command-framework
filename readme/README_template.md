@@ -282,10 +282,10 @@ There are two helpers to split the `parameterString` that is provided to `Comman
 that can then be handled separately.
 
 The first is the method `Command.getParameters(...)` which you give the parameter string and the maximum amount of
-parameters to split into. The provided string will then be split at any arbitrary amount of consecutive non-newline
-whitespace characters. The last element of the returned array will have all remaining text in the parameter string. If
-you expect exactly three parameters without whitespaces, you should set the max parameters to four, so you can easily
-test the length of the returned array whether too many parameters were given to the command.
+parameters to split into. The provided string will then be split at any arbitrary amount of consecutive whitespace
+characters. The last element of the returned array will have all remaining text in the parameter string. If you expect
+exactly three parameters without whitespaces, you should set the max parameters to four, so you can easily test the
+length of the returned array whether too many parameters were given to the command.
 
 The second is the [`ParameterParser`][ParameterParser JavaDoc] that you can get injected into your command. For the
 `ParameterParser` to work, the [usage](#command-usage) of the command has to follow a defined syntax language. This

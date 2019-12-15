@@ -52,12 +52,12 @@ import static net.kautler.command.api.annotation.RestrictionPolicy.Policy.NONE_O
  */
 public interface Command<M> {
     /**
-     * The regex pattern string for one parameter separator character. It matches one whitespaces except newline.
+     * The regex pattern string for one parameter separator character. It matches one whitespace character.
      */
-    String PARAMETER_SEPARATOR_CHARACTER = "[\\s&&[^\\n]]";
+    String PARAMETER_SEPARATOR_CHARACTER = "\\s";
 
     /**
-     * The pattern that is used to split parameters. It matches an arbitrary amount of whitespaces except newlines.
+     * The pattern that is used to split parameters. It matches an arbitrary amount of whitespaces.
      */
     Pattern PARAMETER_SEPARATOR_PATTERN = Pattern.compile(PARAMETER_SEPARATOR_CHARACTER + "++");
 
@@ -272,7 +272,7 @@ public interface Command<M> {
 
     /**
      * Returns an array of parameters from the given parameter string. The parameter string is split at any sequence of
-     * non-newline whitespace characters. If you expect three parameters, you should set {@code maxParameters} to four,
+     * whitespace characters. If you expect three parameters, you should set {@code maxParameters} to four,
      * so you can easily test the length of the returned array whether too many parameters were given to the command.
      *
      * <p>For a syntactically and semantically parsing of the parameter string, you can have a look at the

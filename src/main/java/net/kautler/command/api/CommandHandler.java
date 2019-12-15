@@ -211,7 +211,7 @@ public abstract class CommandHandler<M> {
                 commandByAlias.keySet().stream()
                         .map(Pattern::quote)
                         .collect(joining("|", "(?s)^(?<alias>", ")(?=\\s|$)"
-                                + "\\s?+" + PARAMETER_SEPARATOR_CHARACTER + "*+"
+                                + PARAMETER_SEPARATOR_CHARACTER + "*+"
                                 + "(?<parameterString>.*+)$")));
     }
 

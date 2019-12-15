@@ -179,7 +179,7 @@ public class UsagePatternBuilder extends UsageBaseVisitor<String> {
         String tokenText = ctx.getText();
         String tokenName = tokenText.substring(1, tokenText.length() - 4);
         return format(
-                "%s(?<%s>.+)$",
+                "%s(?<%s>(?s:.+))$",
                 PRECEDED_BY_PARAMETER_SEPARATOR_CHARACTER,
                 getGroupName(ctx, tokenName));
     }

@@ -70,248 +70,251 @@ class UsagePatternBuilderTest extends Specification {
             }
 
         where:
-            usage                       | parameterString       || groups                      | tokenValues
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo>'                     | 'test'                || ['test']                    | [foo: ['test']]
-            '<foo>'                     | 'test1  test2'        || null                        | null
-            '<foo>'                     | ''                    || null                        | null
-            '<foo bar>'                 | 'test'                || ['test']                    | ['foo bar': ['test']]
-            '<foo bar>'                 | 'test1  test2'        || null                        | null
-            '<foo bar>'                 | ''                    || null                        | null
-            '<foo> <bar>'               | 'test'                || null                        | null
-            '<foo> <bar>'               | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '<foo> <bar>'               | ''                    || null                        | null
-            '<foo><bar>'                | 'test'                || null                        | null
-            '<foo><bar>'                | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '<foo><bar>'                | ''                    || null                        | null
-            ' <foo bar> '               | 'test'                || ['test']                    | ['foo bar': ['test']]
-            ' <foo bar> '               | 'test1 test2'         || null                        | null
-            ' <foo bar> '               | ''                    || null                        | null
-            '<foo> <foo>'               | 'test'                || null                        | null
-            '<foo> <foo>'               | 'test1  test2'        || ['test1', 'test2']          | ['foo': ['test1', 'test2']]
-            '<foo> <foo>'               | ''                    || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo...>'                  | 'test'                || ['test']                    | [foo: ['test']]
-            '<foo...>'                  | 'test1  test2'        || ['test1  test2']            | [foo: ['test1  test2']]
-            '<foo...>'                  | ''                    || null                        | null
-            '<foo bar...>'              | 'test'                || ['test']                    | ['foo bar': ['test']]
-            '<foo bar...>'              | 'test1  test2'        || ['test1  test2']            | ['foo bar': ['test1  test2']]
-            '<foo bar...>'              | ''                    || null                        | null
-            '<foo> <bar...>'            | 'test'                || null                        | null
-            '<foo> <bar...>'            | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '<foo> <bar...>'            | 'test1  test2  test3' || ['test1', 'test2  test3']   | [foo: ['test1'], bar: ['test2  test3']]
-            '<foo> <bar...>'            | ''                    || null                        | null
-            '<foo><bar...>'             | 'test'                || null                        | null
-            '<foo><bar...>'             | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '<foo><bar...>'             | 'test1  test2  test3' || ['test1', 'test2  test3']   | [foo: ['test1'], bar: ['test2  test3']]
-            '<foo><bar...>'             | ''                    || null                        | null
-            '<foo><bar...><baz>'        | 'test1  test2  test3' || null                        | null
-            '<foo><bar...>[<baz>]'      | 'test1  test2  test3' || ['test1', 'test2  test3']   | [foo: ['test1'], bar: ['test2  test3']]
-            ' <foo bar...> '            | 'test'                || ['test']                    | ['foo bar': ['test']]
-            ' <foo bar...> '            | 'test1  test2'        || ['test1  test2']            | ['foo bar': ['test1  test2']]
-            ' <foo bar...> '            | ''                    || null                        | null
-            '<foo><foo...>'             | 'test'                || null                        | null
-            '<foo><foo...>'             | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1', 'test2']]
-            '<foo><foo...>'             | 'test1  test2  test3' || ['test1', 'test2  test3']   | [foo: ['test1', 'test2  test3']]
-            '<foo><foo...>'             | ''                    || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            /'test'/                    | 'test'                || ['test']                    | [test: ['test']]
-            /'test'/                    | 'test1  test2'        || null                        | null
-            /'test'/                    | ''                    || null                        | null
-            / 'test1' 'test2' /         | 'test1'               || null                        | null
-            / 'test1' 'test2' /         | 'test1  test2'        || ['test1', 'test2']          | [test1: ['test1'], test2: ['test2']]
-            / 'test1' 'test2' /         | ''                    || null                        | null
-            /'test1''test2'/            | 'test1'               || null                        | null
-            /'test1''test2'/            | 'test1  test2'        || ['test1', 'test2']          | [test1: ['test1'], test2: ['test2']]
-            /'test1''test2'/            | ''                    || null                        | null
-            / 'test1' 'test1' /         | 'test1'               || null                        | null
-            / 'test1' 'test1' /         | 'test1  test1'        || ['test1', 'test1']          | [test1: ['test1', 'test1']]
-            / 'test1' 'test1' /         | ''                    || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '[<foo>]'                   | 'test'                || ['test']                    | [foo: ['test']]
-            '[<foo>]'                   | 'test1  test2'        || null                        | null
-            '[<foo>]'                   | ''                    || []                          | [:]
-            '[ <foo> ]'                 | 'test'                || ['test']                    | [foo: ['test']]
-            '[ <foo> ]'                 | 'test1  test2'        || null                        | null
-            '[ <foo> ]'                 | ''                    || []                          | [:]
-            '[<foo>] [<bar>]'           | 'test'                || ['test']                    | [foo: ['test']]
-            '[<foo>] [<bar>]'           | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '[<foo>] [<bar>]'           | ''                    || []                          | [:]
-            '[<foo>][<bar>]'            | 'test'                || ['test']                    | [foo: ['test']]
-            '[<foo>][<bar>]'            | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '[<foo>][<bar>]'            | ''                    || []                          | [:]
-            ' [<foo>] '                 | 'test'                || ['test']                    | [foo: ['test']]
-            ' [<foo>] '                 | 'test1 test2'         || null                        | null
-            ' [<foo>] '                 | ''                    || []                          | [:]
-            '[<foo>] [<foo>]'           | 'test'                || ['test']                    | [foo: ['test']]
-            '[<foo>] [<foo>]'           | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1', 'test2']]
-            '[<foo>] [<foo>]'           | ''                    || []                          | [:]
-            '[<foo...>]'                | 'test'                || ['test']                    | [foo: ['test']]
-            '[<foo...>]'                | 'test1  test2'        || ['test1  test2']            | [foo: ['test1  test2']]
-            '[<foo...>]'                | ''                    || []                          | [:]
-            /['test']/                  | 'test'                || ['test']                    | [test: ['test']]
-            /['test']/                  | 'test1  test2'        || null                        | null
-            /['test']/                  | ''                    || []                          | [:]
-            '[[<foo>] [<bar>]]'         | 'test'                || ['test']                    | [foo: ['test']]
-            '[[<foo>] [<bar>]]'         | 'test1  test2'        || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '[[<foo>] [<bar>]]'         | ''                    || []                          | [:]
-            /[('test1'|'test2')]/       | 'test1'               || ['test1']                   | [test1: ['test1']]
-            /[('test1'|'test2')]/       | 'test2'               || ['test2']                   | [test2: ['test2']]
-            /[('test1'|'test2')]/       | 'test1  test2'        || null                        | null
-            /[('test1'|'test2')]/       | ''                    || []                          | [:]
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            /('test1'|'test2')/         | 'test1'               || ['test1']                   | [test1: ['test1']]
-            /('test1'|'test2')/         | 'test2'               || ['test2']                   | [test2: ['test2']]
-            /('test1'|'test2')/         | 'test1  test2'        || null                        | null
-            /('test1'|'test2')/         | ''                    || null                        | null
-            /( 'test1' | 'test2' )/     | 'test1'               || ['test1']                   | [test1: ['test1']]
-            /( 'test1' | 'test2' )/     | 'test2'               || ['test2']                   | [test2: ['test2']]
-            /( 'test1' | 'test2' )/     | 'test1  test2'        || null                        | null
-            /( 'test1' | 'test2' )/     | ''                    || null                        | null
-            / ('test1'|'test2') /       | 'test1'               || ['test1']                   | [test1: ['test1']]
-            / ('test1'|'test2') /       | 'test2'               || ['test2']                   | [test2: ['test2']]
-            / ('test1'|'test2') /       | 'test1  test2'        || null                        | null
-            / ('test1'|'test2') /       | ''                    || null                        | null
-            '( <test1> | <test1...> )'  | 'test1'               || ['test1']                   | [test1: ['test1']]
-            '( <test1> | <test1...> )'  | 'test1  test2'        || ['test1  test2']            | [test1: ['test1  test2']]
-            '( <test1> | <test2...> )'  | 'test1  test2'        || ['test1  test2']            | [test2: ['test1  test2']]
-            '( <test1...> | <test2> )'  | 'test1  test2'        || ['test1  test2']            | [test1: ['test1  test2']]
-            /( 'test1' | 'test1' )/     | 'test1  test2'        || null                        | null
-            /( 'test1' | 'test1' )/     | ''                    || null                        | null
-            /('test1'|'test2' 'test3')/ | 'test1'               || ['test1']                   | [test1: ['test1']]
-            /('test1'|'test2' 'test3')/ | 'test2 test3'         || ['test2', 'test3']          | [test2: ['test2'], test3: ['test3']]
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo>'                     | 'test1'               || ['test1']                   | [foo: ['test1']]
-            '<foo>'                     | ' test1'              || null                        | null
-            '<foo>'                     | 'test1 '              || null                        | null
-            '<foo>'                     | ' test1 '             || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '[<foo>]'                   | 'test1'               || ['test1']                   | [foo: ['test1']]
-            '[<foo>]'                   | ' test1'              || null                        | null
-            '[<foo>]'                   | 'test1 '              || null                        | null
-            '[<foo>]'                   | ' test1 '             || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo> <bar>'               | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '<foo> <bar>'               | ' test1 test2'        || null                        | null
-            '<foo> <bar>'               | 'test1 test2 '        || null                        | null
-            '<foo> <bar>'               | ' test1 test2 '       || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '[<foo>] <bar>'             | 'test1'               || ['test1']                   | [bar: ['test1']]
-            '[<foo>] <bar>'             | ' test1'              || null                        | null
-            '[<foo>] <bar>'             | 'test1 '              || null                        | null
-            '[<foo>] <bar>'             | ' test1 '             || null                        | null
-            '[<foo>] <bar>'             | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '[<foo>] <bar>'             | ' test1 test2'        || null                        | null
-            '[<foo>] <bar>'             | 'test1 test2 '        || null                        | null
-            '[<foo>] <bar>'             | ' test1 test2 '       || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo> [<bar>]'             | 'test1'               || ['test1']                   | [foo: ['test1']]
-            '<foo> [<bar>]'             | ' test1'              || null                        | null
-            '<foo> [<bar>]'             | 'test1 '              || null                        | null
-            '<foo> [<bar>]'             | ' test1 '             || null                        | null
-            '<foo> [<bar>]'             | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '<foo> [<bar>]'             | ' test1 test2'        || null                        | null
-            '<foo> [<bar>]'             | 'test1 test2 '        || null                        | null
-            '<foo> [<bar>]'             | ' test1 test2 '       || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '[<foo>] [<bar>]'           | ''                    || []                          | [:]
-            '[<foo>] [<bar>]'           | ' '                   || null                        | null
-            '[<foo>] [<bar>]'           | 'test1'               || ['test1']                   | [foo: ['test1']]
-            '[<foo>] [<bar>]'           | ' test1'              || null                        | null
-            '[<foo>] [<bar>]'           | 'test1 '              || null                        | null
-            '[<foo>] [<bar>]'           | ' test1 '             || null                        | null
-            '[<foo>] [<bar>]'           | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '[<foo>] [<bar>]'           | ' test1 test2'        || null                        | null
-            '[<foo>] [<bar>]'           | 'test1 test2 '        || null                        | null
-            '[<foo>] [<bar>]'           | ' test1 test2 '       || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo> <bar> <baz>'         | 'test1 test2 test3'   || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
-            '<foo> <bar> <baz>'         | ' test1 test2 test3'  || null                        | null
-            '<foo> <bar> <baz>'         | 'test1 test2 test3 '  || null                        | null
-            '<foo> <bar> <baz>'         | ' test1 test2 test3 ' || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '[<foo>] <bar> <baz>'       | 'test1 test2'         || ['test1', 'test2']          | [bar: ['test1'], baz: ['test2']]
-            '[<foo>] <bar> <baz>'       | ' test1 test2'        || null                        | null
-            '[<foo>] <bar> <baz>'       | 'test1 test2 '        || null                        | null
-            '[<foo>] <bar> <baz>'       | ' test1 test2 '       || null                        | null
-            '[<foo>] <bar> <baz>'       | 'test1 test2 test3'   || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
-            '[<foo>] <bar> <baz>'       | ' test1 test2 test3'  || null                        | null
-            '[<foo>] <bar> <baz>'       | 'test1 test2 test3 '  || null                        | null
-            '[<foo>] <bar> <baz>'       | ' test1 test2 test3 ' || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo> [<bar>] <baz>'       | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], baz: ['test2']]
-            '<foo> [<bar>] <baz>'       | ' test1 test2'        || null                        | null
-            '<foo> [<bar>] <baz>'       | 'test1 test2 '        || null                        | null
-            '<foo> [<bar>] <baz>'       | ' test1 test2 '       || null                        | null
-            '<foo> [<bar>] <baz>'       | 'test1 test2 test3'   || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
-            '<foo> [<bar>] <baz>'       | ' test1 test2 test3'  || null                        | null
-            '<foo> [<bar>] <baz>'       | 'test1 test2 test3 '  || null                        | null
-            '<foo> [<bar>] <baz>'       | ' test1 test2 test3 ' || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo> <bar> [<baz>]'       | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '<foo> <bar> [<baz>]'       | ' test1 test2'        || null                        | null
-            '<foo> <bar> [<baz>]'       | 'test1 test2 '        || null                        | null
-            '<foo> <bar> [<baz>]'       | ' test1 test2 '       || null                        | null
-            '<foo> <bar> [<baz>]'       | 'test1 test2 test3'   || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
-            '<foo> <bar> [<baz>]'       | ' test1 test2 test3'  || null                        | null
-            '<foo> <bar> [<baz>]'       | 'test1 test2 test3 '  || null                        | null
-            '<foo> <bar> [<baz>]'       | ' test1 test2 test3 ' || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '[<foo>] [<bar>] <baz>'     | 'test1'               || ['test1']                   | [baz: ['test1']]
-            '[<foo>] [<bar>] <baz>'     | ' test1'              || null                        | null
-            '[<foo>] [<bar>] <baz>'     | 'test1 '              || null                        | null
-            '[<foo>] [<bar>] <baz>'     | ' test1 '             || null                        | null
-            '[<foo>] [<bar>] <baz>'     | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], baz: ['test2']]
-            '[<foo>] [<bar>] <baz>'     | ' test1 test2'        || null                        | null
-            '[<foo>] [<bar>] <baz>'     | 'test1 test2 '        || null                        | null
-            '[<foo>] [<bar>] <baz>'     | ' test1 test2 '       || null                        | null
-            '[<foo>] [<bar>] <baz>'     | 'test1 test2 test3'   || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
-            '[<foo>] [<bar>] <baz>'     | ' test1 test2 test3'  || null                        | null
-            '[<foo>] [<bar>] <baz>'     | 'test1 test2 test3 '  || null                        | null
-            '[<foo>] [<bar>] <baz>'     | ' test1 test2 test3 ' || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '[<foo>] <bar> [<baz>]'     | 'test1'               || ['test1']                   | [bar: ['test1']]
-            '[<foo>] <bar> [<baz>]'     | ' test1'              || null                        | null
-            '[<foo>] <bar> [<baz>]'     | 'test1 '              || null                        | null
-            '[<foo>] <bar> [<baz>]'     | ' test1 '             || null                        | null
-            '[<foo>] <bar> [<baz>]'     | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '[<foo>] <bar> [<baz>]'     | ' test1 test2'        || null                        | null
-            '[<foo>] <bar> [<baz>]'     | 'test1 test2 '        || null                        | null
-            '[<foo>] <bar> [<baz>]'     | ' test1 test2 '       || null                        | null
-            '[<foo>] <bar> [<baz>]'     | 'test1 test2 test3'   || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
-            '[<foo>] <bar> [<baz>]'     | ' test1 test2 test3'  || null                        | null
-            '[<foo>] <bar> [<baz>]'     | 'test1 test2 test3 '  || null                        | null
-            '[<foo>] <bar> [<baz>]'     | ' test1 test2 test3 ' || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '<foo> [<bar>] [<baz>]'     | 'test1'               || ['test1']                   | [foo: ['test1']]
-            '<foo> [<bar>] [<baz>]'     | ' test1'              || null                        | null
-            '<foo> [<bar>] [<baz>]'     | 'test1 '              || null                        | null
-            '<foo> [<bar>] [<baz>]'     | ' test1 '             || null                        | null
-            '<foo> [<bar>] [<baz>]'     | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '<foo> [<bar>] [<baz>]'     | ' test1 test2'        || null                        | null
-            '<foo> [<bar>] [<baz>]'     | 'test1 test2 '        || null                        | null
-            '<foo> [<bar>] [<baz>]'     | ' test1 test2 '       || null                        | null
-            '<foo> [<bar>] [<baz>]'     | 'test1 test2 test3'   || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
-            '<foo> [<bar>] [<baz>]'     | ' test1 test2 test3'  || null                        | null
-            '<foo> [<bar>] [<baz>]'     | 'test1 test2 test3 '  || null                        | null
-            '<foo> [<bar>] [<baz>]'     | ' test1 test2 test3 ' || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            '[<foo>] [<bar>] [<baz>]'   | ''                    || []                          | [:]
-            '[<foo>] [<bar>] [<baz>]'   | ' '                   || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | 'test1'               || ['test1']                   | [foo: ['test1']]
-            '[<foo>] [<bar>] [<baz>]'   | ' test1'              || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | 'test1 '              || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | ' test1 '             || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | 'test1 test2'         || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
-            '[<foo>] [<bar>] [<baz>]'   | ' test1 test2'        || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | 'test1 test2 '        || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | ' test1 test2 '       || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | 'test1 test2 test3'   || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
-            '[<foo>] [<bar>] [<baz>]'   | ' test1 test2 test3'  || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | 'test1 test2 test3 '  || null                        | null
-            '[<foo>] [<bar>] [<baz>]'   | ' test1 test2 test3 ' || null                        | null
-            //---------------------------------------------------------------------------------------------------------------------------------//
-            /<foo> '|' <bar>/           | 'test1 | test2'       || ['test1', '|', 'test2']     | [foo: ['test1'], '|': ['|'], bar: ['test2']]
+            usage                       | parameterString         || groups                      | tokenValues
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo>'                     | 'test'                  || ['test']                    | [foo: ['test']]
+            '<foo>'                     | 'test1  test2'          || null                        | null
+            '<foo>'                     | ''                      || null                        | null
+            '<foo bar>'                 | 'test'                  || ['test']                    | ['foo bar': ['test']]
+            '<foo bar>'                 | 'test1  test2'          || null                        | null
+            '<foo bar>'                 | ''                      || null                        | null
+            '<foo> <bar>'               | 'test'                  || null                        | null
+            '<foo> <bar>'               | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '<foo> <bar>'               | ''                      || null                        | null
+            '<foo><bar>'                | 'test'                  || null                        | null
+            '<foo><bar>'                | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '<foo><bar>'                | ''                      || null                        | null
+            ' <foo bar> '               | 'test'                  || ['test']                    | ['foo bar': ['test']]
+            ' <foo bar> '               | 'test1 test2'           || null                        | null
+            ' <foo bar> '               | ''                      || null                        | null
+            '<foo> <foo>'               | 'test'                  || null                        | null
+            '<foo> <foo>'               | 'test1  test2'          || ['test1', 'test2']          | ['foo': ['test1', 'test2']]
+            '<foo> <foo>'               | ''                      || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo...>'                  | 'test'                  || ['test']                    | [foo: ['test']]
+            '<foo...>'                  | 'test1  test2'          || ['test1  test2']            | [foo: ['test1  test2']]
+            '<foo...>'                  | ''                      || null                        | null
+            '<foo bar...>'              | 'test'                  || ['test']                    | ['foo bar': ['test']]
+            '<foo bar...>'              | 'test1  test2'          || ['test1  test2']            | ['foo bar': ['test1  test2']]
+            '<foo bar...>'              | ''                      || null                        | null
+            '<foo> <bar...>'            | 'test'                  || null                        | null
+            '<foo> <bar...>'            | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '<foo> <bar...>'            | 'test1  test2  test3'   || ['test1', 'test2  test3']   | [foo: ['test1'], bar: ['test2  test3']]
+            '<foo> <bar...>'            | ''                      || null                        | null
+            '<foo><bar...>'             | 'test'                  || null                        | null
+            '<foo><bar...>'             | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '<foo><bar...>'             | 'test1  test2  test3'   || ['test1', 'test2  test3']   | [foo: ['test1'], bar: ['test2  test3']]
+            '<foo><bar...>'             | ''                      || null                        | null
+            '<foo><bar...><baz>'        | 'test1  test2  test3'   || null                        | null
+            '<foo><bar...>[<baz>]'      | 'test1  test2  test3'   || ['test1', 'test2  test3']   | [foo: ['test1'], bar: ['test2  test3']]
+            ' <foo bar...> '            | 'test'                  || ['test']                    | ['foo bar': ['test']]
+            ' <foo bar...> '            | 'test1  test2'          || ['test1  test2']            | ['foo bar': ['test1  test2']]
+            ' <foo bar...> '            | ''                      || null                        | null
+            '<foo><foo...>'             | 'test'                  || null                        | null
+            '<foo><foo...>'             | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1', 'test2']]
+            '<foo><foo...>'             | 'test1  test2  test3'   || ['test1', 'test2  test3']   | [foo: ['test1', 'test2  test3']]
+            '<foo><foo...>'             | ''                      || null                        | null
+            '<foo><foo...>'             | 'test1  test2\n test3'  || ['test1', 'test2\n test3']  | [foo: ['test1', 'test2\n test3']]
+            '<foo><foo...>'             | 'test1 \n test2\ntest3' || ['test1', 'test2\ntest3']   | [foo: ['test1', 'test2\ntest3']]
+            '<foo><foo...>'             | 'test1\n test2\ntest3'  || ['test1', 'test2\ntest3']   | [foo: ['test1', 'test2\ntest3']]
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            /'test'/                    | 'test'                  || ['test']                    | [test: ['test']]
+            /'test'/                    | 'test1  test2'          || null                        | null
+            /'test'/                    | ''                      || null                        | null
+            / 'test1' 'test2' /         | 'test1'                 || null                        | null
+            / 'test1' 'test2' /         | 'test1  test2'          || ['test1', 'test2']          | [test1: ['test1'], test2: ['test2']]
+            / 'test1' 'test2' /         | ''                      || null                        | null
+            /'test1''test2'/            | 'test1'                 || null                        | null
+            /'test1''test2'/            | 'test1  test2'          || ['test1', 'test2']          | [test1: ['test1'], test2: ['test2']]
+            /'test1''test2'/            | ''                      || null                        | null
+            / 'test1' 'test1' /         | 'test1'                 || null                        | null
+            / 'test1' 'test1' /         | 'test1  test1'          || ['test1', 'test1']          | [test1: ['test1', 'test1']]
+            / 'test1' 'test1' /         | ''                      || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '[<foo>]'                   | 'test'                  || ['test']                    | [foo: ['test']]
+            '[<foo>]'                   | 'test1  test2'          || null                        | null
+            '[<foo>]'                   | ''                      || []                          | [:]
+            '[ <foo> ]'                 | 'test'                  || ['test']                    | [foo: ['test']]
+            '[ <foo> ]'                 | 'test1  test2'          || null                        | null
+            '[ <foo> ]'                 | ''                      || []                          | [:]
+            '[<foo>] [<bar>]'           | 'test'                  || ['test']                    | [foo: ['test']]
+            '[<foo>] [<bar>]'           | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '[<foo>] [<bar>]'           | ''                      || []                          | [:]
+            '[<foo>][<bar>]'            | 'test'                  || ['test']                    | [foo: ['test']]
+            '[<foo>][<bar>]'            | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '[<foo>][<bar>]'            | ''                      || []                          | [:]
+            ' [<foo>] '                 | 'test'                  || ['test']                    | [foo: ['test']]
+            ' [<foo>] '                 | 'test1 test2'           || null                        | null
+            ' [<foo>] '                 | ''                      || []                          | [:]
+            '[<foo>] [<foo>]'           | 'test'                  || ['test']                    | [foo: ['test']]
+            '[<foo>] [<foo>]'           | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1', 'test2']]
+            '[<foo>] [<foo>]'           | ''                      || []                          | [:]
+            '[<foo...>]'                | 'test'                  || ['test']                    | [foo: ['test']]
+            '[<foo...>]'                | 'test1  test2'          || ['test1  test2']            | [foo: ['test1  test2']]
+            '[<foo...>]'                | ''                      || []                          | [:]
+            /['test']/                  | 'test'                  || ['test']                    | [test: ['test']]
+            /['test']/                  | 'test1  test2'          || null                        | null
+            /['test']/                  | ''                      || []                          | [:]
+            '[[<foo>] [<bar>]]'         | 'test'                  || ['test']                    | [foo: ['test']]
+            '[[<foo>] [<bar>]]'         | 'test1  test2'          || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '[[<foo>] [<bar>]]'         | ''                      || []                          | [:]
+            /[('test1'|'test2')]/       | 'test1'                 || ['test1']                   | [test1: ['test1']]
+            /[('test1'|'test2')]/       | 'test2'                 || ['test2']                   | [test2: ['test2']]
+            /[('test1'|'test2')]/       | 'test1  test2'          || null                        | null
+            /[('test1'|'test2')]/       | ''                      || []                          | [:]
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            /('test1'|'test2')/         | 'test1'                 || ['test1']                   | [test1: ['test1']]
+            /('test1'|'test2')/         | 'test2'                 || ['test2']                   | [test2: ['test2']]
+            /('test1'|'test2')/         | 'test1  test2'          || null                        | null
+            /('test1'|'test2')/         | ''                      || null                        | null
+            /( 'test1' | 'test2' )/     | 'test1'                 || ['test1']                   | [test1: ['test1']]
+            /( 'test1' | 'test2' )/     | 'test2'                 || ['test2']                   | [test2: ['test2']]
+            /( 'test1' | 'test2' )/     | 'test1  test2'          || null                        | null
+            /( 'test1' | 'test2' )/     | ''                      || null                        | null
+            / ('test1'|'test2') /       | 'test1'                 || ['test1']                   | [test1: ['test1']]
+            / ('test1'|'test2') /       | 'test2'                 || ['test2']                   | [test2: ['test2']]
+            / ('test1'|'test2') /       | 'test1  test2'          || null                        | null
+            / ('test1'|'test2') /       | ''                      || null                        | null
+            '( <test1> | <test1...> )'  | 'test1'                 || ['test1']                   | [test1: ['test1']]
+            '( <test1> | <test1...> )'  | 'test1  test2'          || ['test1  test2']            | [test1: ['test1  test2']]
+            '( <test1> | <test2...> )'  | 'test1  test2'          || ['test1  test2']            | [test2: ['test1  test2']]
+            '( <test1...> | <test2> )'  | 'test1  test2'          || ['test1  test2']            | [test1: ['test1  test2']]
+            /( 'test1' | 'test1' )/     | 'test1  test2'          || null                        | null
+            /( 'test1' | 'test1' )/     | ''                      || null                        | null
+            /('test1'|'test2' 'test3')/ | 'test1'                 || ['test1']                   | [test1: ['test1']]
+            /('test1'|'test2' 'test3')/ | 'test2 test3'           || ['test2', 'test3']          | [test2: ['test2'], test3: ['test3']]
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo>'                     | 'test1'                 || ['test1']                   | [foo: ['test1']]
+            '<foo>'                     | ' test1'                || null                        | null
+            '<foo>'                     | 'test1 '                || null                        | null
+            '<foo>'                     | ' test1 '               || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '[<foo>]'                   | 'test1'                 || ['test1']                   | [foo: ['test1']]
+            '[<foo>]'                   | ' test1'                || null                        | null
+            '[<foo>]'                   | 'test1 '                || null                        | null
+            '[<foo>]'                   | ' test1 '               || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo> <bar>'               | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '<foo> <bar>'               | ' test1 test2'          || null                        | null
+            '<foo> <bar>'               | 'test1 test2 '          || null                        | null
+            '<foo> <bar>'               | ' test1 test2 '         || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '[<foo>] <bar>'             | 'test1'                 || ['test1']                   | [bar: ['test1']]
+            '[<foo>] <bar>'             | ' test1'                || null                        | null
+            '[<foo>] <bar>'             | 'test1 '                || null                        | null
+            '[<foo>] <bar>'             | ' test1 '               || null                        | null
+            '[<foo>] <bar>'             | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '[<foo>] <bar>'             | ' test1 test2'          || null                        | null
+            '[<foo>] <bar>'             | 'test1 test2 '          || null                        | null
+            '[<foo>] <bar>'             | ' test1 test2 '         || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo> [<bar>]'             | 'test1'                 || ['test1']                   | [foo: ['test1']]
+            '<foo> [<bar>]'             | ' test1'                || null                        | null
+            '<foo> [<bar>]'             | 'test1 '                || null                        | null
+            '<foo> [<bar>]'             | ' test1 '               || null                        | null
+            '<foo> [<bar>]'             | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '<foo> [<bar>]'             | ' test1 test2'          || null                        | null
+            '<foo> [<bar>]'             | 'test1 test2 '          || null                        | null
+            '<foo> [<bar>]'             | ' test1 test2 '         || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '[<foo>] [<bar>]'           | ''                      || []                          | [:]
+            '[<foo>] [<bar>]'           | ' '                     || null                        | null
+            '[<foo>] [<bar>]'           | 'test1'                 || ['test1']                   | [foo: ['test1']]
+            '[<foo>] [<bar>]'           | ' test1'                || null                        | null
+            '[<foo>] [<bar>]'           | 'test1 '                || null                        | null
+            '[<foo>] [<bar>]'           | ' test1 '               || null                        | null
+            '[<foo>] [<bar>]'           | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '[<foo>] [<bar>]'           | ' test1 test2'          || null                        | null
+            '[<foo>] [<bar>]'           | 'test1 test2 '          || null                        | null
+            '[<foo>] [<bar>]'           | ' test1 test2 '         || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo> <bar> <baz>'         | 'test1 test2 test3'     || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
+            '<foo> <bar> <baz>'         | ' test1 test2 test3'    || null                        | null
+            '<foo> <bar> <baz>'         | 'test1 test2 test3 '    || null                        | null
+            '<foo> <bar> <baz>'         | ' test1 test2 test3 '   || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '[<foo>] <bar> <baz>'       | 'test1 test2'           || ['test1', 'test2']          | [bar: ['test1'], baz: ['test2']]
+            '[<foo>] <bar> <baz>'       | ' test1 test2'          || null                        | null
+            '[<foo>] <bar> <baz>'       | 'test1 test2 '          || null                        | null
+            '[<foo>] <bar> <baz>'       | ' test1 test2 '         || null                        | null
+            '[<foo>] <bar> <baz>'       | 'test1 test2 test3'     || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
+            '[<foo>] <bar> <baz>'       | ' test1 test2 test3'    || null                        | null
+            '[<foo>] <bar> <baz>'       | 'test1 test2 test3 '    || null                        | null
+            '[<foo>] <bar> <baz>'       | ' test1 test2 test3 '   || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo> [<bar>] <baz>'       | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], baz: ['test2']]
+            '<foo> [<bar>] <baz>'       | ' test1 test2'          || null                        | null
+            '<foo> [<bar>] <baz>'       | 'test1 test2 '          || null                        | null
+            '<foo> [<bar>] <baz>'       | ' test1 test2 '         || null                        | null
+            '<foo> [<bar>] <baz>'       | 'test1 test2 test3'     || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
+            '<foo> [<bar>] <baz>'       | ' test1 test2 test3'    || null                        | null
+            '<foo> [<bar>] <baz>'       | 'test1 test2 test3 '    || null                        | null
+            '<foo> [<bar>] <baz>'       | ' test1 test2 test3 '   || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo> <bar> [<baz>]'       | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '<foo> <bar> [<baz>]'       | ' test1 test2'          || null                        | null
+            '<foo> <bar> [<baz>]'       | 'test1 test2 '          || null                        | null
+            '<foo> <bar> [<baz>]'       | ' test1 test2 '         || null                        | null
+            '<foo> <bar> [<baz>]'       | 'test1 test2 test3'     || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
+            '<foo> <bar> [<baz>]'       | ' test1 test2 test3'    || null                        | null
+            '<foo> <bar> [<baz>]'       | 'test1 test2 test3 '    || null                        | null
+            '<foo> <bar> [<baz>]'       | ' test1 test2 test3 '   || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '[<foo>] [<bar>] <baz>'     | 'test1'                 || ['test1']                   | [baz: ['test1']]
+            '[<foo>] [<bar>] <baz>'     | ' test1'                || null                        | null
+            '[<foo>] [<bar>] <baz>'     | 'test1 '                || null                        | null
+            '[<foo>] [<bar>] <baz>'     | ' test1 '               || null                        | null
+            '[<foo>] [<bar>] <baz>'     | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], baz: ['test2']]
+            '[<foo>] [<bar>] <baz>'     | ' test1 test2'          || null                        | null
+            '[<foo>] [<bar>] <baz>'     | 'test1 test2 '          || null                        | null
+            '[<foo>] [<bar>] <baz>'     | ' test1 test2 '         || null                        | null
+            '[<foo>] [<bar>] <baz>'     | 'test1 test2 test3'     || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
+            '[<foo>] [<bar>] <baz>'     | ' test1 test2 test3'    || null                        | null
+            '[<foo>] [<bar>] <baz>'     | 'test1 test2 test3 '    || null                        | null
+            '[<foo>] [<bar>] <baz>'     | ' test1 test2 test3 '   || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '[<foo>] <bar> [<baz>]'     | 'test1'                 || ['test1']                   | [bar: ['test1']]
+            '[<foo>] <bar> [<baz>]'     | ' test1'                || null                        | null
+            '[<foo>] <bar> [<baz>]'     | 'test1 '                || null                        | null
+            '[<foo>] <bar> [<baz>]'     | ' test1 '               || null                        | null
+            '[<foo>] <bar> [<baz>]'     | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '[<foo>] <bar> [<baz>]'     | ' test1 test2'          || null                        | null
+            '[<foo>] <bar> [<baz>]'     | 'test1 test2 '          || null                        | null
+            '[<foo>] <bar> [<baz>]'     | ' test1 test2 '         || null                        | null
+            '[<foo>] <bar> [<baz>]'     | 'test1 test2 test3'     || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
+            '[<foo>] <bar> [<baz>]'     | ' test1 test2 test3'    || null                        | null
+            '[<foo>] <bar> [<baz>]'     | 'test1 test2 test3 '    || null                        | null
+            '[<foo>] <bar> [<baz>]'     | ' test1 test2 test3 '   || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '<foo> [<bar>] [<baz>]'     | 'test1'                 || ['test1']                   | [foo: ['test1']]
+            '<foo> [<bar>] [<baz>]'     | ' test1'                || null                        | null
+            '<foo> [<bar>] [<baz>]'     | 'test1 '                || null                        | null
+            '<foo> [<bar>] [<baz>]'     | ' test1 '               || null                        | null
+            '<foo> [<bar>] [<baz>]'     | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '<foo> [<bar>] [<baz>]'     | ' test1 test2'          || null                        | null
+            '<foo> [<bar>] [<baz>]'     | 'test1 test2 '          || null                        | null
+            '<foo> [<bar>] [<baz>]'     | ' test1 test2 '         || null                        | null
+            '<foo> [<bar>] [<baz>]'     | 'test1 test2 test3'     || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
+            '<foo> [<bar>] [<baz>]'     | ' test1 test2 test3'    || null                        | null
+            '<foo> [<bar>] [<baz>]'     | 'test1 test2 test3 '    || null                        | null
+            '<foo> [<bar>] [<baz>]'     | ' test1 test2 test3 '   || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            '[<foo>] [<bar>] [<baz>]'   | ''                      || []                          | [:]
+            '[<foo>] [<bar>] [<baz>]'   | ' '                     || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | 'test1'                 || ['test1']                   | [foo: ['test1']]
+            '[<foo>] [<bar>] [<baz>]'   | ' test1'                || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | 'test1 '                || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | ' test1 '               || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | 'test1 test2'           || ['test1', 'test2']          | [foo: ['test1'], bar: ['test2']]
+            '[<foo>] [<bar>] [<baz>]'   | ' test1 test2'          || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | 'test1 test2 '          || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | ' test1 test2 '         || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | 'test1 test2 test3'     || ['test1', 'test2', 'test3'] | [foo: ['test1'], bar: ['test2'], baz: ['test3']]
+            '[<foo>] [<bar>] [<baz>]'   | ' test1 test2 test3'    || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | 'test1 test2 test3 '    || null                        | null
+            '[<foo>] [<bar>] [<baz>]'   | ' test1 test2 test3 '   || null                        | null
+            //-----------------------------------------------------------------------------------------------------------------------------------//
+            /<foo> '|' <bar>/           | 'test1 | test2'         || ['test1', '|', 'test2']     | [foo: ['test1'], '|': ['|'], bar: ['test2']]
 
         and:
             match = (groups == null) ? 'not match' : "match to $tokenValues"
