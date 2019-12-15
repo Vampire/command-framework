@@ -30,6 +30,7 @@ import org.javacord.api.entity.message.Message
 import org.javacord.api.event.message.MessageCreateEvent
 import org.javacord.api.listener.message.MessageCreateListener
 import org.javacord.api.util.concurrent.ThreadPool
+import org.javacord.api.util.event.ListenerManager
 import org.javacord.core.DiscordApiImpl
 import org.jboss.weld.junit.MockBean
 import org.jboss.weld.junit4.WeldInitiator
@@ -57,13 +58,24 @@ import static java.util.concurrent.TimeUnit.SECONDS
 import static org.apache.logging.log4j.Level.ERROR
 import static org.apache.logging.log4j.Level.INFO
 import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
+import static org.powermock.reflect.Whitebox.getAllInstanceFields
+import static org.powermock.reflect.Whitebox.getField
+import static org.powermock.reflect.Whitebox.newInstance
 
 class CommandHandlerJavacordTest extends Specification {
-    DiscordApi discordApi = Mock()
+    ListenerManager<Object> listenerManager = Mock()
 
-    DiscordApi discordApiInCollection1 = Mock()
+    DiscordApi discordApi = Mock {
+        addMessageCreateListener(_) >> listenerManager
+    }
 
-    DiscordApi discordApiInCollection2 = Mock()
+    DiscordApi discordApiInCollection1 = Mock {
+        addMessageCreateListener(_) >> listenerManager
+    }
+
+    DiscordApi discordApiInCollection2 = Mock {
+        addMessageCreateListener(_) >> listenerManager
+    }
 
     Restriction<Object> restriction = Stub {
         allowCommand(_) >> false
@@ -237,6 +249,7 @@ class CommandHandlerJavacordTest extends Specification {
             ].each {
                 1 * it.addMessageCreateListener(_) >> { MessageCreateListener listener ->
                     listener.onMessageCreate(messageCreateEvent)
+                    listenerManager
                 }
             }
             3 * commandHandlerJavacord.doHandleMessage(message, message.content) >> { }
@@ -403,6 +416,79 @@ class CommandHandlerJavacordTest extends Specification {
 
         cleanup:
             discordApi?.disconnect()
+    }
+
+    def 'shutting down the container should remove the listeners'() {
+        when:
+            weld.shutdown()
+
+        then:
+            3 * listenerManager.remove()
+    }
+
+    def 'shutting down the container without Javacord producer should not log an error'() {
+        when:
+            WeldInitiator
+                    .from(
+                            CommandHandlerJavacord,
+                            LoggerProducer
+                    )
+                    .addBeans(
+                            MockBean.builder()
+                                    .scope(ApplicationScoped)
+                                    .qualifiers(new AnnotationLiteral<Internal>() { })
+                                    .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
+                                    .creating(defaultPrefixProvider)
+                                    .build()
+                    )
+                    .build()
+                    .apply({ }, null)
+                    .evaluate()
+
+        then:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == ERROR }
+                    .empty
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'toString should start with class name'() {
+        expect:
+            commandHandlerJavacord.toString().startsWith("${commandHandlerJavacord.ci().getClass().simpleName}[")
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'toString should contain field name and value for "#field.name"'() {
+        when:
+            def toStringResult = commandHandlerJavacord.toString()
+
+        then:
+            toStringResult.contains("$field.name=")
+            field.type == String ?
+                    toStringResult.contains("'${field.get(commandHandlerJavacord.ci())}'") :
+                    toStringResult.contains(field.get(commandHandlerJavacord.ci()).toString())
+
+        where:
+            field << getAllInstanceFields(newInstance(getField(getClass(), 'commandHandlerJavacord').type))
+                    .findAll {
+                        !(it.name in [
+                                'logger',
+                                'discordApis',
+                                'discordApiCollections',
+                                'commandNotAllowedEvent',
+                                'commandNotFoundEvent',
+                                'defaultPrefixProvider',
+                                'commandByAlias',
+                                'commandPattern',
+                                'customPrefixProvider',
+                                'prefixProvider',
+                                'availableRestrictions',
+                                'readLock',
+                                'writeLock',
+                                'executorService'
+                        ])
+                    }
     }
 
     @ApplicationScoped

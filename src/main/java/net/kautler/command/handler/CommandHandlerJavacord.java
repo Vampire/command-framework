@@ -27,17 +27,22 @@ import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.event.message.MessageCreateEvent;
+import org.javacord.api.util.event.ListenerManager;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A command handler that handles Javacord messages.
@@ -76,6 +81,12 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      */
     @Inject
     private volatile Event<CommandNotFoundEventJavacord> commandNotFoundEvent;
+
+    /**
+     * The listener managers for the added listeners,
+     * so that they can easily be removed when the bean is destroyed.
+     */
+    private Collection<ListenerManager<?>> listenerManagers = emptyList();
 
     /**
      * Constructs a new Javacord command handler.
@@ -128,11 +139,22 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
             } else {
                 logger.info("DiscordApi and Collection<DiscordApi> injected, CommandHandlerJavacord will be used.");
             }
-            Stream.concat(
+
+            listenerManagers = Stream.concat(
                     discordApis.stream(),
                     discordApiCollections.stream().flatMap(Collection::stream)
-            ).forEach(discordApi -> discordApi.addMessageCreateListener(this::handleMessage));
+            )
+                    .map(discordApi -> discordApi.addMessageCreateListener(this::handleMessage))
+                    .collect(toList());
         }
+    }
+
+    /**
+     * Removes this command handler from the injected {@code DiscordApi} instances as message create listener.
+     */
+    @PreDestroy
+    private void removeListener() {
+        listenerManagers.forEach(ListenerManager::remove);
     }
 
     /**
@@ -163,5 +185,12 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
                         logger.error("Exception while executing command asynchronously", throwable);
                     }
                 });
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", CommandHandlerJavacord.class.getSimpleName() + "[", "]")
+                .add("listenerManagers=" + listenerManagers)
+                .toString();
     }
 }
