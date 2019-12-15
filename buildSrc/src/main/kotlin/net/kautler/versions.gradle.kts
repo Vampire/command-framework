@@ -39,7 +39,7 @@ repositories {
 val versions by extra(mapOf(
         // production versions
         "cdi" to "2.0",
-        "javacord" to "3.0.4",
+        "javacord" to "3.0.5",
         "javax.annotation-api" to "1.3.2",
         "javax.inject" to "1",
         "jda" to "4.0.0_52",

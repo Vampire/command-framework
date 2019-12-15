@@ -354,7 +354,7 @@ class CommandHandlerJavacordTest extends Specification {
 
     def 'asynchronous command execution should happen asynchronously'() {
         given:
-            def discordApi = new DiscordApiImpl(null, null, null, null, false)
+            def discordApi = new DiscordApiImpl(null, null, null, null, null, false)
             message.api >> discordApi
             def threadFuture = new CompletableFuture()
 
@@ -372,7 +372,7 @@ class CommandHandlerJavacordTest extends Specification {
 
     def 'asynchronous command execution should not log an error if none happened'() {
         given:
-            def discordApi = new DiscordApiImpl(null, null, null, null, false)
+            def discordApi = new DiscordApiImpl(null, null, null, null, null, false)
             message.api >> discordApi
 
         when:
@@ -394,7 +394,7 @@ class CommandHandlerJavacordTest extends Specification {
 
     def 'exception during asynchronous command execution should be logged properly'() {
         given:
-            def discordApi = new DiscordApiImpl(null, null, null, null, false)
+            def discordApi = new DiscordApiImpl(null, null, null, null, null, false)
             message.api >> discordApi
             def exception = new Exception()
 
