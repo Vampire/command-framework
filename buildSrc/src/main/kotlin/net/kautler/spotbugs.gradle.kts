@@ -32,7 +32,7 @@ plugins {
 val versions: Map<String, String> by project
 
 spotbugs {
-    toolVersion = versions["spotbugs"] ?: error("spotbugs version is missing")
+    toolVersion = versions.safeGet("spotbugs")
     reportLevel = string(project, "spotbugs.reportLevel", "low").getValue()
     @Suppress("UnstableApiUsage")
     excludeFilterConfig = resources.text.fromFile("config/spotbugs/spotbugs-exclude.xml")

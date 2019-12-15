@@ -23,7 +23,7 @@ plugins {
 val versions: Map<String, String> by project
 
 pmd {
-    toolVersion = versions["pmd"] ?: error("pmd version is missing")
+    toolVersion = versions.safeGet("pmd")
     // necessary due to https://github.com/gradle/gradle/issues/8514
     ruleSets.clear()
     ruleSetConfig = resources.text.fromFile("config/pmd/pmd.xml")

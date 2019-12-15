@@ -16,7 +16,6 @@
 
 package net.kautler
 
-import info.solidsoft.gradle.pitest.PitestTask
 import org.pitest.mutationtest.engine.gregor.config.Mutator
 import java.util.concurrent.TimeUnit.SECONDS
 import javax.naming.ConfigurationException
@@ -63,7 +62,7 @@ dependencies {
 }
 
 jacoco {
-    toolVersion = versions["jacoco"] ?: error("jacoco version is missing")
+    toolVersion = versions.safeGet("jacoco")
 }
 
 tasks.test {
@@ -118,7 +117,7 @@ tasks.check {
 }
 
 pitest {
-    pitestVersion(versions["pitest"] ?: error("pitest version is missing"))
+    pitestVersion(versions.safeGet("pitest"))
     // work-around for https://github.com/hcoles/pitest/pull/687
     testPlugin("spock")
     mutators(listOf(

@@ -89,7 +89,7 @@ configurations.configureEach {
     resolutionStrategy {
         eachDependency {
             if (requested.group == "org.codehaus.groovy") {
-                useVersion(versions["groovy"] ?: error("groovy version is missing"))
+                useVersion(versions.safeGet("groovy"))
             }
         }
     }

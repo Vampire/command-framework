@@ -24,7 +24,7 @@ plugins {
 val versions: Map<String, String> by project
 
 codenarc {
-    toolVersion = versions["codenarc"] ?: error("codenarc version is missing")
+    toolVersion = versions.safeGet("codenarc")
     // customized copy from http://codenarc.sourceforge.net/StarterRuleSet-AllRulesByCategory.groovy.txt
     // update with new rules when version is updated (previous version: 1.4)
     config = resources.text.fromFile("config/codenarc/codenarc.groovy")
