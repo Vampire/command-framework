@@ -35,7 +35,7 @@ public class Version {
      * The resource from which the version properties are read.
      */
     private static final URL versionPropertiesResource =
-            Version.class.getResource("../version.properties");
+            Version.class.getResource("version.properties");
 
     /**
      * The version of this library.

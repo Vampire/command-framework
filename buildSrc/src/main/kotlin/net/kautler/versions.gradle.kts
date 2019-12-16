@@ -81,7 +81,7 @@ dependencies {
 
 normalization {
     runtimeClasspath {
-        ignore("net/kautler/command/version.properties")
+        ignore("net/kautler/command/api/version.properties")
     }
 }
 
@@ -111,7 +111,7 @@ tasks.processResources {
     inputs.property("commitId", commitId)
     inputs.property("buildTimestamp", now)
     filteringCharset = "ISO-8859-1"
-    filesMatching("net/kautler/command/version.properties") {
+    filesMatching("net/kautler/command/api/version.properties") {
         expand(
                 "version" to version,
                 "commitId" to commitId,
