@@ -357,6 +357,10 @@ tasks.beforeReleaseBuild {
     dependsOn(tasks.named("pitest"))
 }
 
+tasks.closeRepository {
+    enabled = releaseVersion
+}
+
 tasks.publish {
     dependsOn(tasks.closeRepository)
 }
