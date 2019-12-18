@@ -18,6 +18,7 @@ package net.kautler.command.handler
 
 import net.kautler.command.Internal
 import net.kautler.command.LoggerProducer
+import net.kautler.command.api.AliasAndParameterStringTransformer
 import net.kautler.command.api.Command
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord
@@ -225,6 +226,31 @@ class CommandHandlerJavacordTest extends Specification {
 
         then:
             1 * commandHandlerJavacord.doSetCustomPrefixProvider(customPrefixProvider) >> { }
+    }
+
+    def 'an injector method for alias and parameter string transformer should exist and forward to the common base class'() {
+        given:
+            CommandHandlerJavacord commandHandlerJavacord = Spy(useObjenesis: true)
+            Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer = Stub()
+
+        when:
+            def aliasAndParameterStringTransformerInjectors = CommandHandlerJavacord
+                    .declaredMethods
+                    .findAll {
+                        it.getAnnotation(Inject) &&
+                                it.genericParameterTypes ==
+                                [new TypeLiteral<Instance<AliasAndParameterStringTransformer<? super Message>>>() { }.type] as Type[]
+                    }
+                    .each { it.accessible = true }
+
+        then:
+            aliasAndParameterStringTransformerInjectors.size() == 1
+
+        when:
+            aliasAndParameterStringTransformerInjectors.first().invoke(commandHandlerJavacord, aliasAndParameterStringTransformer)
+
+        then:
+            1 * commandHandlerJavacord.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer) >> { }
     }
 
     @Use(ContextualInstanceCategory)
@@ -483,6 +509,8 @@ class CommandHandlerJavacordTest extends Specification {
                                 'commandPattern',
                                 'customPrefixProvider',
                                 'prefixProvider',
+                                'injectedAliasAndParameterStringTransformer',
+                                'aliasAndParameterStringTransformer',
                                 'availableRestrictions',
                                 'readLock',
                                 'writeLock',

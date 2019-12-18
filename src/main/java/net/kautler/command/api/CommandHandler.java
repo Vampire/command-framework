@@ -104,6 +104,16 @@ public abstract class CommandHandler<M> {
     private volatile PrefixProvider<? super M> prefixProvider;
 
     /**
+     * The alias and parameter string transformer that was provided.
+     */
+    private volatile Instance<AliasAndParameterStringTransformer<? super M>> injectedAliasAndParameterStringTransformer;
+
+    /**
+     * The alias and parameter string transformer that is used.
+     */
+    private volatile AliasAndParameterStringTransformer<? super M> aliasAndParameterStringTransformer;
+
+    /**
      * The available restrictions for this command handler.
      */
     private final RestrictionLookup<M> availableRestrictions = new RestrictionLookup<>();
@@ -239,14 +249,45 @@ public abstract class CommandHandler<M> {
     }
 
     /**
-     * Determines whether a custom prefix provider or the default prefix provider should be used.
+     * Sets the custom alias and parameter string transformer for this command handler.
+     *
+     * <p>A subclass will typically have a method where it gets this injected, specific to the handled message type,
+     * and forwards its parameter as argument to this method like
+     *
+     * <pre>{@code
+     * }&#64;{@code Inject
+     * private void setAliasAndParameterStringTransformer(
+     *         Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer) {
+     *     doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer);
+     * }
+     * }</pre>
+     *
+     * <p><b>Important:</b> This method should be called directly in the injectable method as shown above, not in some
+     * {@link PostConstruct @PostConstruct} annotated method, as the {@code @PostConstruct} stage is used to decide
+     * whether an alias and parameter string transformer should be used, so it has to already be set at that point.
+     *
+     * @param aliasAndParameterStringTransformer the alias and parameter string transformer for this command handler
+     */
+    protected void doSetAliasAndParameterStringTransformer(
+            Instance<AliasAndParameterStringTransformer<? super M>> aliasAndParameterStringTransformer) {
+        this.injectedAliasAndParameterStringTransformer = aliasAndParameterStringTransformer;
+    }
+
+    /**
+     * Determines whether a custom prefix provider or the default prefix provider should be used
+     * and whether an alias and parameter string transformer is provided.
      */
     @PostConstruct
-    private void determinePrefixProvider() {
+    private void determineProcessors() {
         prefixProvider = ((customPrefixProvider == null) || customPrefixProvider.isUnsatisfied()
                 ? defaultPrefixProvider
                 : customPrefixProvider)
                 .get();
+
+        if ((injectedAliasAndParameterStringTransformer != null)
+                && (!injectedAliasAndParameterStringTransformer.isUnsatisfied())) {
+            aliasAndParameterStringTransformer = injectedAliasAndParameterStringTransformer.get();
+        }
     }
 
     /**
@@ -286,27 +327,66 @@ public abstract class CommandHandler<M> {
         }
         if (messageContent.startsWith(prefix)) {
             String messageContentWithoutPrefix = messageContent.substring(prefix.length()).trim();
-            Matcher commandMatcher = commandPattern.matcher(messageContentWithoutPrefix);
-            if (commandMatcher.find()) {
-                String usedAlias = commandMatcher.group("alias");
-                Command<? super M> command = commandByAlias.get(usedAlias);
-                if (isCommandAllowed(message, command)) {
-                    Runnable commandExecutor = () -> command.execute(message, prefix, usedAlias, commandMatcher.group("parameterString"));
-                    if (command.isAsynchronous()) {
-                        executeAsync(message, commandExecutor);
-                    } else {
-                        commandExecutor.run();
-                    }
-                } else {
-                    logger.debug("Command {} was not allowed by restrictions", command);
-                    fireCommandNotAllowedEvent(message, prefix, usedAlias);
-                }
-            } else {
+            AliasAndParameterString aliasAndParameterString =
+                    determineAliasAndParameterString(message, messageContentWithoutPrefix);
+
+            // no alias determined => command not found
+            if (aliasAndParameterString == null) {
                 logger.debug("No matching command found");
                 String[] parameters = getParameters(messageContentWithoutPrefix, 2);
                 fireCommandNotFoundEvent(message, prefix, parameters.length == 0 ? "" : parameters[0]);
+                return;
+            }
+
+            String usedAlias = aliasAndParameterString.getAlias();
+            Command<? super M> command = commandByAlias.get(usedAlias);
+            // alias did not match any command => command not found
+            if (command == null) {
+                logger.debug("No matching command found");
+                fireCommandNotFoundEvent(message, prefix, usedAlias);
+                return;
+            }
+
+            if (isCommandAllowed(message, command)) {
+                String parameterString = aliasAndParameterString.getParameterString();
+                Runnable commandExecutor = () -> command.execute(message, prefix, usedAlias, parameterString);
+                if (command.isAsynchronous()) {
+                    executeAsync(message, commandExecutor);
+                } else {
+                    commandExecutor.run();
+                }
+            } else {
+                logger.debug("Command {} was not allowed by restrictions", command);
+                fireCommandNotAllowedEvent(message, prefix, usedAlias);
             }
         }
+    }
+
+    /**
+     * Determines the alias and parameter string from the given message and content without prefix.
+     *
+     * @param message                     the message from which to determine the details
+     * @param messageContentWithoutPrefix the message content without prefix
+     * @return the alias and parameter string from the given message and content
+     */
+    private AliasAndParameterString determineAliasAndParameterString(M message, String messageContentWithoutPrefix) {
+        Matcher commandMatcher = commandPattern.matcher(messageContentWithoutPrefix);
+
+        AliasAndParameterString aliasAndParameterString = null;
+
+        // get the alias and parameter string from the defined aliases
+        if (commandMatcher.find()) {
+            String usedAlias = commandMatcher.group("alias");
+            String parameterString = commandMatcher.group("parameterString");
+            aliasAndParameterString = new AliasAndParameterString(usedAlias, parameterString);
+        }
+
+        // use the alias and parameter string transformer if provided
+        if (aliasAndParameterStringTransformer == null) {
+            return aliasAndParameterString;
+        }
+        return aliasAndParameterStringTransformer
+                .transformAliasAndParameterString(message, aliasAndParameterString);
     }
 
     /**

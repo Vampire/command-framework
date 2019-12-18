@@ -52,6 +52,7 @@
                     <Method name="setAvailableRestrictions" params="javax.enterprise.inject.Instance" returns="void"/>
                     <Method name="setCommands" params="javax.enterprise.inject.Instance" returns="void"/>
                     <Method name="setCustomPrefixProvider" params="javax.enterprise.inject.Instance" returns="void"/>
+                    <Method name="setAliasAndParameterStringTransformer" params="javax.enterprise.inject.Instance" returns="void"/>
                 </Or>
             </And>
         </Or>

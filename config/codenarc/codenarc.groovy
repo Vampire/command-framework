@@ -30,7 +30,11 @@ ruleset {
     BrokenOddnessCheck
     ClassForName
     ComparisonOfTwoConstants
-    ComparisonWithSelf
+    ComparisonWithSelf {
+        doNotApplyToClassNames = [
+                'net.kautler.command.api.AliasAndParameterStringTest'
+        ].join(', ')
+    }
     ConstantAssertExpression
     ConstantIfExpression
     ConstantTernaryExpression
@@ -276,7 +280,11 @@ ruleset {
         ].join(', ')
     }
     ExplicitCallToDivMethod
-    ExplicitCallToEqualsMethod
+    ExplicitCallToEqualsMethod {
+        doNotApplyToClassNames = [
+                'net.kautler.command.api.AliasAndParameterStringTest'
+        ].join(', ')
+    }
     ExplicitCallToGetAtMethod
     ExplicitCallToLeftShiftMethod
     ExplicitCallToMinusMethod
@@ -391,7 +399,9 @@ ruleset {
 
     // rulesets/size.xml
     //AbcMetric   // Requires the GMetrics jar
-    ClassSize
+    ClassSize {
+        maxLines = 1500
+    }
     //CrapMetric   // Requires the GMetrics jar and a Cobertura coverage file
     //CyclomaticComplexity   // Requires the GMetrics jar
     //MethodCount

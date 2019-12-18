@@ -17,6 +17,7 @@
 package net.kautler.command.handler;
 
 import net.kautler.command.Internal;
+import net.kautler.command.api.AliasAndParameterStringTransformer;
 import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandHandler;
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord;
@@ -122,6 +123,17 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     @Inject
     private void setCustomPrefixProvider(Instance<PrefixProvider<? super Message>> customPrefixProvider) {
         doSetCustomPrefixProvider(customPrefixProvider);
+    }
+
+    /**
+     * Sets the alias and parameter string transformer for this command handler.
+     *
+     * @param aliasAndParameterStringTransformer the alias and parameter string transformer for this command handler
+     */
+    @Inject
+    private void setAliasAndParameterStringTransformer(
+            Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer) {
+        doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer);
     }
 
     /**

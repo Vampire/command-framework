@@ -207,7 +207,9 @@
                     \QFound 'DU'-anomaly for variable 'result' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'usageTree' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'seen' (lines '\E.* |
-                    \QFound 'DD'-anomaly for variable 'distance' (lines '\E.*
+                    \QFound 'DD'-anomaly for variable 'distance' (lines '\E.* |
+                    \QFound 'DD'-anomaly for variable 'aliasAndParameterString' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'parameterString' (lines '\E.*
                 </value>
             </property>
         </properties>

@@ -167,8 +167,15 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "getUsageContext",
                     "(Lnet/kautler/command/usage/UsageParserRuleContext;)Lnet/kautler/command/usage/UsageParser$UsageContext;",
                     "org.pitest.mutationtest.engine.gregor.mutators.NonVoidMethodCallMutator",
-                    "removed call to org/antlr/v4/runtime/RuleContext::getParent")
-    ).collect(groupingBy(ExplicitMutationFilterDetails::getClazz));
+                    "removed call to org/antlr/v4/runtime/RuleContext::getParent"),
+            // giving a 3 instead of 2 element array to Objects.hash can be killed, but we do not want to
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.api.AliasAndParameterString",
+                    "hashCode",
+                    "()I",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3")
+            ).collect(groupingBy(ExplicitMutationFilterDetails::getClazz));
 
     // work-around for https://github.com/hcoles/pitest/issues/689
     static {

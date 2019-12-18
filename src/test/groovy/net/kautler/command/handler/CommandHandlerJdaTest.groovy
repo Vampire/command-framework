@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.kautler.command.Internal
 import net.kautler.command.LoggerProducer
+import net.kautler.command.api.AliasAndParameterStringTransformer
 import net.kautler.command.api.Command
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
 import net.kautler.command.api.event.jda.CommandNotFoundEventJda
@@ -236,6 +237,31 @@ class CommandHandlerJdaTest extends Specification {
 
         then:
             1 * commandHandlerJda.doSetCustomPrefixProvider(customPrefixProvider) >> { }
+    }
+
+    def 'an injector method for alias and parameter string transformer should exist and forward to the common base class'() {
+        given:
+            CommandHandlerJda commandHandlerJda = Spy(useObjenesis: true)
+            Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer = Stub()
+
+        when:
+            def aliasAndParameterStringTransformerInjectors = CommandHandlerJda
+                    .declaredMethods
+                    .findAll {
+                        it.getAnnotation(Inject) &&
+                                it.genericParameterTypes ==
+                                [new TypeLiteral<Instance<AliasAndParameterStringTransformer<? super Message>>>() { }.type] as Type[]
+                    }
+                    .each { it.accessible = true }
+
+        then:
+            aliasAndParameterStringTransformerInjectors.size() == 1
+
+        when:
+            aliasAndParameterStringTransformerInjectors.first().invoke(commandHandlerJda, aliasAndParameterStringTransformer)
+
+        then:
+            1 * commandHandlerJda.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer) >> { }
     }
 
     @Use(ContextualInstanceCategory)

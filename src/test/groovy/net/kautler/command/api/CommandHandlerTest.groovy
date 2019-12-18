@@ -67,6 +67,8 @@ class CommandHandlerTest extends Specification {
 
     PrefixProvider<Object> defaultPrefixProvider = Mock()
 
+    AliasAndParameterStringTransformer<Object> aliasAndParameterStringTransformer = Mock()
+
     @Rule
     WeldInitiator weld = WeldInitiator
             .from(
@@ -114,6 +116,11 @@ class CommandHandlerTest extends Specification {
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
                             .creating(customPrefixProvider)
+                            .build(),
+                    MockBean.builder()
+                            .scope(ApplicationScoped)
+                            .types(new TypeLiteral<AliasAndParameterStringTransformer<Object>>() { }.type)
+                            .creating(aliasAndParameterStringTransformer)
                             .build()
             )
             .inject(this)
@@ -131,6 +138,9 @@ class CommandHandlerTest extends Specification {
 
     @Inject
     Instance<PrefixProvider<? super Object>> customPrefixProviderInstance
+
+    @Inject
+    Instance<AliasAndParameterStringTransformer<? super Object>> aliasAndParameterStringTransformerInstance
 
     def readLocks = 0
 
@@ -255,7 +265,7 @@ class CommandHandlerTest extends Specification {
     def 'the default prefix provider should be chosen if no custom prefix provider is set'() {
         given:
             commandHandler.doSetCustomPrefixProvider(null)
-            commandHandler.ci().invokeMethod('determinePrefixProvider')
+            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -273,7 +283,7 @@ class CommandHandlerTest extends Specification {
 
         and:
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-            commandHandler.ci().invokeMethod('determinePrefixProvider')
+            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -287,7 +297,7 @@ class CommandHandlerTest extends Specification {
     def 'a custom prefix provider should be chosen over the default prefix provider'() {
         given:
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-            commandHandler.ci().invokeMethod('determinePrefixProvider')
+            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -340,7 +350,7 @@ class CommandHandlerTest extends Specification {
         given:
             1 * customPrefixProvider.getCommandPrefix(_) >> ''
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-            commandHandler.ci().invokeMethod('determinePrefixProvider')
+            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -371,7 +381,7 @@ class CommandHandlerTest extends Specification {
         given:
             1 * customPrefixProvider.getCommandPrefix(_) >> '!'
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-            commandHandler.ci().invokeMethod('determinePrefixProvider')
+            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -687,6 +697,254 @@ class CommandHandlerTest extends Specification {
             command    | _
             'command1' | _
             'command2' | _
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'no alias and parameter string transformer should be used if none is available'() {
+        given:
+            def aliasAndParameterStringTransformerInstance = Spy(aliasAndParameterStringTransformerInstance)
+            aliasAndParameterStringTransformerInstance.unsatisfied >> true
+
+        and:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+
+        when:
+            commandHandler.ci().invokeMethod('determineProcessors')
+
+        then:
+            commandHandler.ci().getInternalState('aliasAndParameterStringTransformer') == null
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'message with correct prefix but wrong trigger should call alias and parameter string transformer with null argument'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+
+        when:
+            commandHandler.doHandleMessage(this, '!nocommand')
+
+        then:
+            1 * aliasAndParameterStringTransformer.transformAliasAndParameterString(this, null)
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'message with correct prefix and trigger should call alias and parameter string transformer with respective argument for #command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+            command = this."$command"
+
+        when:
+            commandHandler.doHandleMessage(this, "!${command.aliases.first()} foo bar")
+
+        then:
+            1 * aliasAndParameterStringTransformer.transformAliasAndParameterString(this) {
+                it.alias == command.aliases.first()
+                it.parameterString == 'foo bar'
+            }
+
+        where:
+            command    | _
+            'command1' | _
+            'command2' | _
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'command not found event should be fired if alias and parameter string transformer returns null for #command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+            command = command ? this."$command" : null
+            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
+
+        and:
+            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >> null
+
+        when:
+            commandHandler.doHandleMessage(this, "!$alias")
+
+        then:
+            1 * commandHandlerDelegate.fireCommandNotFoundEvent(this, '!', alias ?: '')
+
+        where:
+            command    | _
+            'command1' | _
+            'command2' | _
+            null       | _
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'command not found event should be logged if alias and parameter string transformer returns null for #command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+            command = command ? this."$command" : null
+            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
+
+        and:
+            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >> null
+
+        when:
+            commandHandler.doHandleMessage(this, "!$alias")
+
+        then:
+            def expectedMessage = 'No matching command found'
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any { it.message.formattedMessage == expectedMessage }
+
+        where:
+            command    | _
+            'command1' | _
+            'command2' | _
+            null       | _
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'command not found event should be fired if alias and parameter string transformer returns non-existent alias for #command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+            command = command ? this."$command" : null
+            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
+
+        and:
+            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >>
+                    new AliasAndParameterString('nocommand', '')
+
+        when:
+            commandHandler.doHandleMessage(this, "!$alias")
+
+        then:
+            1 * commandHandlerDelegate.fireCommandNotFoundEvent(this, '!', 'nocommand')
+
+        where:
+            command    | _
+            'command1' | _
+            'command2' | _
+            null       | _
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'command not found event should be logged if alias and parameter string transformer returns non-existent alias for #command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+            command = command ? this."$command" : null
+            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
+
+        and:
+            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >> new AliasAndParameterString('nocommand', '')
+
+        when:
+            commandHandler.doHandleMessage(this, "!$alias")
+
+        then:
+            def expectedMessage = 'No matching command found'
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any { it.message.formattedMessage == expectedMessage }
+
+        where:
+            command    | _
+            'command1' | _
+            'command2' | _
+            null       | _
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'command not found event should not be fired if alias and parameter string transformer returns existent alias for #command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+            command = command ? this."$command" : null
+            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
+
+        and:
+            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >>
+                    new AliasAndParameterString(command1.aliases.first(), '')
+
+        when:
+            commandHandler.doHandleMessage(this, "!$alias")
+
+        then:
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(this, *_)
+
+        where:
+            command    | _
+            'command1' | _
+            'command2' | _
+            null       | _
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'command not found event should not be logged if alias and parameter string transformer returns existent alias for #command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+            command = command ? this."$command" : null
+            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
+
+        and:
+            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >>
+                    new AliasAndParameterString(command1.aliases.first(), '')
+
+        when:
+            commandHandler.doHandleMessage(this, "!$alias")
+
+        then:
+            def notExpectedMessage = 'No matching command found'
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .every { it.message.formattedMessage != notExpectedMessage }
+
+        where:
+            command    | _
+            'command1' | _
+            'command2' | _
+            null       | _
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'command1 should be triggered if alias and parameter string transformer returns its alias for #command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
+            commandHandler.ci().invokeMethod('determineProcessors')
+            command = command ? this."$command" : null
+            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
+
+        and:
+            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >>
+                    new AliasAndParameterString(command1.aliases.first(), '')
+
+        when:
+            commandHandler.doHandleMessage(this, "!$alias")
+
+        then:
+            1 * command1.execute(this, '!', command1.aliases.first(), '')
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        where:
+            command    | _
+            'command1' | _
+            'command2' | _
+            null       | _
     }
 
     @Use([ContextualInstanceCategory, PrivateFinalFieldSetterCategory, Whitebox])

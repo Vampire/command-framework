@@ -39,6 +39,7 @@ Table of Contents
     * [Command Usage](#command-usage)
     * [Parsing Parameters](#parsing-parameters)
     * [Customizing Command Prefix](#customizing-command-prefix)
+    * [Customizing Alias Calculation](#customizing-alias-calculation)
   * [CDI Events](#cdi-events)
     * [Handling Missing Commands](#handling-missing-commands)
     * [Handling Disallowed Commands](#handling-disallowed-commands)
@@ -409,6 +410,50 @@ public class MentionPrefixProvider extends MentionPrefixProviderJavacord {
 }
 ```
 
+#### Customizing Alias Calculation
+
+The alias calculation can be customized by providing a CDI bean that implements the
+[`AliasAndParameterStringTransformer`][AliasAndParameterStringTransformer JavaDoc] interface. In the implementation of
+the `transformAliasAndParameterString` method you can determine from the message that caused the processing what the
+alias and parameter string should be. The transformer is called after the alias and parameter string are determined from
+the message using all registered aliases and before the command is resolved from the alias. If an alias was found from
+the registered aliases, the `aliasAndParameterString` parameter contains the found information. If no alias was found,
+the parameter will be `null`. The fields in the `AliasAndParameterString` object are always non-`null`.
+
+The transformer can then either accept the found alias and parameter string by returning the argument directly, or it
+can determine a new alias and parameter string and return these. The return value of the transformer will be used for
+further processing. If the alias in the returned object is not one of the registered aliases or the transformer returns
+`null`, there will not be any command found and the respective CDI event will be fired.
+
+Example use-cases for this are:
+
+- fuzzy-searching for mistyped aliases and their automatic correction (this could also be used for just a
+  "did you mean X" response, but for that the command not found events are probably better suited)
+
+- having a command that forwards to one command in one channel but to another command in another channel,
+  like `!player` that forwards to `!mc:player` in an MC channel but to `!s4:player` in an S4 channel
+
+- supporting something like `!runas @other-user foo bar baz`, where the transformer will transform that to alias
+  `foo` and parameter string `bar baz` and then a custom `Restriction` can check whether the message author has
+  the permissions to use `!runas` and then for example whether the `other-user` would have permissions for the
+  `foo` command and only then allow it to proceed
+
+- forwarding to a `!help` command if an unknown command was issued
+
+_**Example:**_
+```java
+@ApplicationScoped
+public class MyAliasAndParameterStringTransformer implements AliasAndParameterStringTransformer<Message> {
+    @Override
+    public AliasAndParameterString transformAliasAndParameterString(
+            Message message, AliasAndParameterString aliasAndParameterString) {
+        return (aliasAndParameterString == null)
+                ? new AliasAndParameterString("help", "")
+                : aliasAndParameterString;
+    }
+}
+```
+
 ### CDI Events
 
 #### Handling Missing Commands
@@ -557,6 +602,8 @@ limitations under the License.
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/ParameterParser.html
 [PrefixProvider JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/prefix/PrefixProvider.html
+[AliasAndParameterStringTransformer JavaDoc]:
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/AliasAndParameterStringTransformer.html
 [@RestrictedTo JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/annotation/RestrictedTo.html
 [Restriction JavaDoc]:
