@@ -18,4 +18,27 @@
 <beans xmlns="http://xmlns.jcp.org/xml/ns/javaee"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/beans_1_1.xsd"
-       bean-discovery-mode="annotated"/>
+       bean-discovery-mode="annotated">
+    <scan>
+        <exclude name="net.kautler.command.api.ParameterParser">
+            <if-class-not-available name="org.antlr.v4.runtime.Parser"/>
+        </exclude>
+        <exclude name="net.kautler.command.usage.UsagePatternBuilder">
+            <if-class-not-available name="org.antlr.v4.runtime.Parser"/>
+        </exclude>
+
+        <exclude name="net.kautler.command.api.restriction.javacord.*">
+            <if-class-not-available name="org.javacord.api.Javacord"/>
+        </exclude>
+        <exclude name="net.kautler.command.handler.CommandHandlerJavacord">
+            <if-class-not-available name="org.javacord.api.Javacord"/>
+        </exclude>
+
+        <exclude name="net.kautler.command.api.restriction.jda.*">
+            <if-class-not-available name="net.dv8tion.jda.api.JDA"/>
+        </exclude>
+        <exclude name="net.kautler.command.handler.CommandHandlerJda">
+            <if-class-not-available name="net.dv8tion.jda.api.JDA"/>
+        </exclude>
+    </scan>
+</beans>
