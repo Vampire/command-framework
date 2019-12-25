@@ -20,7 +20,6 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.kautler.command.Internal
 import net.kautler.command.LoggerProducer
@@ -160,10 +159,6 @@ class CommandHandlerJdaTest extends Specification {
         it.message >> message
     }
 
-    PrivateMessageReceivedEvent privateMessageReceivedEvent = Stub {
-        it.message >> message
-    }
-
     def 'an injector method for available restrictions should exist and forward to the common base class'() {
         given:
             CommandHandlerJda commandHandlerJda = Spy(useObjenesis: true)
@@ -290,12 +285,11 @@ class CommandHandlerJdaTest extends Specification {
                 1 * it.addEventListener(_) >> {
                     it.first().each {
                         it.onEvent(messageReceivedEvent)
-                        it.onEvent(privateMessageReceivedEvent)
                         it.onEvent(otherEvent)
                     }
                 }
             }
-            12 * commandHandlerJda.doHandleMessage(message, message.contentRaw) >> { }
+            6 * commandHandlerJda.doHandleMessage(message, message.contentRaw) >> { }
             0 * commandHandlerJda.doHandleMessage(*_)
     }
 

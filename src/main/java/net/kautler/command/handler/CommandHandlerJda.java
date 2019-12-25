@@ -20,7 +20,6 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.hooks.SubscribeEvent;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -205,8 +204,6 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     public void onEvent(GenericEvent event) {
         if (event instanceof MessageReceivedEvent) {
             onMessageReceived((MessageReceivedEvent) event);
-        } else if (event instanceof PrivateMessageReceivedEvent) {
-            onPrivateMessageReceived((PrivateMessageReceivedEvent) event);
         }
     }
 
@@ -218,17 +215,6 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     @SubscribeEvent
     private void onMessageReceived(MessageReceivedEvent messageReceivedEvent) {
         Message message = messageReceivedEvent.getMessage();
-        doHandleMessage(message, message.getContentRaw());
-    }
-
-    /**
-     * Handles the actual private messages received.
-     *
-     * @param privateMessageReceivedEvent the private message received event
-     */
-    @SubscribeEvent
-    private void onPrivateMessageReceived(PrivateMessageReceivedEvent privateMessageReceivedEvent) {
-        Message message = privateMessageReceivedEvent.getMessage();
         doHandleMessage(message, message.getContentRaw());
     }
 
