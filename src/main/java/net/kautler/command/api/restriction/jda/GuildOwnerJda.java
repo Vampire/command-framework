@@ -26,15 +26,15 @@ import java.util.Optional;
 import static java.lang.Boolean.FALSE;
 
 /**
- * A restriction that allows a command for the server owner and is evaluated by the JDA command handler.
- * If a message is not sent on a server, this restriction always denies.
+ * A restriction that allows a command for the guild owner and is evaluated by the JDA command handler.
+ * If a message is not sent on a guild, this restriction always denies.
  */
 @ApplicationScoped
-public class ServerOwnerJda implements Restriction<Message> {
+public class GuildOwnerJda implements Restriction<Message> {
     /**
-     * Constructs a new server owner restriction.
+     * Constructs a new guild owner restriction.
      */
-    private ServerOwnerJda() {
+    private GuildOwnerJda() {
     }
 
     @Override

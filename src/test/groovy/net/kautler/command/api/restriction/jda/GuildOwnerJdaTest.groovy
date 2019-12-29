@@ -25,36 +25,36 @@ import spock.lang.Subject
 
 import javax.inject.Inject
 
-class ServerOwnerJdaTest extends Specification {
+class GuildOwnerJdaTest extends Specification {
     @Rule
     WeldInitiator weld = WeldInitiator
-            .from(ServerOwnerJda)
+            .from(GuildOwnerJda)
             .inject(this)
             .build()
 
     @Inject
     @Subject
-    ServerOwnerJda serverOwnerJda
+    GuildOwnerJda guildOwnerJda
 
     Message message = Stub {
         it.member >> null
     }
 
-    Message serverMessage = Stub {
+    Message guildMessage = Stub {
         it.member >> Stub(Member)
     }
 
-    def 'server owner "#serverOwner" should #be allowed'() {
+    def 'guild owner "#guildOwner" should #be allowed'() {
         given:
-            serverMessage.member.owner >> serverOwner
+            guildMessage.member.owner >> guildOwner
 
         expect:
-            !serverOwnerJda.allowCommand(message)
-            serverOwnerJda.allowCommand(serverMessage) == allowed
+            !guildOwnerJda.allowCommand(message)
+            guildOwnerJda.allowCommand(guildMessage) == allowed
 
         where:
-            serverOwner || allowed | be
-            true        || true    | 'be'
-            false       || false   | 'not be'
+            guildOwner || allowed | be
+            true       || true    | 'be'
+            false      || false   | 'not be'
     }
 }

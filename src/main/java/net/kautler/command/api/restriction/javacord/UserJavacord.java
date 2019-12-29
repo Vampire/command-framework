@@ -57,7 +57,7 @@ public abstract class UserJavacord implements Restriction<Message> {
     private final Pattern userPattern;
 
     /**
-     * Constructs a new user restriction for checking the channel ID.
+     * Constructs a new user restriction for checking the user ID.
      *
      * @param userId the ID of the user for whom a command should be allowed
      */

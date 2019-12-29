@@ -58,7 +58,7 @@ class NsfwChannelJdaTest extends Specification {
             false || false   | 'not be'
     }
 
-    def 'non-server channel should not be allowed'() {
+    def 'non-guild channel should not be allowed'() {
         given:
             with(message) {
                 isFromType(TEXT) >> false

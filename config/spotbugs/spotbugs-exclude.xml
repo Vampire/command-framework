@@ -79,8 +79,8 @@
             <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord"/>
             <Class name="net.kautler.command.api.restriction.javacord.UserJavacord"/>
             <Class name="net.kautler.command.api.restriction.jda.ChannelJda"/>
+            <Class name="net.kautler.command.api.restriction.jda.GuildJda"/>
             <Class name="net.kautler.command.api.restriction.jda.RoleJda"/>
-            <Class name="net.kautler.command.api.restriction.jda.ServerJda"/>
             <Class name="net.kautler.command.api.restriction.jda.UserJda"/>
         </Or>
         <Or>

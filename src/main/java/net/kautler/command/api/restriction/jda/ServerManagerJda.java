@@ -27,7 +27,7 @@ import static net.dv8tion.jda.api.Permission.MANAGE_SERVER;
 
 /**
  * A restriction that allows a command for server managers and is evaluated by the JDA command handler.
- * If a message is not sent on a server, this restriction always denies.
+ * If a message is not sent on a guild, this restriction always denies.
  */
 @ApplicationScoped
 public class ServerManagerJda implements Restriction<Message> {

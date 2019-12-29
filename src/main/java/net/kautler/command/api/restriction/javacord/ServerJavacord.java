@@ -57,7 +57,7 @@ public abstract class ServerJavacord implements Restriction<Message> {
     private final Pattern serverPattern;
 
     /**
-     * Constructs a new server restriction for checking the channel ID.
+     * Constructs a new server restriction for checking the server ID.
      *
      * @param serverId the ID of the server where a command should be allowed
      */

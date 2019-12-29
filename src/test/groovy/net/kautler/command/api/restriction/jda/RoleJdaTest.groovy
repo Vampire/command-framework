@@ -57,7 +57,7 @@ class RoleJdaTest extends Specification {
         it.name >> lowerRoleName
     }
 
-    Guild server = Stub(Guild) {
+    Guild guild = Stub(Guild) {
         it.roles >> [higherRole, lowerRole]
         getRoleById(higherRoleId) >> higherRole
         getRoleById(lowerRoleId) >> lowerRole
@@ -68,10 +68,10 @@ class RoleJdaTest extends Specification {
         getRolesByName({ it.equalsIgnoreCase(lowerRoleName) }, true) >> [lowerRole]
     }
 
-    Message serverMessage = Stub {
+    Message guildMessage = Stub {
         it.channelType >> TEXT
         it.member >> Stub(Member)
-        it.guild >> server
+        it.guild >> guild
     }
 
     def setup() {
@@ -85,11 +85,11 @@ class RoleJdaTest extends Specification {
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
-            serverMessage.member.roles >> actualRoles
+            guildMessage.member.roles >> actualRoles
 
         expect:
             !roleJda.allowCommand(message)
-            roleJda.allowCommand(serverMessage) == allowed
+            roleJda.allowCommand(guildMessage) == allowed
 
         where:
             [expectedRoleId, actualRoles] << [
@@ -107,11 +107,11 @@ class RoleJdaTest extends Specification {
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
-            serverMessage.member.roles >> actualRoles
+            guildMessage.member.roles >> actualRoles
 
         expect:
             !roleJda.allowCommand(message)
-            roleJda.allowCommand(serverMessage) == allowed
+            roleJda.allowCommand(guildMessage) == allowed
 
         where:
             [expectedRoleId, actualRoles] << [
@@ -129,11 +129,11 @@ class RoleJdaTest extends Specification {
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
-            serverMessage.member.roles >> actualRoles
+            guildMessage.member.roles >> actualRoles
 
         expect:
             !roleJda.allowCommand(message)
-            roleJda.allowCommand(serverMessage) == allowed
+            roleJda.allowCommand(guildMessage) == allowed
 
         where:
             [expectedRoleName, actualRoles] << [
@@ -152,11 +152,11 @@ class RoleJdaTest extends Specification {
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
-            serverMessage.member.roles >> actualRoles
+            guildMessage.member.roles >> actualRoles
 
         expect:
             !roleJda.allowCommand(message)
-            roleJda.allowCommand(serverMessage) == allowed
+            roleJda.allowCommand(guildMessage) == allowed
 
         where:
             [expectedRoleName, actualRoles] << [
@@ -175,11 +175,11 @@ class RoleJdaTest extends Specification {
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
-            serverMessage.member.roles >> actualRoles
+            guildMessage.member.roles >> actualRoles
 
         expect:
             !roleJda.allowCommand(message)
-            roleJda.allowCommand(serverMessage) == allowed
+            roleJda.allowCommand(guildMessage) == allowed
 
         where:
             [expectedRoleName, actualRoles] << [
@@ -198,11 +198,11 @@ class RoleJdaTest extends Specification {
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
-            serverMessage.member.roles >> actualRoles
+            guildMessage.member.roles >> actualRoles
 
         expect:
             !roleJda.allowCommand(message)
-            roleJda.allowCommand(serverMessage) == allowed
+            roleJda.allowCommand(guildMessage) == allowed
 
         where:
             [expectedRoleName, actualRoles] << [
@@ -221,11 +221,11 @@ class RoleJdaTest extends Specification {
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
-            serverMessage.member.roles >> actualRoles
+            guildMessage.member.roles >> actualRoles
 
         expect:
             !roleJda.allowCommand(message)
-            roleJda.allowCommand(serverMessage) == allowed
+            roleJda.allowCommand(guildMessage) == allowed
 
         where:
             [expectedRolePattern, actualRoles] << [
@@ -244,11 +244,11 @@ class RoleJdaTest extends Specification {
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
-            serverMessage.member.roles >> actualRoles
+            guildMessage.member.roles >> actualRoles
 
         expect:
             !roleJda.allowCommand(message)
-            roleJda.allowCommand(serverMessage) == allowed
+            roleJda.allowCommand(guildMessage) == allowed
 
         where:
             [expectedRolePattern, actualRoles] << [

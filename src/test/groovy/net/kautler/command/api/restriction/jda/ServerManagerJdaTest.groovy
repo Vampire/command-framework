@@ -42,17 +42,17 @@ class ServerManagerJdaTest extends Specification {
         it.member >> null
     }
 
-    Message serverMessage = Stub {
+    Message guildMessage = Stub {
         it.member >> Stub(Member)
     }
 
     def 'server manager "#serverManager" should #be allowed'() {
         given:
-            serverMessage.member.hasPermission(MANAGE_SERVER) >> serverManager
+            guildMessage.member.hasPermission(MANAGE_SERVER) >> serverManager
 
         expect:
             !serverManagerJda.allowCommand(message)
-            serverManagerJda.allowCommand(serverMessage) == allowed
+            serverManagerJda.allowCommand(guildMessage) == allowed
 
         where:
             serverManager || allowed | be

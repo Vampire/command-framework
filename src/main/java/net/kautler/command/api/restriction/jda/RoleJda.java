@@ -283,7 +283,7 @@ public abstract class RoleJda implements Restriction<Message> {
         return Optional.of(message)
                 .filter(msg -> msg.getChannelType().isGuild())
                 .map(Message::getGuild)
-                .flatMap(server -> Optional.ofNullable(server.getRoleById(roleId))
+                .flatMap(guild -> Optional.ofNullable(guild.getRoleById(roleId))
                         .flatMap(role -> message
                                 .getMember()
                                 .getRoles()
@@ -340,13 +340,13 @@ public abstract class RoleJda implements Restriction<Message> {
         return Optional.of(message)
                 .filter(msg -> msg.getChannelType().isGuild())
                 .map(Message::getGuild)
-                .flatMap(server -> {
+                .flatMap(guild -> {
                     Stream<Role> roleStream;
                     if (this.roleName == null) {
-                        roleStream = server.getRoles().stream()
+                        roleStream = guild.getRoles().stream()
                                 .filter(role -> rolePattern.matcher(role.getName()).matches());
                     } else {
-                        roleStream = server.getRolesByName(roleName, !caseSensitive).stream();
+                        roleStream = guild.getRolesByName(roleName, !caseSensitive).stream();
                     }
                     return roleStream
                             .min(naturalOrder())
