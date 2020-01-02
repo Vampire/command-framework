@@ -81,18 +81,20 @@ public class Version {
         } catch (IOException ignored) {
         }
 
+        String unknown = "<unknown>";
+
         String version = versionProperties.getProperty("version", "$version");
-        version = "$version".equals(version) ? "<unknown>" : version;
+        version = "$version".equals(version) ? unknown : version;
         this.version = version;
 
         String commitId = versionProperties.getProperty("commitId", "$commitId");
-        this.commitId = "$commitId".equals(commitId) ? "<unknown>" : commitId;
+        this.commitId = "$commitId".equals(commitId) ? unknown : commitId;
 
         String buildTimestamp = versionProperties.getProperty("buildTimestamp", "$buildTimestamp");
         this.buildTimestamp = "$buildTimestamp".equals(buildTimestamp) ? null : Instant.parse(buildTimestamp);
 
-        displayVersion = version.endsWith("-SNAPSHOT")
-                ? format("%s [%s | %s]", version, commitId, buildTimestamp)
+        displayVersion = (version.endsWith("-SNAPSHOT") || unknown.equals(version))
+                ? format("%s [%s | %s]", version, this.commitId, this.buildTimestamp == null ? unknown : this.buildTimestamp)
                 : version;
     }
 

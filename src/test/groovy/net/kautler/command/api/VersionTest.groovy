@@ -22,6 +22,7 @@ import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.util.environment.RestoreSystemProperties
 import spock.util.mop.Use
 
 import javax.inject.Inject
@@ -32,6 +33,7 @@ import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
 import static org.powermock.reflect.Whitebox.newInstance
 
+@RestoreSystemProperties
 class VersionTest extends Specification {
     @Rule
     WeldInitiator weld = WeldInitiator
@@ -59,7 +61,7 @@ class VersionTest extends Specification {
                 version == '<unknown>'
                 commitId == '<unknown>'
                 buildTimestamp == null
-                displayVersion == '<unknown>'
+                displayVersion == '<unknown> [<unknown> | <unknown>]'
             }
 
         cleanup:
@@ -78,7 +80,7 @@ class VersionTest extends Specification {
                 version == '<unknown>'
                 commitId == '<unknown>'
                 buildTimestamp == null
-                displayVersion == '<unknown>'
+                displayVersion == '<unknown> [<unknown> | <unknown>]'
             }
 
         cleanup:
@@ -131,6 +133,55 @@ class VersionTest extends Specification {
                 commitId == 'abcdef'
                 buildTimestamp == now
                 displayVersion == "1.2.3-SNAPSHOT [abcdef | $now]"
+            }
+
+        cleanup:
+            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+    }
+
+    @Use(PrivateFinalFieldSetterCategory)
+    def 'missing commit ID should show as unknown in display version'() {
+        given:
+            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
+            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
+            def now = now()
+
+        and:
+            versionPropertiesResourceField.set(null, new URL("testproperties:${URLEncoder.encode("""
+                version = 1.2.3-SNAPSHOT
+                buildTimestamp = $now
+            """, UTF_8.name())}"))
+
+        expect:
+            with(testee) {
+                version == '1.2.3-SNAPSHOT'
+                commitId == '<unknown>'
+                buildTimestamp == now
+                displayVersion == "1.2.3-SNAPSHOT [<unknown> | $now]"
+            }
+
+        cleanup:
+            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+    }
+
+    @Use(PrivateFinalFieldSetterCategory)
+    def 'missing build timestamp should show as unknown in display version'() {
+        given:
+            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
+            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
+
+        and:
+            versionPropertiesResourceField.set(null, new URL("testproperties:${URLEncoder.encode("""
+                version = 1.2.3-SNAPSHOT
+                commitId = abcdef
+            """, UTF_8.name())}"))
+
+        expect:
+            with(testee) {
+                version == '1.2.3-SNAPSHOT'
+                commitId == 'abcdef'
+                buildTimestamp == null
+                displayVersion == '1.2.3-SNAPSHOT [abcdef | <unknown>]'
             }
 
         cleanup:
