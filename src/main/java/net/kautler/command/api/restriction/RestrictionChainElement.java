@@ -84,7 +84,7 @@ public class RestrictionChainElement {
      * @return a restriction chain element that represents the boolean combination
      */
     public RestrictionChainElement and(Class<? extends Restriction<?>> other) {
-        return new AndCombination(this, new RestrictionChainElement(other));
+        return and(new RestrictionChainElement(other));
     }
 
     /**
@@ -106,7 +106,7 @@ public class RestrictionChainElement {
      * @return a restriction chain element that represents the boolean combination
      */
     public RestrictionChainElement or(Class<? extends Restriction<?>> other) {
-        return new OrCombination(this, new RestrictionChainElement(other));
+        return or(new RestrictionChainElement(other));
     }
 
     /**

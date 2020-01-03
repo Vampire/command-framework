@@ -50,7 +50,9 @@ ruleset {
     EmptyForStatement
     EmptyIfStatement
     EmptyInstanceInitializer
-    EmptyMethod
+    EmptyMethod {
+        doNotApplyToClassNames = 'net.kautler.command.integ.test.VersionIntegTest$VersionHolder'
+    }
     EmptyStaticInitializer
     EmptySwitchStatement
     EmptySynchronizedStatement
@@ -136,7 +138,7 @@ ruleset {
     //NoDef
     NoJavaUtilDate
     NoTabCharacter
-    ParameterReassignment
+    //ParameterReassignment
     PublicMethodsBeforeNonPublicMethods
     StaticFieldsBeforeInstanceFields
     StaticMethodsBeforeInstanceMethods
@@ -148,7 +150,12 @@ ruleset {
     // rulesets/design.xml
     AbstractClassWithPublicConstructor
     AbstractClassWithoutAbstractMethod
-    AssignmentToStaticFieldFromInstanceMethod
+    AssignmentToStaticFieldFromInstanceMethod {
+        doNotApplyToClassNames = [
+                'net.kautler.command.integ.test.javacord.spock.JavacordExtension',
+                'net.kautler.command.integ.test.jda.spock.JdaExtension'
+        ].join(', ')
+    }
     BooleanMethodReturnsNull
     BuilderMethodWithSideEffects
     CloneableWithoutClone
@@ -159,7 +166,7 @@ ruleset {
     FinalClassWithProtectedMember
     ImplementationAsType
     Instanceof {
-        ignoreTypeNames = 'WeldClientProxy'
+        ignoreTypeNames = 'WeldClientProxy, GuildMemberRoleRemoveEvent, TextChannelCreateEvent'
     }
     LocaleSetDefault
     NestedForLoop
@@ -224,7 +231,13 @@ ruleset {
     MissingBlankLineAfterImports
     MissingBlankLineAfterPackage
     SpaceAfterCatch
-    SpaceAfterClosingBrace
+    SpaceAfterClosingBrace {
+        // work-around for https://github.com/CodeNarc/CodeNarc/issues/452
+        doNotApplyToClassNames = [
+                'net.kautler.command.integ.test.javacord.spock.JavacordExtension',
+                'net.kautler.command.integ.test.jda.spock.JdaExtension'
+        ].join(', ')
+    }
     SpaceAfterComma
     SpaceAfterFor
     SpaceAfterIf
@@ -306,7 +319,12 @@ ruleset {
     ExplicitTreeSetInstantiation
     GStringAsMapKey
     GStringExpressionWithinString
-    GetterMethodCouldBeProperty
+    GetterMethodCouldBeProperty {
+        doNotApplyToClassNames = [
+                'net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.RestrictionChainElementIntegTest$PingCommand'
+        ].join(', ')
+    }
     GroovyLangImmutable
     UseCollectMany
     UseCollectNested
@@ -368,7 +386,7 @@ ruleset {
     ClassNameSameAsFilename
     ClassNameSameAsSuperclass
     ConfusingMethodName
-    FactoryMethodName
+    //FactoryMethodName
     FieldName
     InterfaceName
     InterfaceNameSameAsSuperInterface
@@ -406,7 +424,9 @@ ruleset {
     //CyclomaticComplexity   // Requires the GMetrics jar
     //MethodCount
     //MethodSize
-    NestedBlockDepth
+    NestedBlockDepth {
+        maxNestedBlockDepth = 6
+    }
     ParameterCount
 
     // rulesets/unnecessary.xml
@@ -460,10 +480,14 @@ ruleset {
 
     // rulesets/unused.xml
     UnusedArray
-    UnusedMethodParameter
+    UnusedMethodParameter {
+        doNotApplyToClassNames = 'net.kautler.command.integ.test.VersionIntegTest$VersionHolder'
+    }
     UnusedObject
     UnusedPrivateField
-    UnusedPrivateMethod
+    UnusedPrivateMethod {
+        doNotApplyToClassNames = 'net.kautler.command.integ.test.spock.AddBeansExtension'
+    }
     UnusedPrivateMethodParameter
     UnusedVariable
 }

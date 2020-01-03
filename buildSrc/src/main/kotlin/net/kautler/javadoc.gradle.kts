@@ -17,7 +17,6 @@
 package net.kautler
 
 import org.gradle.api.JavaVersion.VERSION_1_8
-import javax.naming.ConfigurationException
 import kotlin.text.Charsets.UTF_8
 
 plugins {
@@ -37,9 +36,8 @@ tasks.withType<Javadoc>().configureEach {
             if (allowJava8Javadoc?.toBoolean() == true) {
                 logger.warn("JavaDoc ($javadocTask) is built with Java 8, no search box will be available!")
             } else {
-                throw ConfigurationException(
-                        "JavaDoc ($javadocTask) should be built with Java 9 at least " +
-                                "(set Gradle project property allowJava8Javadoc=true to allow building with Java 8)")
+                error("JavaDoc ($javadocTask) should be built with Java 9 at least " +
+                        "(set Gradle project property allowJava8Javadoc=true to allow building with Java 8)")
             }
         }
     }
@@ -50,14 +48,15 @@ tasks.withType<Javadoc>().configureEach {
         encoding = UTF_8.name()
         links!!.apply {
             val versions: Map<String, String> by project
+            val messageFrameworkVersions: Map<String, List<String>> by project
             if (java.targetCompatibility != VERSION_1_8) {
-                throw ConfigurationException("JavaDoc URL for JRE needs to be adapted to new target compatibility ${java.targetCompatibility}")
+                error("JavaDoc URL for JRE needs to be adapted to new target compatibility ${java.targetCompatibility}")
             }
             add("https://docs.oracle.com/javase/8/docs/api/")
             add("https://static.javadoc.io/javax.enterprise/cdi-api/${versions["cdi"]}/")
             add("https://static.javadoc.io/javax.inject/javax.inject/${versions["javax.inject"]}/")
-            add("https://static.javadoc.io/org.javacord/javacord-api/${versions["javacord"]}/")
-            add("https://static.javadoc.io/net.dv8tion/JDA/${versions["jda"]}/")
+            add("https://static.javadoc.io/org.javacord/javacord-api/${messageFrameworkVersions.safeGet("javacord").first()}/")
+            add("https://static.javadoc.io/net.dv8tion/JDA/${messageFrameworkVersions.safeGet("jda").first()}/")
         }
         isUse = true
         isVersion = true

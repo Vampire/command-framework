@@ -49,11 +49,17 @@ tasks.check {
 
 tasks.register("updateReadme") {
     val versions: Map<String, String> by project
+    val messageFrameworkVersions: Map<String, List<String>> by project
+
+    val testedJavacordVersions = "* `${messageFrameworkVersions.safeGet("javacord").joinToString("`\n* `")}`"
+    val testedJdaVersions = "* `${messageFrameworkVersions.safeGet("jda").joinToString("`\n* `")}`"
 
     dependsOn(verifyReadme)
     inputs.property("version", version)
     inputs.property("cdiVersion", versions["cdi"])
     inputs.property("antlrVersion", versions["antlr"])
+    inputs.property("testedJavacordVersions", testedJavacordVersions)
+    inputs.property("testedJdaVersions", testedJdaVersions)
     inputs.file(readmeTemplateFilePath).withPropertyName("readmeTemplate")
     outputs.file(readmeFilePath).withPropertyName("readme")
     outputs.file(readmeChecksumFilePath).withPropertyName("readmeChecksum")
@@ -68,7 +74,9 @@ tasks.register("updateReadme") {
             expand(
                     "version" to version,
                     "cdiVersion" to versions["cdi"],
-                    "antlrVersion" to versions["antlr"]
+                    "antlrVersion" to versions["antlr"],
+                    "testedJavacordVersions" to testedJavacordVersions,
+                    "testedJdaVersions" to testedJdaVersions
             )
         }
         file(readmeChecksumFilePath).writeText(calculateReadmeChecksum())

@@ -16,21 +16,68 @@
 
 package net.kautler
 
+import net.kautler.Property.Companion.boolean
+import net.kautler.Property.Companion.double
+import net.kautler.Property.Companion.optionalString
 import org.pitest.mutationtest.engine.gregor.config.Mutator
 import java.util.concurrent.TimeUnit.SECONDS
-import javax.naming.ConfigurationException
 
 plugins {
+    idea
     id("info.solidsoft.pitest")
     groovy
     jacoco
 }
 
 val versions: Map<String, String> by project
+val messageFrameworkVersions: Map<String, List<String>> by project
+
+fun sanitizeVersion(version: String) = version.replace("^|[.-]|$".toRegex(), "_")
+
+fun SourceSetContainer.createForTest(name: String, configuration: SourceSet.() -> Unit = { }) {
+    create(name) {
+        idea {
+            module {
+                // allGroovy would be better, but does not work somehow
+                // but due to Groovy joint compilation, this works too
+                testSourceDirs = testSourceDirs + allJava.sourceDirectories.files
+                @Suppress("UnstableApiUsage")
+                testResourceDirs = testResourceDirs + resources.sourceDirectories.files
+            }
+        }
+        configuration.invoke(this)
+    }
+}
+
+val integTestSourceSets = messageFrameworkVersions
+        .mapValues { (_, versions) ->
+            listOf("") + versions
+                    .drop(1)
+                    .map(::sanitizeVersion)
+        }
+        .flatMap { (messageFramework, versions) ->
+            versions.map {
+                "$messageFramework${it}IntegTest" to "${messageFramework}IntegTest"
+            }
+        }
+        .toTypedArray()
+        .let { mapOf(*it) }
 
 sourceSets {
-    create("pitest")
-    create("spock")
+    createForTest("pitest")
+    createForTest("spock")
+    // work-around for https://youtrack.jetbrains.com/issue/IDEA-229618
+    create("integTestCommon")
+}
+
+integTestSourceSets.keys.forEach {
+    sourceSets.createForTest(it) {
+        @Suppress("UnstableApiUsage")
+        sourceSets.main.get().output.also {
+            compileClasspath += it
+            runtimeClasspath += it
+        }
+    }
 }
 
 dependencies {
@@ -40,29 +87,179 @@ dependencies {
     testImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}:tests")
     testImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}")
     testImplementation("org.antlr:antlr4-runtime:${versions["antlr"]}")
-    testImplementation("org.javacord:javacord-api:${versions["javacord"]}")
-    testImplementation("org.javacord:javacord-core:${versions["javacord"]}")
-    testImplementation("net.dv8tion:JDA:${versions["jda"]}") {
+    testImplementation("org.javacord:javacord-api:${messageFrameworkVersions.safeGet("javacord").first()}")
+    testImplementation("org.javacord:javacord-core:${messageFrameworkVersions.safeGet("javacord").first()}")
+    testImplementation("net.dv8tion:JDA:${messageFrameworkVersions.safeGet("jda").first()}") {
         exclude("club.minnced", "opus-java")
         exclude("com.google.code.findbugs", "jsr305")
     }
+    val spock by sourceSets
+    testImplementation(spock.let { it.output + it.runtimeClasspath })
 
     testRuntimeOnly("info.solidsoft.spock:spock-global-unroll:${versions["spock-global-unroll"]}")
     testRuntimeOnly("net.bytebuddy:byte-buddy:${versions["byte-buddy"]}")
     testRuntimeOnly("org.objenesis:objenesis:${versions["objenesis"]}")
 
-    val spock by sourceSets
-    testCompileOnly(spock.let { it.output + it.runtimeClasspath })
+    val pitestImplementation by configurations
+    pitestImplementation("org.pitest:pitest-entry:${versions["pitest"]}")
+    pitestImplementation("org.spockframework:spock-core:${versions["spock"]}")
 
-    "pitestImplementation"("org.pitest:pitest-entry:${versions["pitest"]}")
-    "pitestImplementation"("org.spockframework:spock-core:${versions["spock"]}")
+    val spockCompileOnly by configurations
+    spockCompileOnly("org.codehaus.groovy:groovy:${versions["groovy"]}")
+    spockCompileOnly("org.spockframework:spock-core:${versions["spock"]}")
+    val spockImplementation by configurations
+    spockImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}:tests")
+    spockImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}")
 
-    "spockCompileOnly"("org.codehaus.groovy:groovy:${versions["groovy"]}")
-    "spockCompileOnly"("org.spockframework:spock-core:${versions["spock"]}")
+    val integTestCommonImplementation by configurations
+    integTestCommonImplementation("org.spockframework:spock-core:${versions["spock"]}")
+    integTestCommonImplementation("javax.enterprise:cdi-api:${versions["cdi"]}")
+    integTestCommonImplementation("javax.annotation:javax.annotation-api:${versions["javax.annotation-api"]}")
+    integTestCommonImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}:tests")
+    integTestCommonImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}")
+
+    val integTestCommonRuntimeOnly by configurations
+    integTestCommonRuntimeOnly(spock.let { it.output + it.runtimeClasspath })
+    integTestCommonRuntimeOnly("info.solidsoft.spock:spock-global-unroll:${versions["spock-global-unroll"]}")
+    integTestCommonRuntimeOnly("org.jboss.weld.se:weld-se-core:${versions["weld-se"]}") {
+        @Suppress("UnstableApiUsage")
+        because("CDI implementation")
+    }
+    integTestCommonRuntimeOnly("org.jboss:jandex:${versions["jandex"]}") {
+        @Suppress("UnstableApiUsage")
+        because("faster CDI bean scanning")
+    }
+    integTestCommonRuntimeOnly("org.fusesource.jansi:jansi:${versions["jansi"]}") {
+        @Suppress("UnstableApiUsage")
+        because("ANSI colors on Windows")
+    }
+
+    val integTestCommon by sourceSets
+    integTestSourceSets.keys.forEach {
+        "${it}Implementation"(integTestCommon.let { it.output + it.runtimeClasspath })
+        "${it}Implementation"("org.spockframework:spock-core:${versions["spock"]}")
+        "${it}Implementation"("javax.enterprise:cdi-api:${versions["cdi"]}")
+
+        "${it}CompileOnly"("javax.annotation:javax.annotation-api:${versions["javax.annotation-api"]}")
+    }
+
+    val messageFrameworkDependencies = mapOf(
+            "javacord" to "org.javacord:javacord",
+            "jda" to "net.dv8tion:JDA"
+    )
+
+    val additionalMessageFrameworkDependencies = mapOf(
+            "javacord" to listOf(
+                    "club.minnced:discord-webhooks:${versions["discordWebhooks"]}",
+                    "org.apache.logging.log4j:log4j-slf4j-impl:${versions["log4j"]}"
+            ),
+            "jda" to listOf(
+                    "club.minnced:discord-webhooks:${versions["discordWebhooks"]}",
+                    "org.apache.logging.log4j:log4j-slf4j-impl:${versions["log4j"]}"
+            )
+    )
+
+    messageFrameworkVersions.forEach { (messageFramework, frameworkVersions) ->
+        var integTestImplementation = configurations.getByName("${messageFramework}IntegTestImplementation")
+        integTestImplementation("${messageFrameworkDependencies[messageFramework]}:${frameworkVersions.first()}") {
+            exclude("club.minnced", "opus-java")
+        }
+        additionalMessageFrameworkDependencies[messageFramework]?.forEach { integTestImplementation(it) }
+
+        var integTestRuntimeOnly = configurations.getByName("${messageFramework}IntegTestRuntimeOnly")
+        integTestRuntimeOnly("org.antlr:antlr4-runtime:${versions["antlr"]}")
+
+        frameworkVersions.drop(1).forEach {
+            integTestImplementation = configurations.getByName("${messageFramework}${sanitizeVersion(it)}IntegTestImplementation")
+            integTestImplementation("${messageFrameworkDependencies[messageFramework]}:$it") {
+                exclude("club.minnced", "opus-java")
+            }
+            additionalMessageFrameworkDependencies[messageFramework]?.forEach { integTestImplementation(it) }
+
+            integTestRuntimeOnly = configurations.getByName("${messageFramework}${sanitizeVersion(it)}IntegTestRuntimeOnly")
+            integTestRuntimeOnly("org.antlr:antlr4-runtime:${versions["antlr"]}")
+        }
+    }
+}
+
+val testResponseTimeout by double(10.0)
+val testManualCommandTimeout by double(10 * 60.0)
+val testDiscordToken1 by optionalString()
+val testDiscordToken2 by optionalString()
+val testDiscordServerId by optionalString()
+val includeManualTests by boolean()
+
+val integTest by tasks.registering {
+    group = "verification"
+}
+
+val integTestReport by tasks.registering(TestReport::class) {
+    group = "verification"
+    @Suppress("UnstableApiUsage")
+    destinationDir = reporting.baseDirectory.dir("tests/integTest").get().asFile
+
+    gradle.taskGraph.whenReady {
+        reportOn(allTasks.filter {
+            (it is Test) && (it.extra.properties["testType"] == "integration")
+        })
+    }
+}
+
+integTestSourceSets.forEach { (testSourceSetName, referenceSourceSetName) ->
+    val testTask = tasks.register<Test>(testSourceSetName) {
+        extra["testType"] = "integration"
+        description = "Runs the ${testSourceSetName.capitalize()} integration tests."
+        group = "verification"
+        testClassesDirs = sourceSets.getByName(referenceSourceSetName).output.classesDirs
+        classpath = (sourceSets.getByName(testSourceSetName).runtimeClasspath
+                + sourceSets.getByName(referenceSourceSetName).output)
+                .filter { it.exists() }
+
+        if (includeManualTests.not()) {
+            useJUnit {
+                excludeCategories("net.kautler.command.integ.test.ManualTests")
+            }
+        }
+
+        systemProperty("testResponseTimeout", testResponseTimeout)
+        systemProperty("testManualCommandTimeout", testManualCommandTimeout)
+
+        listOf("javacord", "jda").forEach {
+            if (referenceSourceSetName == "${it}IntegTest") {
+                systemProperty("testDiscordToken1", testDiscordToken1 ?: "")
+                systemProperty("testDiscordToken2", testDiscordToken2 ?: "")
+                systemProperty("testDiscordServerId", testDiscordServerId ?: "")
+
+                doFirst("verify Discord tokens and server id are set") {
+                    testDiscordToken1.verifyPropertyIsSet("testDiscordToken1", rootProject.name)
+                    testDiscordToken2.verifyPropertyIsSet("testDiscordToken2", rootProject.name)
+                    testDiscordServerId.verifyPropertyIsSet("testDiscordServerId", rootProject.name)
+                }
+            }
+        }
+
+        finalizedBy(integTestReport)
+        shouldRunAfter(tasks.test)
+    }
+
+    integTest {
+        dependsOn(testTask)
+    }
 }
 
 jacoco {
     toolVersion = versions.safeGet("jacoco")
+}
+
+val jacocoIntegTestReport by tasks.registering(JacocoReport::class) {
+    group = "verification"
+    sourceSets(sourceSets.main.get())
+}
+
+tasks.withType<Test> {
+    if (extra.properties["testType"] == "integration") {
+        finalizedBy(jacocoIntegTestReport)
+    }
 }
 
 tasks.test {
@@ -71,7 +268,7 @@ tasks.test {
 
 val applyJacocoTestReportExcludes by tasks.registering {
     doLast {
-        tasks.jacocoTestReport {
+        tasks.withType<JacocoReport> {
             classDirectories.setFrom(classDirectories.asFileTree.matching {
                 exclude(
                         "net/kautler/command/usage/UsageBaseVisitor.class",
@@ -86,6 +283,21 @@ val applyJacocoTestReportExcludes by tasks.registering {
 
 tasks.jacocoTestReport {
     dependsOn(applyJacocoTestReportExcludes)
+}
+
+jacocoIntegTestReport {
+    dependsOn(applyJacocoTestReportExcludes)
+}
+
+gradle.taskGraph.whenReady {
+    allTasks
+            .filter { (it is Test) && (it.extra.properties["testType"] == "integration") }
+            .toTypedArray()
+            .also {
+                jacocoIntegTestReport {
+                    executionData(*it)
+                }
+            }
 }
 
 tasks.jacocoTestCoverageVerification {
@@ -221,15 +433,12 @@ tasks.pitest {
 
         val schroedingersMutatorChamber = mutators.intersect(notExplicitlyEnabledMutators)
         if (schroedingersMutatorChamber.isNotEmpty()) {
-            throw ConfigurationException(
-                    "There are enabled and at the same time not enabled mutators: ${
-                    schroedingersMutatorChamber.sorted()
-                    }")
+            error("There are enabled and at the same time not enabled mutators: ${schroedingersMutatorChamber.sorted()}")
         }
 
         val newMutators = availableMutators - mutators - notExplicitlyEnabledMutators
         if (newMutators.isNotEmpty()) {
-            throw ConfigurationException("There are new mutators: ${newMutators.sorted()}")
+            error("There are new mutators: ${newMutators.sorted()}")
         }
     }
 }

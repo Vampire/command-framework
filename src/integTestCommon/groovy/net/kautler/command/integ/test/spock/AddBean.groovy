@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package net.kautler.test
+package net.kautler.command.integ.test.spock
 
-import org.apache.logging.log4j.test.appender.ListAppender
-import org.spockframework.runtime.extension.AbstractGlobalExtension
-import org.spockframework.runtime.model.SpecInfo
+import java.lang.annotation.Repeatable
+import java.lang.annotation.Retention
+import java.lang.annotation.Target
 
-class TestAppenderClearer extends AbstractGlobalExtension {
-    @Override
-    void visitSpec(SpecInfo spec) {
-        spec.allFeatures*.addIterationInterceptor {
-            ListAppender.getListAppender('Test Appender').clear()
-            it.proceed()
-        }
-    }
+import static java.lang.annotation.ElementType.METHOD
+import static java.lang.annotation.RetentionPolicy.RUNTIME
+
+@Retention(RUNTIME)
+@Target(METHOD)
+@Repeatable(AddBeans)
+@interface AddBean {
+    Class<?> value()
 }

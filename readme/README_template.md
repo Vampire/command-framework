@@ -6,8 +6,9 @@ Command Framework
 [![License][License Badge]][License File]
 [![Discord][Discord Badge]][Discord Invite]
 
-![Branch Coverage Badge]
+![Unit Test Coverage Badge]
 ![Mutant Coverage Badge]
+![Integration Test Coverage Badge]
 
 [![Supported Java Versions][Supported Java Versions Badge]](#)
 
@@ -140,6 +141,9 @@ public class JavacordProducer {
 }
 ```
 
+_**Tested versions:**_
+$testedJavacordVersions
+
 #### JDA
 
 For the [JDA][JDA Website] support, include JDA as implementation dependency and create a CDI producer that produces
@@ -176,6 +180,9 @@ public class JdaProducer {
     }
 }
 ```
+
+_**Tested versions:**_
+$testedJdaVersions
 
 ### Creating Commands
 
@@ -555,10 +562,12 @@ limitations under the License.
     https://github.com/Vampire/command-framework/blob/master/LICENSE
 [Discord Badge]:
     https://shields.javacord.org/discord/534420861294346255.svg?label=Discord
-[Branch Coverage Badge]:
-    https://shields.javacord.org/badge/Branch%20Coverage-100%25-brightgreen.svg?style=flat
+[Unit Test Coverage Badge]:
+    https://shields.javacord.org/badge/Unit%20Test%20Coverage-100%25-brightgreen.svg?style=flat
 [Mutant Coverage Badge]:
     https://shields.javacord.org/badge/PIT%20Mutant%20Coverage-100%25-brightgreen.svg?style=flat
+[Integration Test Coverage Badge]:
+    https://shields.javacord.org/badge/Integration%20Test%20Coverage-~75%25-brightgreen.svg?style=flat
 [Supported Java Versions Badge]:
     https://shields.javacord.org/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:

@@ -24,14 +24,15 @@ plugins {
     `java-library`
 }
 
+val messageFrameworkVersions: Map<String, List<String>> by project
+
 java {
     sourceCompatibility = VERSION_1_8
     val main by sourceSets
-    registerFeature("javacordSupport") {
-        usingSourceSet(main)
-    }
-    registerFeature("jdaSupport") {
-        usingSourceSet(main)
+    messageFrameworkVersions.keys.forEach {
+        registerFeature("${it}Support") {
+            usingSourceSet(main)
+        }
     }
 }
 
@@ -47,9 +48,9 @@ dependencies {
 
     implementation("org.apache.logging.log4j:log4j-api:${versions["log4j"]}")
 
-    "javacordSupportImplementation"("org.javacord:javacord-api:${versions["javacord"]}")
+    "javacordSupportImplementation"("org.javacord:javacord-api:${messageFrameworkVersions.safeGet("javacord").first()}")
 
-    "jdaSupportImplementation"("net.dv8tion:JDA:${versions["jda"]}") {
+    "jdaSupportImplementation"("net.dv8tion:JDA:${messageFrameworkVersions.safeGet("jda").first()}") {
         exclude("club.minnced", "opus-java")
         exclude("com.google.code.findbugs", "jsr305")
     }

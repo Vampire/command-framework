@@ -105,6 +105,35 @@ sealed class Property<out T> constructor(
                 project: Project,
                 propertyName: String
         ): Property<String?> = OptionalStringProperty(propertyName, project)
+
+        fun double(
+                default: () -> Double = { 0.0 },
+                propertyName: String? = null,
+                project: Project? = null
+        ) = PropertyDelegateProvider(
+                default,
+                propertyName,
+                project,
+                ::DoubleProperty
+        )
+
+        fun double(
+                default: Double,
+                propertyName: String? = null,
+                project: Project? = null
+        ) = double({ default }, propertyName, project)
+
+        fun double(
+                project: Project,
+                propertyName: String,
+                default: () -> Double = { 0.0 }
+        ): Property<Double> = DoubleProperty(default, propertyName, project)
+
+        fun double(
+                project: Project,
+                propertyName: String,
+                default: Double
+        ) = double(project, propertyName) { default }
     }
 }
 
@@ -156,10 +185,26 @@ private class BooleanProperty(
             findProperty(project, propertyName)?.toBoolean()
 }
 
+private class DoubleProperty(
+        default: () -> Double = { 0.0 },
+        propertyName: String,
+        project: Project
+) : Property<Double>(default, propertyName, project) {
+    override fun doGetValue(project: Project, propertyName: String) =
+            findProperty(project, propertyName)?.let { it.toDoubleOrNull() ?: error("'$it' is not a valid value for double property '$propertyName'") }
+}
+
 private fun findProperty(project: Project, propertyName: String): String? {
     var result = project.findProperty("${project.rootProject.name}.$propertyName") as String?
     if (result.isNullOrBlank()) {
         result = project.findProperty(propertyName) as String?
     }
     return if (result.isNullOrBlank()) null else result
+}
+
+fun String?.verifyPropertyIsSet(propertyName: String, rootProjectName: String) {
+    if (isNullOrBlank()) {
+        error("Please set the project property '$propertyName' or '$rootProjectName.$propertyName'. " +
+                "If both are set, the latter will be effective.")
+    }
 }

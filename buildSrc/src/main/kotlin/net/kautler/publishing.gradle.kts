@@ -28,7 +28,6 @@ import wooga.gradle.github.publish.PublishMethod.update
 import wooga.gradle.github.publish.tasks.GithubPublish
 import java.awt.GraphicsEnvironment.isHeadless
 import java.util.concurrent.CompletableFuture
-import javax.naming.ConfigurationException
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JOptionPane.DEFAULT_OPTION
@@ -74,18 +73,8 @@ extra["github.token"] = optionalString(project, "github.token").getValue()
 
 tasks.withType<PublishToMavenRepository>().configureEach {
     doFirst("verify username and password are set") {
-        if (sonatypeUsername.isNullOrBlank()) {
-            throw ConfigurationException(
-                    "Please set the Sonatype username with project property 'sonatype.username' " +
-                            "or '${rootProject.name}.sonatype.username'. " +
-                            "If both are set, the latter will be effective.")
-        }
-        if (sonatypePassword.isNullOrBlank()) {
-            throw ConfigurationException(
-                    "Please set the Sonatype password with project property 'sonatype.password' " +
-                            "or '${rootProject.name}.sonatype.password'. " +
-                            "If both are set, the latter will be effective.")
-        }
+        sonatypeUsername.verifyPropertyIsSet("sonatypeUsername", rootProject.name)
+        sonatypePassword.verifyPropertyIsSet("sonatypePassword", rootProject.name)
     }
 }
 
@@ -190,25 +179,10 @@ tasks.withType<BaseStagingTask>().configureEach {
 
     doFirst("verify username, password and staging profile id are set") {
         if (this !is GetStagingProfileTask) {
-            if (sonatypeStagingProfileId.isNullOrBlank()) {
-                throw ConfigurationException(
-                        "Please set the Sonatype staging profile id with project property 'sonatype.stagingProfileId' " +
-                                "or '${rootProject.name}.sonatype.stagingProfileId'. " +
-                                "If both are set, the latter will be effective.")
-            }
+            sonatypeStagingProfileId.verifyPropertyIsSet("sonatypeStagingProfileId", rootProject.name)
         }
-        if (sonatypeUsername.isNullOrBlank()) {
-            throw ConfigurationException(
-                    "Please set the Sonatype username with project property 'sonatype.username' " +
-                            "or '${rootProject.name}.sonatype.username'. " +
-                            "If both are set, the latter will be effective.")
-        }
-        if (sonatypePassword.isNullOrBlank()) {
-            throw ConfigurationException(
-                    "Please set the Sonatype password with project property 'sonatype.password' " +
-                            "or '${rootProject.name}.sonatype.password'. " +
-                            "If both are set, the latter will be effective.")
-        }
+        sonatypeUsername.verifyPropertyIsSet("sonatypeUsername", rootProject.name)
+        sonatypePassword.verifyPropertyIsSet("sonatypePassword", rootProject.name)
     }
 }
 
@@ -354,6 +328,7 @@ val finishMilestone by tasks.registering {
 }
 
 tasks.beforeReleaseBuild {
+    dependsOn(tasks.named("integTest"))
     dependsOn(tasks.named("pitest"))
 }
 
