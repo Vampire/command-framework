@@ -6,8 +6,9 @@ Command Framework
 [![License][License Badge]][License File]
 [![Discord][Discord Badge]][Discord Invite]
 
-![Branch Coverage Badge]
+![Unit Test Coverage Badge]
 ![Mutant Coverage Badge]
+![Integration Test Coverage Badge]
 
 [![Supported Java Versions][Supported Java Versions Badge]](#)
 
@@ -31,6 +32,7 @@ Table of Contents
 * [Usage](#usage)
   * [Message Framework](#message-framework)
     * [Javacord](#javacord)
+    * [JDA](#jda)
   * [Creating Commands](#creating-commands)
     * [Command Aliases](#command-aliases)
     * [Asynchronous Command Execution](#asynchronous-command-execution)
@@ -38,6 +40,7 @@ Table of Contents
     * [Command Usage](#command-usage)
     * [Parsing Parameters](#parsing-parameters)
     * [Customizing Command Prefix](#customizing-command-prefix)
+    * [Customizing Alias Calculation](#customizing-alias-calculation)
   * [CDI Events](#cdi-events)
     * [Handling Missing Commands](#handling-missing-commands)
     * [Handling Disallowed Commands](#handling-disallowed-commands)
@@ -63,6 +66,7 @@ Supported Message Frameworks
 The following message frameworks are currently supported:
 
 * [Javacord](#javacord)
+* [JDA](#jda)
 
 If you want to have support for an additional, do not hesitate to open a PR or feature request issue.
 
@@ -75,7 +79,7 @@ Setup
 
 ```gradle
 repositories { mavenCentral() }
-dependencies { implementation 'net.kautler:command-framework:0.2.0' }
+dependencies { implementation 'net.kautler:command-framework:0.3.0' }
 ```
 
 ### Maven
@@ -84,7 +88,7 @@ dependencies { implementation 'net.kautler:command-framework:0.2.0' }
 <dependency>
   <groupId>net.kautler</groupId>
   <artifactId>command-framework</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
 </dependency>
 ```
 
@@ -103,12 +107,16 @@ Usage
 
 For the [Javacord][Javacord Website] support, include Javacord as implementation dependency and create a CDI producer
 that produces either one `DiscordApi`, or if you use sharding a `Collection<DiscordApi>` with all shards where you want
-commands to be handled.
+commands to be handled. You should also have a disposer method that properly disconnects the produced `DiscordApi`
+instances.
 
 _**Example:**_
 ```java
 @ApplicationScoped
 public class JavacordProducer {
+    @Inject
+    private volatile Logger logger;
+
     @Inject
     @Named
     private String discordToken;
@@ -119,7 +127,11 @@ public class JavacordProducer {
         return new DiscordApiBuilder()
                 .setToken(discordToken)
                 .login()
-                .exceptionally(ExceptionLogger.get())
+                .whenComplete((discordApi, throwable) -> {
+                    if (throwable != null) {
+                        logger.error("Exception while logging in to Discord", throwable);
+                    }
+                })
                 .join();
     }
 
@@ -128,6 +140,49 @@ public class JavacordProducer {
     }
 }
 ```
+
+_**Tested versions:**_
+* `3.0.5`
+
+#### JDA
+
+For the [JDA][JDA Website] support, include JDA as implementation dependency and create a CDI producer that produces
+either one `JDA`, of if you use sharding a `Collection<JDA>`, a `ShardManager` or a `Collection<ShardManager>` with all
+shards where you want commands to be handled. You should also have a disposer method that properly shuts down the
+produced `JDA` and / or `ShardManager` instances.
+
+_**Example:**_
+```java
+@ApplicationScoped
+public class JdaProducer {
+    @Inject
+    private volatile Logger logger;
+
+    @Inject
+    @Named
+    private String discordToken;
+
+    @Produces
+    @ApplicationScoped
+    private JDA produceJda() {
+        try {
+            return new JDABuilder(discordToken)
+                    .build()
+                    .awaitReady();
+        } catch (InterruptedException | LoginException e) {
+            logger.error("Exception while logging in to Discord", e);
+            return null;
+        }
+    }
+
+    private void disposeJda(@Disposes JDA jda) {
+        jda.shutdown();
+    }
+}
+```
+
+_**Tested versions:**_
+* `4.0.0_52`
 
 ### Creating Commands
 
@@ -235,10 +290,10 @@ There are two helpers to split the `parameterString` that is provided to `Comman
 that can then be handled separately.
 
 The first is the method `Command.getParameters(...)` which you give the parameter string and the maximum amount of
-parameters to split into. The provided string will then be split at any arbitrary amount of consecutive non-newline
-whitespace characters. The last element of the returned array will have all remaining text in the parameter string. If
-you expect exactly three parameters without whitespaces, you should set the max parameters to four, so you can easily
-test the length of the returned array whether too many parameters were given to the command.
+parameters to split into. The provided string will then be split at any arbitrary amount of consecutive whitespace
+characters. The last element of the returned array will have all remaining text in the parameter string. If you expect
+exactly three parameters without whitespaces, you should set the max parameters to four, so you can easily test the
+length of the returned array whether too many parameters were given to the command.
 
 The second is the [`ParameterParser`][ParameterParser JavaDoc] that you can get injected into your command. For the
 `ParameterParser` to work, the [usage](#command-usage) of the command has to follow a defined syntax language. This
@@ -362,6 +417,50 @@ public class MentionPrefixProvider extends MentionPrefixProviderJavacord {
 }
 ```
 
+#### Customizing Alias Calculation
+
+The alias calculation can be customized by providing a CDI bean that implements the
+[`AliasAndParameterStringTransformer`][AliasAndParameterStringTransformer JavaDoc] interface. In the implementation of
+the `transformAliasAndParameterString` method you can determine from the message that caused the processing what the
+alias and parameter string should be. The transformer is called after the alias and parameter string are determined from
+the message using all registered aliases and before the command is resolved from the alias. If an alias was found from
+the registered aliases, the `aliasAndParameterString` parameter contains the found information. If no alias was found,
+the parameter will be `null`. The fields in the `AliasAndParameterString` object are always non-`null`.
+
+The transformer can then either accept the found alias and parameter string by returning the argument directly, or it
+can determine a new alias and parameter string and return these. The return value of the transformer will be used for
+further processing. If the alias in the returned object is not one of the registered aliases or the transformer returns
+`null`, there will not be any command found and the respective CDI event will be fired.
+
+Example use-cases for this are:
+
+- fuzzy-searching for mistyped aliases and their automatic correction (this could also be used for just a
+  "did you mean X" response, but for that the command not found events are probably better suited)
+
+- having a command that forwards to one command in one channel but to another command in another channel,
+  like `!player` that forwards to `!mc:player` in an MC channel but to `!s4:player` in an S4 channel
+
+- supporting something like `!runas @other-user foo bar baz`, where the transformer will transform that to alias
+  `foo` and parameter string `bar baz` and then a custom `Restriction` can check whether the message author has
+  the permissions to use `!runas` and then for example whether the `other-user` would have permissions for the
+  `foo` command and only then allow it to proceed
+
+- forwarding to a `!help` command if an unknown command was issued
+
+_**Example:**_
+```java
+@ApplicationScoped
+public class MyAliasAndParameterStringTransformer implements AliasAndParameterStringTransformer<Message> {
+    @Override
+    public AliasAndParameterString transformAliasAndParameterString(
+            Message message, AliasAndParameterString aliasAndParameterString) {
+        return (aliasAndParameterString == null)
+                ? new AliasAndParameterString("help", "")
+                : aliasAndParameterString;
+    }
+}
+```
+
 ### CDI Events
 
 #### Handling Missing Commands
@@ -463,14 +562,16 @@ limitations under the License.
     https://github.com/Vampire/command-framework/blob/master/LICENSE
 [Discord Badge]:
     https://shields.javacord.org/discord/534420861294346255.svg?label=Discord
-[Branch Coverage Badge]:
-    https://shields.javacord.org/badge/Branch%20Coverage-100%25-brightgreen.svg?style=flat
+[Unit Test Coverage Badge]:
+    https://shields.javacord.org/badge/Unit%20Test%20Coverage-100%25-brightgreen.svg?style=flat
 [Mutant Coverage Badge]:
     https://shields.javacord.org/badge/PIT%20Mutant%20Coverage-100%25-brightgreen.svg?style=flat
+[Integration Test Coverage Badge]:
+    https://shields.javacord.org/badge/Integration%20Test%20Coverage-~75%25-brightgreen.svg?style=flat
 [Supported Java Versions Badge]:
     https://shields.javacord.org/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:
-    https://shields.javacord.org/badge/Supported%20Message%20Frameworks-Javacord-lightgrey.svg
+    https://shields.javacord.org/badge/Supported%20Message%20Frameworks-Javacord%20%7C%20JDA-lightgrey.svg
 [Weld SE Website]:
     https://docs.jboss.org/weld/reference/latest/en-US/html/environments.html#weld-se
 [Semantic Versioning Website]:
@@ -485,6 +586,8 @@ limitations under the License.
 
 [Javacord Website]:
     https://javacord.org
+[JDA Website]:
+    https://github.com/DV8FromTheWorld/JDA
 
 [@Alias JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/annotation/Alias.html
@@ -508,6 +611,8 @@ limitations under the License.
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/ParameterParser.html
 [PrefixProvider JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/prefix/PrefixProvider.html
+[AliasAndParameterStringTransformer JavaDoc]:
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/AliasAndParameterStringTransformer.html
 [@RestrictedTo JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/annotation/RestrictedTo.html
 [Restriction JavaDoc]:
