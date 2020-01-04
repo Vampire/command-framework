@@ -202,7 +202,7 @@ public class PingCommand implements Command<Message> {
 ```
 
 With everything else using the default, this is already enough to have a working ping bot.
-A fully self-contained example can be found at `examples/simplePingBot`.
+A fully self-contained example can be found at `examples/simplePingBotJavacord`.
 
 To further customize the behavior of a command you can either annotate the command class or overwrite the according
 methods in your command implementation to replace the default implementation which evaluates the annotations.
