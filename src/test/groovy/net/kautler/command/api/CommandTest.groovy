@@ -24,6 +24,7 @@ import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.annotation.RestrictionPolicy
 import net.kautler.command.api.annotation.Usage
+import net.kautler.command.api.annotation.Usages
 import net.kautler.command.api.restriction.Everyone
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
@@ -77,9 +78,11 @@ class CommandTest extends Specification {
             testee.usage == expectedUsage
 
         where:
-            testee             || expectedUsage
-            new Test1Command() || Optional.empty()
-            new Test2Cmd()     || Optional.of('test1 [test2]')
+            testee                  || expectedUsage
+            new Test1Command()      || Optional.empty()
+            new Test2Cmd()          || Optional.of('test1 [test2]')
+            new CombinedUsage1Cmd() || Optional.of("('a' | 'b' | 'c')")
+            new CombinedUsage2Cmd() || Optional.of("('a' | 'b' | 'c')")
     }
 
     def 'no restriction should allow to everyone'() {
@@ -395,6 +398,18 @@ class CommandTest extends Specification {
     @RestrictedTo(Restriction3)
     @RestrictionPolicy(NONE_OF)
     static class CommandTest9Cmd extends BaseCommand { }
+
+    @Usages([
+            @Usage("'a'"),
+            @Usage("'b'"),
+            @Usage("'c'")
+    ])
+    static class CombinedUsage1Cmd extends BaseCommand { }
+
+    @Usage("'a'")
+    @Usage("'b'")
+    @Usage("'c'")
+    static class CombinedUsage2Cmd extends BaseCommand { }
 
     static class BaseRestriction implements Restriction<Object> {
         @Override

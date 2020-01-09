@@ -16,11 +16,7 @@
 
 package net.kautler.command.api.annotation;
 
-import net.kautler.command.api.Command;
-import net.kautler.command.api.ParameterParser;
-
 import java.lang.annotation.Documented;
-import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -28,28 +24,20 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * An annotation with which the usage of the command can be configured.
- * This usage can for example be displayed in an own help command.
+ * An annotation which serves as container for applying multiple {@link Usage @Usage} annotations.
+ * This container annotation is used implicitly and should usually not be applied manually.
+ * Just use multiple {@code @Usage} annotations on the same class instead.
  *
- * <p>When using the {@link ParameterParser}, the usage string has to follow a pre-defined format that is described
- * there.
- *
- * <p>Alternatively to using this annotation the {@link Command#getUsage()} method can be overwritten.
- * If that method is overwritten and this annotation is used, the method overwrite takes precedence.
- * That method is also what should be used to retrieve the configured usage.
- *
- * @see Command#getUsage()
- * @see ParameterParser
+ * @see Usage @Usage
  */
 @Retention(RUNTIME)
 @Target(TYPE)
-@Repeatable(Usages.class)
 @Documented
-public @interface Usage {
+public @interface Usages {
     /**
-     * Returns the usage of the annotated command.
+     * Returns the usages for the annotated command.
      *
-     * @return the usage of the annotated command
+     * @return the usages for the annotated command
      */
-    String value();
+    Usage[] value();
 }
