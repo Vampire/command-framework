@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -43,9 +44,9 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
     private final String clazz;
 
     /**
-     * The method name of the mutations to be filtered.
+     * The method name pattern of the mutations to be filtered.
      */
-    private final String method;
+    private final Pattern methodPattern;
 
     /**
      * The signature of the method of the mutations to be filtered.
@@ -130,7 +131,10 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
         }
         this.amount = amount;
         this.clazz = requireNonNull(clazz);
-        this.method = requireNonNull(method);
+        methodPattern = Pattern.compile(format(
+                "\\Q%s\\E%s",
+                requireNonNull(method),
+                method.startsWith("lambda$") ? "\\$\\d++" : ""));
         this.methodDesc = requireNonNull(methodDesc);
         this.mutator = requireNonNull(mutator);
         this.description = requireNonNull(description);
@@ -158,7 +162,7 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
     @Override
     public boolean test(MutationDetails mutationDetails) {
         return clazz.equals(mutationDetails.getClassName().asJavaName())
-                && method.equals(mutationDetails.getMethod().name())
+                && methodPattern.matcher(mutationDetails.getMethod().name()).matches()
                 && methodDesc.equals(mutationDetails.getId().getLocation().getMethodDesc())
                 && mutator.equals(mutationDetails.getMutator())
                 && description.equals(mutationDetails.getDescription())
@@ -177,7 +181,7 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
         return amount == that.amount
                 && firstIndexes.equals(that.firstIndexes)
                 && clazz.equals(that.clazz)
-                && method.equals(that.method)
+                && methodPattern.equals(that.methodPattern)
                 && methodDesc.equals(that.methodDesc)
                 && mutator.equals(that.mutator)
                 && description.equals(that.description);
@@ -185,7 +189,7 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
 
     @Override
     public int hashCode() {
-        return Objects.hash(amount, clazz, method, methodDesc, mutator, description, firstIndexes);
+        return Objects.hash(amount, clazz, methodPattern, methodDesc, mutator, description, firstIndexes);
     }
 
     @Override
@@ -193,7 +197,7 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
         return new StringJoiner(", ", ExplicitMutationFilterDetails.class.getSimpleName() + "[", "]")
                 .add("amount=" + amount)
                 .add("clazz='" + clazz + "'")
-                .add("method='" + method + "'")
+                .add("methodPattern=" + methodPattern)
                 .add("methodDesc='" + methodDesc + "'")
                 .add("mutator='" + mutator + "'")
                 .add("description='" + description + "'")

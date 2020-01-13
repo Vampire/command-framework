@@ -27,6 +27,7 @@
         </List>
     </Appenders>
     <Loggers>
+        <Logger name="net.kautler" level="ALL"/>
         <Root level="INFO">
             <AppenderRef ref="Console Appender"/>
             <AppenderRef ref="Test Appender"/>

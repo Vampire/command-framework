@@ -36,6 +36,7 @@ import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -84,12 +85,17 @@ public abstract class CommandHandler<M> {
     /**
      * The actual command by possible aliases for lookup.
      */
-    private final Map<String, Command<? super M>> commandByAlias = new ConcurrentHashMap<>();
+    private volatile LazyReferenceBySupplier<Map<String, Command<? super M>>> commandByAlias =
+            new LazyReferenceBySupplier<>(() -> {
+                logger.info("Got no commands injected");
+                return Collections.emptyMap();
+            });
 
     /**
      * The pattern to match all possible commands.
      */
-    private volatile Pattern commandPattern = Pattern.compile("[^\\w\\W]");
+    private volatile LazyReferenceBySupplier<Pattern> commandPattern =
+            new LazyReferenceBySupplier<>(() -> Pattern.compile("[^\\w\\W]"));
 
     /**
      * The custom prefix provider that was provided.
@@ -99,7 +105,13 @@ public abstract class CommandHandler<M> {
     /**
      * The actual prefix provider that is used.
      */
-    private volatile PrefixProvider<? super M> prefixProvider;
+    private final LazyReferenceBySupplier<PrefixProvider<? super M>> prefixProvider =
+            new LazyReferenceBySupplier<>(() ->
+                    ((customPrefixProvider == null) || customPrefixProvider.isUnsatisfied()
+                            ? defaultPrefixProvider
+                            : customPrefixProvider)
+                            .get()
+            );
 
     /**
      * The alias and parameter string transformer that was provided.
@@ -109,12 +121,16 @@ public abstract class CommandHandler<M> {
     /**
      * The alias and parameter string transformer that is used.
      */
-    private volatile AliasAndParameterStringTransformer<? super M> aliasAndParameterStringTransformer;
+    private volatile LazyReferenceBySupplier<AliasAndParameterStringTransformer<? super M>> aliasAndParameterStringTransformer;
 
     /**
      * The available restrictions for this command handler.
      */
-    private final RestrictionLookup<M> availableRestrictions = new RestrictionLookup<>();
+    private volatile LazyReferenceBySupplier<RestrictionLookup<M>> availableRestrictions =
+            new LazyReferenceBySupplier<>(() -> {
+                logger.info("Got no restrictions injected");
+                return new RestrictionLookup<M>();
+            });
 
     /**
      * An executor service for asynchronous command execution.
@@ -147,13 +163,17 @@ public abstract class CommandHandler<M> {
      * @param availableRestrictions the available restrictions for this command handler
      */
     protected void doSetAvailableRestrictions(Instance<Restriction<? super M>> availableRestrictions) {
-        Collection<Restriction<? super M>> restrictions = availableRestrictions.stream().peek(restriction ->
-                logger.debug("Got restriction {} injected", () -> restriction.getClass().getName())
-        ).collect(toList());
-        this.availableRestrictions.addAllRestrictions(restrictions);
-        logger.info("Got {} restriction{} injected",
-                restrictions::size,
-                () -> restrictions.size() == 1 ? "" : 's');
+        this.availableRestrictions = new LazyReferenceBySupplier<>(() -> {
+            RestrictionLookup<M> result = new RestrictionLookup<>();
+            Collection<Restriction<? super M>> restrictions = availableRestrictions.stream().peek(restriction ->
+                    logger.debug("Got restriction {} injected", () -> restriction.getClass().getName())
+            ).collect(toList());
+            result.addAllRestrictions(restrictions);
+            logger.info("Got {} restriction{} injected",
+                    restrictions::size,
+                    () -> restrictions.size() == 1 ? "" : 's');
+            return result;
+        });
     }
 
     /**
@@ -172,37 +192,42 @@ public abstract class CommandHandler<M> {
      * @param commands the available commands for this command handler
      */
     protected void doSetCommands(Instance<Command<? super M>> commands) {
-        Collection<Command<? super M>> actualCommands = commands.stream().peek(command ->
-                logger.debug("Got command {} injected", () -> command.getClass().getName())
-        ).collect(toList());
-        logger.info("Got {} command{} injected",
-                actualCommands::size,
-                () -> actualCommands.size() == 1 ? "" : 's');
+        commandByAlias = new LazyReferenceBySupplier<>(() -> {
+            Map<String, Command<? super M>> result = new ConcurrentHashMap<>();
+            Collection<Command<? super M>> actualCommands = commands.stream().peek(command ->
+                    logger.debug("Got command {} injected", () -> command.getClass().getName())
+            ).collect(toList());
+            logger.info("Got {} command{} injected",
+                    actualCommands::size,
+                    () -> actualCommands.size() == 1 ? "" : 's');
 
-        // verify the restriction annotations combination
-        actualCommands.forEach(Command::getRestrictionChain);
+            // verify the restriction annotations combination
+            actualCommands.forEach(Command::getRestrictionChain);
 
-        // build the alias to command map
-        commandByAlias.putAll(actualCommands.stream()
-                .flatMap(command -> command.getAliases().stream()
-                        .map(alias -> new AbstractMap.SimpleImmutableEntry<>(alias, command)))
-                .collect(toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (cmd1, cmd2) -> {
-                            throw new IllegalStateException(format(
-                                    "The same alias was defined for the two commands '%s' and '%s'",
-                                    cmd1,
-                                    cmd2));
-                        })));
+            // build the alias to command map
+            result.putAll(actualCommands.stream()
+                    .flatMap(command -> command.getAliases().stream()
+                            .map(alias -> new AbstractMap.SimpleImmutableEntry<>(alias, command)))
+                    .collect(toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (cmd1, cmd2) -> {
+                                throw new IllegalStateException(format(
+                                        "The same alias was defined for the two commands '%s' and '%s'",
+                                        cmd1,
+                                        cmd2));
+                            })));
+
+            return result;
+        });
 
         // build the command matching pattern
-        commandPattern = Pattern.compile(
-                commandByAlias.keySet().stream()
+        commandPattern = new LazyReferenceBySupplier<>(() -> Pattern.compile(
+                commandByAlias.get().keySet().stream()
                         .map(Pattern::quote)
                         .collect(joining("|", "(?s)^(?<alias>", ")(?=\\s|$)"
                                 + PARAMETER_SEPARATOR_CHARACTER + "*+"
-                                + "(?<parameterString>.*+)$")));
+                                + "(?<parameterString>.*+)$"))));
     }
 
     /**
@@ -217,10 +242,6 @@ public abstract class CommandHandler<M> {
      *     doSetCustomPrefixProvider(customPrefixProvider);
      * }
      * }</pre>
-     *
-     * <p><b>Important:</b> This method should be called directly in the injectable method as shown above, not in some
-     * {@link PostConstruct @PostConstruct} annotated method, as the {@code @PostConstruct} stage is used to decide
-     * whether the custom or the default prefix provider should be used, so it has to already be set at that point.
      *
      * @param customPrefixProvider the custom prefix provider for this command handler
      */
@@ -254,19 +275,14 @@ public abstract class CommandHandler<M> {
     }
 
     /**
-     * Determines whether a custom prefix provider or the default prefix provider should be used
-     * and whether an alias and parameter string transformer is provided.
+     * Determines whether an alias and parameter string transformer is provided.
      */
     @PostConstruct
-    private void determineProcessors() {
-        prefixProvider = ((customPrefixProvider == null) || customPrefixProvider.isUnsatisfied()
-                ? defaultPrefixProvider
-                : customPrefixProvider)
-                .get();
-
+    private void determineAliasAndParameterStringTransformer() {
         if ((injectedAliasAndParameterStringTransformer != null)
                 && (!injectedAliasAndParameterStringTransformer.isUnsatisfied())) {
-            aliasAndParameterStringTransformer = injectedAliasAndParameterStringTransformer.get();
+            aliasAndParameterStringTransformer =
+                    new LazyReferenceBySupplier<>(() -> injectedAliasAndParameterStringTransformer.get());
         }
     }
 
@@ -295,7 +311,7 @@ public abstract class CommandHandler<M> {
      * @param messageContent the textual content of the given message
      */
     protected void doHandleMessage(M message, String messageContent) {
-        String prefix = prefixProvider.getCommandPrefix(message);
+        String prefix = prefixProvider.get().getCommandPrefix(message);
         int prefixLength = prefix.length();
         boolean emptyPrefix = prefixLength == 0;
         if (emptyPrefix) {
@@ -319,7 +335,7 @@ public abstract class CommandHandler<M> {
             }
 
             String usedAlias = aliasAndParameterString.getAlias();
-            Command<? super M> command = commandByAlias.get(usedAlias);
+            Command<? super M> command = commandByAlias.get().get(usedAlias);
             // alias did not match any command => command not found
             if (command == null) {
                 logger.debug("No matching command found");
@@ -350,7 +366,7 @@ public abstract class CommandHandler<M> {
      * @return the alias and parameter string from the given message and content
      */
     private AliasAndParameterString determineAliasAndParameterString(M message, String messageContentWithoutPrefix) {
-        Matcher commandMatcher = commandPattern.matcher(messageContentWithoutPrefix);
+        Matcher commandMatcher = commandPattern.get().matcher(messageContentWithoutPrefix);
 
         AliasAndParameterString aliasAndParameterString = null;
 
@@ -366,6 +382,7 @@ public abstract class CommandHandler<M> {
             return aliasAndParameterString;
         }
         return aliasAndParameterStringTransformer
+                .get()
                 .transformAliasAndParameterString(message, aliasAndParameterString);
     }
 
@@ -378,7 +395,7 @@ public abstract class CommandHandler<M> {
      * @return whether the given command that is caused by the given message should be allowed
      */
     private boolean isCommandAllowed(M message, Command<? super M> command) {
-        return command.getRestrictionChain().isCommandAllowed(message, availableRestrictions);
+        return command.getRestrictionChain().isCommandAllowed(message, availableRestrictions.get());
     }
 
     /**

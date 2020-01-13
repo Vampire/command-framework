@@ -32,6 +32,13 @@
         </Or>
     </Match>
 
+    <Match>
+        <Class name="net.kautler.command.api.CommandHandler"/>
+        <Field name="injectedAliasAndParameterStringTransformer" type="javax.enterprise.inject.Instance"/>
+        <Method name="~lambda\$determineAliasAndParameterStringTransformer\$\d++" params="" returns="net.kautler.command.api.AliasAndParameterStringTransformer"/>
+        <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    </Match>
+
     <!-- work-around for https://github.com/spotbugs/spotbugs/issues/947 -->
     <Match>
         <Or>

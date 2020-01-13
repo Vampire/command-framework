@@ -147,13 +147,30 @@ class CommandHandlerTest extends Specification {
             initialized.every()
     }
 
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'setting no restrictions should be logged properly'() {
+        when:
+            commandHandler.ci().getInternalState('availableRestrictions').get()
+
+        then:
+            def expectedMessage = 'Got no restrictions injected'
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == INFO }
+                    .any { it.message.formattedMessage == expectedMessage }
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
     def 'setting #amount #restrictions should be logged properly'() {
         given:
             def availableRestrictions = Spy(availableRestrictionsInstance)
             availableRestrictions.stream() >> { callRealMethod().limit(amount) }
 
-        when:
+        and:
             commandHandler.doSetAvailableRestrictions(availableRestrictions)
+
+        when:
+            commandHandler.ci().getInternalState('availableRestrictions').get()
 
         then:
             def debugEvents = getListAppender('Test Appender')
@@ -181,7 +198,20 @@ class CommandHandlerTest extends Specification {
             2      | 'restrictions'
     }
 
-    @Use(ContextualInstanceCategory)
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'setting no commands should be logged properly'() {
+        when:
+            commandHandler.ci().getInternalState('commandByAlias').get()
+
+        then:
+            def expectedMessage = 'Got no commands injected'
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == INFO }
+                    .any { it.message.formattedMessage == expectedMessage }
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
     def 'setting #amount #command should be logged properly'() {
         given:
             commandsInstance.eachWithIndex { command, i ->
@@ -192,8 +222,11 @@ class CommandHandlerTest extends Specification {
             def commands = Spy(commandsInstance)
             commands.stream() >> { callRealMethod().limit(amount) }
 
-        when:
+        and:
             commandHandler.doSetCommands(commands)
+
+        when:
+            commandHandler.ci().getInternalState('commandByAlias').get()
 
         then:
             def debugEvents = getListAppender('Test Appender')
@@ -221,7 +254,7 @@ class CommandHandlerTest extends Specification {
             2      | 'commands'
     }
 
-    @Use(ContextualInstanceCategory)
+    @Use([ContextualInstanceCategory, Whitebox])
     def 'two commands with the same alias should throw exception'() {
         given:
             [command1, command2].each { it.aliases >> ['test'] }
@@ -229,8 +262,11 @@ class CommandHandlerTest extends Specification {
                 command.ci().aliases >> ["test$i" as String]
             }
 
-        when:
+        and:
             commandHandler.doSetCommands(commandsInstance)
+
+        when:
+            commandHandler.ci().getInternalState('commandByAlias').get()
 
         then:
             IllegalStateException ise = thrown()
@@ -240,8 +276,8 @@ class CommandHandlerTest extends Specification {
             ].collect { it as String }
     }
 
-    @Use(ContextualInstanceCategory)
-    def 'restriction annotations combination should be verified in doSetCommands for fail-fast'() {
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'restriction annotations combination should be verified for all commands on first command access for fail-fast'() {
         given:
             commandsInstance.eachWithIndex { command, i ->
                 command.ci().aliases >> ["test$i" as String]
@@ -250,18 +286,19 @@ class CommandHandlerTest extends Specification {
         and:
             command1.restrictionChain >> { throw new InvalidAnnotationCombinationException() }
 
-        when:
+        and:
             commandHandler.doSetCommands(commandsInstance)
+
+        when:
+            commandHandler.ci().getInternalState('commandByAlias').get()
 
         then:
             thrown(InvalidAnnotationCombinationException)
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
     def 'the default prefix provider should be chosen if no custom prefix provider is set'() {
         given:
             commandHandler.doSetCustomPrefixProvider(null)
-            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -271,7 +308,6 @@ class CommandHandlerTest extends Specification {
             0 * customPrefixProvider.getCommandPrefix(_) >> '.'
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
     def 'the default prefix provider should be chosen if no custom prefix provider is available'() {
         given:
             def customPrefixProviderInstance = Spy(customPrefixProviderInstance)
@@ -279,7 +315,6 @@ class CommandHandlerTest extends Specification {
 
         and:
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -289,11 +324,9 @@ class CommandHandlerTest extends Specification {
             0 * customPrefixProvider.getCommandPrefix(_) >> '.'
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
     def 'a custom prefix provider should be chosen over the default prefix provider'() {
         given:
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -362,12 +395,10 @@ class CommandHandlerTest extends Specification {
                     .any { it.message.formattedMessage.contains('command prefix is empty') }
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
     def 'an empty custom command prefix should log warning'() {
         given:
             1 * customPrefixProvider.getCommandPrefix(_) >> ''
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -393,12 +424,10 @@ class CommandHandlerTest extends Specification {
                     .empty
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
     def 'a non-empty custom command prefix should not log warning'() {
         given:
             1 * customPrefixProvider.getCommandPrefix(_) >> '!'
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
 
         when:
             commandHandler.doHandleMessage(this, '')
@@ -694,7 +723,7 @@ class CommandHandlerTest extends Specification {
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
 
         when:
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
 
         then:
             commandHandler.ci().getInternalState('aliasAndParameterStringTransformer') == null
@@ -705,7 +734,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
 
         when:
             commandHandler.doHandleMessage(this, '!nocommand')
@@ -719,7 +748,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
             command = this."$command"
 
         when:
@@ -742,7 +771,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
             command = command ? this."$command" : null
             def alias = "${command?.aliases?.first() ?: 'nocommand'}"
 
@@ -767,7 +796,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
             command = command ? this."$command" : null
             def alias = "${command?.aliases?.first() ?: 'nocommand'}"
 
@@ -796,7 +825,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
             command = command ? this."$command" : null
             def alias = "${command?.aliases?.first() ?: 'nocommand'}"
 
@@ -822,7 +851,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
             command = command ? this."$command" : null
             def alias = "${command?.aliases?.first() ?: 'nocommand'}"
 
@@ -851,7 +880,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
             command = command ? this."$command" : null
             def alias = "${command?.aliases?.first() ?: 'nocommand'}"
 
@@ -877,7 +906,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
             command = command ? this."$command" : null
             def alias = "${command?.aliases?.first() ?: 'nocommand'}"
 
@@ -907,7 +936,7 @@ class CommandHandlerTest extends Specification {
         given:
             prepareCommandHandlerForCommandExecution()
             commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineProcessors')
+            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
             command = command ? this."$command" : null
             def alias = "${command?.aliases?.first() ?: 'nocommand'}"
 

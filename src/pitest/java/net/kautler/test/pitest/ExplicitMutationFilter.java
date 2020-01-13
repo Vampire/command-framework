@@ -73,21 +73,21 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             // giving a 3 instead of 2 element array to logger.info cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
-                    "doSetAvailableRestrictions",
-                    "(Ljavax/enterprise/inject/Instance;)V",
+                    "lambda$doSetAvailableRestrictions",
+                    "(Ljavax/enterprise/inject/Instance;)Lnet/kautler/command/restriction/RestrictionLookup;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
             // giving a 3 instead of 2 element array to logger.info cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
-                    "doSetCommands",
-                    "(Ljavax/enterprise/inject/Instance;)V",
+                    "lambda$doSetCommands",
+                    "(Ljavax/enterprise/inject/Instance;)Ljava/util/Map;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
-            // giving a 3 instead of 2 element array to logger.info cannot be killed
+            // giving a 3 instead of 2 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
-                    "lambda$doSetCommands$8",
+                    "lambda$doSetCommands",
                     "(Lnet/kautler/command/api/Command;Lnet/kautler/command/api/Command;)Lnet/kautler/command/api/Command;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
