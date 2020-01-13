@@ -53,7 +53,7 @@ class AliasAndParameterStringTest extends Specification {
 
     def 'equals should return #result for [alias: #alias, parameterString: #parameterString]'() {
         expect:
-            new AliasAndParameterString(alias, parameterString).equals(testee) == result
+            (new AliasAndParameterString(alias, parameterString) == testee) == result
 
         where:
             alias  | parameterString || result
@@ -70,7 +70,7 @@ class AliasAndParameterStringTest extends Specification {
 
     def 'equals should return false for foreign class instance'() {
         expect:
-            testee != new Object()
+            testee != _
     }
 
     def 'equals should return true for the same instance'() {

@@ -22,8 +22,8 @@ import net.kautler.command.LoggerProducer
 import net.kautler.command.api.prefix.PrefixProvider
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
+import net.kautler.command.util.lazy.LazyReferenceBySupplier
 import net.kautler.test.ContextualInstanceCategory
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.jboss.weld.junit.MockBean
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
@@ -141,10 +141,6 @@ class CommandHandlerTest extends Specification {
 
     @Inject
     Instance<AliasAndParameterStringTransformer<? super Object>> aliasAndParameterStringTransformerInstance
-
-    def readLocks = 0
-
-    def writeLocks = 0
 
     def 'command handlers should be automatically initialized on container startup'() {
         expect:
@@ -311,13 +307,34 @@ class CommandHandlerTest extends Specification {
     def 'shutting down the container should shut down an existing executor service'() {
         given:
             ExecutorService executorService = Mock()
-            commandHandler.ci().setInternalState('executorService', executorService)
+            LazyReferenceBySupplier<ExecutorService> executorServiceReference = Mock {
+                it.set >> true
+                get() >> executorService
+            }
+            commandHandler.ci().setInternalState('executorService', executorServiceReference)
 
         when:
             weld.shutdown()
 
         then:
             1 * executorService./shutdown(?:Now)?/()
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'shutting down the container should not shut down an executor service if not previously created'() {
+        given:
+            ExecutorService executorService = Mock()
+            LazyReferenceBySupplier<ExecutorService> executorServiceReference = Mock {
+                it.set >> false
+                get() >> executorService
+            }
+            commandHandler.ci().setInternalState('executorService', executorServiceReference)
+
+        when:
+            weld.shutdown()
+
+        then:
+            0 * executorService./shutdown(?:Now)?/()
     }
 
     def 'shutting down the container should not log errors'() {
@@ -539,40 +556,11 @@ class CommandHandlerTest extends Specification {
             'command2' | _
     }
 
-    def prepareLocks(Closure writeLockLockInterceptor = { callRealMethod() }) {
-        def readLock = Spy(commandHandler.ci().getInternalState('readLock'))
-        commandHandler.ci().setFinalField('readLock', readLock)
-        readLock.lock() >> {
-            callRealMethod()
-            readLocks++
-        }
-        readLock.unlock() >> {
-            callRealMethod()
-            readLocks--
-        }
-
-        def writeLock = Spy(commandHandler.ci().getInternalState('writeLock'))
-        commandHandler.ci().setFinalField('writeLock', writeLock)
-        writeLock.lock() >> {
-            boolean readLockReleased = readLocks == 0
-            assert readLockReleased
-            writeLockLockInterceptor.tap { it.delegate = owner.delegate }.call()
-            writeLocks++
-        }
-        writeLock.unlock() >> {
-            callRealMethod()
-            writeLocks--
-        }
-    }
-
-    @Use([ContextualInstanceCategory, PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(ContextualInstanceCategory)
     def '#command should be executed asynchronously: #asynchronous'() {
         given:
             prepareCommandHandlerForCommandExecution()
             command = this."$command"
-
-        and:
-            prepareLocks()
 
         and:
             commandsInstance.each {
@@ -584,10 +572,6 @@ class CommandHandlerTest extends Specification {
 
         then:
             (asynchronous ? 1 : 0) * commandHandlerDelegate.executeAsync(*_)
-
-        and:
-            readLocks == 0
-            writeLocks == 0
 
         where:
             [command, asynchronous] << [
@@ -947,13 +931,9 @@ class CommandHandlerTest extends Specification {
             null       | _
     }
 
-    @Use([ContextualInstanceCategory, PrivateFinalFieldSetterCategory, Whitebox])
     def 'asynchronous command execution should happen asynchronously'() {
         given:
             def threadFuture = new CompletableFuture()
-
-        and:
-            prepareLocks()
 
         when:
             commandHandler.executeAsync(this) {
@@ -962,22 +942,15 @@ class CommandHandlerTest extends Specification {
 
         then:
             threadFuture.get(5, SECONDS) != currentThread()
-
-        and:
-            readLocks == 0
-            writeLocks == 0
     }
 
-    @Use([ContextualInstanceCategory, PrivateFinalFieldSetterCategory, Whitebox])
+    @Use([ContextualInstanceCategory,  Whitebox])
     def 'asynchronous command execution should not log an error if none happened'() {
-        given:
-            prepareLocks()
-
         when:
             commandHandler.executeAsync(this) { }
 
         and:
-            commandHandler.ci().getInternalState(ExecutorService).with {
+            commandHandler.ci().getInternalState('executorService').get().with {
                 it.shutdown()
                 it.awaitTermination(Long.MAX_VALUE, DAYS)
             }
@@ -987,25 +960,18 @@ class CommandHandlerTest extends Specification {
                     .events
                     .findAll { it.level == ERROR }
                     .empty
-
-        and:
-            readLocks == 0
-            writeLocks == 0
     }
 
-    @Use([ContextualInstanceCategory, PrivateFinalFieldSetterCategory, Whitebox])
+    @Use([ContextualInstanceCategory, Whitebox])
     def 'exception during asynchronous command execution should be logged properly'() {
         given:
             def exception = new Exception()
-
-        and:
-            prepareLocks()
 
         when:
             commandHandler.executeAsync(this) { throw exception }
 
         and:
-            commandHandler.ci().getInternalState(ExecutorService).with {
+            commandHandler.ci().getInternalState('executorService').get().with {
                 it.shutdown()
                 it.awaitTermination(Long.MAX_VALUE, DAYS)
             }
@@ -1018,68 +984,6 @@ class CommandHandlerTest extends Specification {
                         (it.message.formattedMessage == 'Exception while executing command asynchronously') &&
                                 ((it.thrown == exception) || (it.thrown.cause == exception))
                     }
-
-        and:
-            readLocks == 0
-            writeLocks == 0
-    }
-
-    @Use([ContextualInstanceCategory, PrivateFinalFieldSetterCategory, Whitebox])
-    def 'executor service should be initialized only once'() {
-        given:
-            prepareLocks()
-
-        when:
-            def executorService = commandHandler.ci().invokeMethod('getExecutorService')
-
-        then:
-            commandHandler.ci().invokeMethod('getExecutorService').is(executorService)
-
-        and:
-            readLocks == 0
-            writeLocks == 0
-    }
-
-    @Use([ContextualInstanceCategory, PrivateFinalFieldSetterCategory, Whitebox])
-    def 'executor service should not get changed once assigned even if outer check succeeds'() {
-        given:
-            ExecutorService executorService = Stub()
-
-        and:
-            prepareLocks {
-                commandHandler.ci().setInternalState('executorService', executorService)
-                callRealMethod()
-            }
-
-        expect:
-            commandHandler.ci().invokeMethod('getExecutorService').is(executorService)
-
-        and:
-            readLocks == 0
-            writeLocks == 0
-    }
-
-    @Use([ContextualInstanceCategory, PrivateFinalFieldSetterCategory, Whitebox])
-    def 'write lock should not be requested if executor service is already set'() {
-        given:
-            ExecutorService executorService = Stub()
-
-        and:
-            prepareLocks {
-                commandHandler.ci().getInternalState('readLock').lock()
-                boolean noWriteLockRequested = false
-                assert noWriteLockRequested
-            }
-
-        and:
-            commandHandler.ci().setInternalState('executorService', executorService)
-
-        expect:
-            commandHandler.ci().invokeMethod('getExecutorService').is(executorService)
-
-        and:
-            readLocks == 0
-            writeLocks == 0
     }
 
     @ApplicationScoped

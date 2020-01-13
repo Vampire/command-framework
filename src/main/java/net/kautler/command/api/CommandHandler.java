@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord;
 import net.kautler.command.api.prefix.PrefixProvider;
 import net.kautler.command.api.restriction.Restriction;
 import net.kautler.command.restriction.RestrictionLookup;
+import net.kautler.command.util.lazy.LazyReferenceBySupplier;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.PostConstruct;
@@ -38,15 +39,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -119,28 +117,10 @@ public abstract class CommandHandler<M> {
     private final RestrictionLookup<M> availableRestrictions = new RestrictionLookup<>();
 
     /**
-     * A read lock for lazy initialization of the executor service.
-     */
-    private final Lock readLock;
-
-    /**
-     * A write lock for lazy initialization of the executor service.
-     */
-    private final Lock writeLock;
-
-    /**
      * An executor service for asynchronous command execution.
      */
-    private ExecutorService executorService;
-
-    /**
-     * Constructs a new command handler.
-     */
-    public CommandHandler() {
-        ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-        readLock = readWriteLock.readLock();
-        writeLock = readWriteLock.writeLock();
-    }
+    private final LazyReferenceBySupplier<ExecutorService> executorService =
+            new LazyReferenceBySupplier<>(Executors::newCachedThreadPool);
 
     /**
      * Ensures the implementing command handlers are initialized on startup.
@@ -295,8 +275,8 @@ public abstract class CommandHandler<M> {
      */
     @PreDestroy
     private void shutdownExecutorService() {
-        if (executorService != null) {
-            executorService.shutdown();
+        if (executorService.isSet()) {
+            executorService.get().shutdown();
         }
     }
 
@@ -434,40 +414,11 @@ public abstract class CommandHandler<M> {
      * @param commandExecutor the executor that runs the actual command implementation
      */
     protected void executeAsync(M message, Runnable commandExecutor) {
-        runAsync(commandExecutor, getExecutorService())
+        runAsync(commandExecutor, executorService.get())
                 .whenComplete((nothing, throwable) -> {
                     if (throwable != null) {
                         logger.error("Exception while executing command asynchronously", throwable);
                     }
                 });
-    }
-
-    /**
-     * Returns the executor service that is used for asynchronous command execution.
-     *
-     * @return the executor service that is used for asynchronous command execution
-     */
-    private ExecutorService getExecutorService() {
-        readLock.lock();
-        try {
-            if (executorService == null) {
-                readLock.unlock();
-                try {
-                    writeLock.lock();
-                    try {
-                        if (executorService == null) {
-                            executorService = newCachedThreadPool();
-                        }
-                    } finally {
-                        writeLock.unlock();
-                    }
-                } finally {
-                    readLock.lock();
-                }
-            }
-            return executorService;
-        } finally {
-            readLock.unlock();
-        }
     }
 }

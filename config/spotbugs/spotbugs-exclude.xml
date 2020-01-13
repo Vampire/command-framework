@@ -91,21 +91,18 @@
     </Match>
 
     <Match>
-        <Or>
-            <And>
-                <Class name="net.kautler.command.api.CommandHandler"/>
-                <Method name="getExecutorService" params="" returns="java.util.concurrent.ExecutorService"/>
-            </And>
-            <And>
-                <Class name="net.kautler.command.api.prefix.javacord.MentionPrefixProviderJavacord"/>
-                <Method name="getCommandPrefix" params="org.javacord.api.entity.message.Message" returns="java.lang.String"/>
-            </And>
-            <And>
-                <Class name="net.kautler.command.api.prefix.jda.MentionPrefixProviderJda"/>
-                <Method name="getCommandPrefix" params="net.dv8tion.jda.api.entities.Message" returns="java.lang.String"/>
-            </And>
-        </Or>
+        <Class name="net.kautler.command.util.lazy.LazyReference"/>
+        <Method name="get" params="java.util.function.Supplier" returns="java.lang.Object"/>
         <Bug pattern="MDM_WAIT_WITHOUT_TIMEOUT"/>
+    </Match>
+
+    <Match>
+        <Class name="net.kautler.command.util.lazy.LazyReference"/>
+        <Or>
+            <Method name="equals" params="java.lang.Object" returns="boolean"/>
+            <Method name="isSet" params="" returns="boolean"/>
+        </Or>
+        <Bug pattern="OPM_OVERLY_PERMISSIVE_METHOD"/>
     </Match>
 
     <Match>

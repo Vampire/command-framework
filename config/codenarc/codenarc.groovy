@@ -32,7 +32,10 @@ ruleset {
     ComparisonOfTwoConstants
     ComparisonWithSelf {
         doNotApplyToClassNames = [
-                'net.kautler.command.api.AliasAndParameterStringTest'
+                'net.kautler.command.api.AliasAndParameterStringTest',
+                'net.kautler.command.util.lazy.LazyReferenceByFunctionTest',
+                'net.kautler.command.util.lazy.LazyReferenceBySupplierTest',
+                'net.kautler.command.util.lazy.LazyReferenceTest'
         ].join(', ')
     }
     ConstantAssertExpression
@@ -251,7 +254,12 @@ ruleset {
     }
     SpaceAroundOperator
     SpaceBeforeClosingBrace
-    SpaceBeforeOpeningBrace
+    SpaceBeforeOpeningBrace {
+        doNotApplyToClassNames = [
+                'net.kautler.command.util.lazy.LazyReferenceByFunctionTest$1',
+                'net.kautler.command.util.lazy.LazyReferenceBySupplierTest$1'
+        ].join(', ')
+    }
     TrailingWhitespace
 
     // rulesets/generic.xml
@@ -295,7 +303,10 @@ ruleset {
     ExplicitCallToDivMethod
     ExplicitCallToEqualsMethod {
         doNotApplyToClassNames = [
-                'net.kautler.command.api.AliasAndParameterStringTest'
+                'net.kautler.command.api.AliasAndParameterStringTest',
+                'net.kautler.command.util.lazy.LazyReferenceByFunctionTest',
+                'net.kautler.command.util.lazy.LazyReferenceBySupplierTest',
+                'net.kautler.command.util.lazy.LazyReferenceTest'
         ].join(', ')
     }
     ExplicitCallToGetAtMethod

@@ -19,11 +19,8 @@ package net.kautler.command.api.prefix.jda
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.SelfUser
-import net.kautler.test.PrivateFinalFieldSetterCategory
-import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
-import spock.util.mop.Use
 
 import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
@@ -32,7 +29,7 @@ class MentionPrefixProviderJdaTest extends Specification {
     Message message = Stub(Message) {
         it.JDA >> Stub(JDA) {
             it.selfUser >> Stub(SelfUser) {
-                it.asMention >>> ['<@12345>', '<@67890>']
+                it.asMention >> '<@12345>'
             }
         }
     }
@@ -40,99 +37,9 @@ class MentionPrefixProviderJdaTest extends Specification {
     @Subject
     MentionPrefixProviderJda testee = Spy()
 
-    def readLocks = 0
-
-    def writeLocks = 0
-
-    def prepareLocks(Closure writeLockLockInterceptor = { callRealMethod() }) {
-        def readLock = Spy(testee.getInternalState('readLock'))
-        testee.setFinalField('readLock', readLock)
-        readLock.lock() >> {
-            callRealMethod()
-            readLocks++
-        }
-        readLock.unlock() >> {
-            callRealMethod()
-            readLocks--
-        }
-
-        def writeLock = Spy(testee.getInternalState('writeLock'))
-        testee.setFinalField('writeLock', writeLock)
-        writeLock.lock() >> {
-            boolean readLockReleased = readLocks == 0
-            assert readLockReleased
-            writeLockLockInterceptor.tap { it.delegate = owner.delegate }.call()
-            writeLocks++
-        }
-        writeLock.unlock() >> {
-            callRealMethod()
-            writeLocks--
-        }
-    }
-
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
     def 'mention tag should be returned as prefix'() {
-        given:
-            prepareLocks()
-
         expect:
             testee.getCommandPrefix(message) == '<@12345> '
-
-        and:
-            readLocks == 0
-            writeLocks == 0
-    }
-
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
-    def 'prefix should be initialized only once'() {
-        given:
-            prepareLocks()
-
-        expect:
-            testee.getCommandPrefix(message) == '<@12345> '
-
-        and:
-            testee.getCommandPrefix(message) == '<@12345> '
-
-        and:
-            readLocks == 0
-            writeLocks == 0
-    }
-
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
-    def 'prefix should not get changed once assigned even if outer check succeeds'() {
-        given:
-            prepareLocks {
-                testee.setInternalState('prefix', '<@666> ')
-                callRealMethod()
-            }
-
-        expect:
-            testee.getCommandPrefix(message) == '<@666> '
-
-        and:
-            readLocks == 0
-            writeLocks == 0
-    }
-
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
-    def 'write lock should not be requested if prefix is already set'() {
-        given:
-            prepareLocks {
-                testee.getInternalState('readLock').lock()
-                boolean noWriteLockRequested = false
-                assert noWriteLockRequested
-            }
-
-        and:
-            testee.setInternalState('prefix', '<@666> ')
-
-        expect:
-            testee.getCommandPrefix(message) == '<@666> '
-
-        and:
-            readLocks == 0
-            writeLocks == 0
     }
 
     def '#className toString should start with class name'() {
@@ -162,7 +69,7 @@ class MentionPrefixProviderJdaTest extends Specification {
 
         where:
             field << getAllInstanceFields(Stub(getField(getClass(), 'testee').type))
-                    .findAll { !(it.name in ['$spock_interceptor', 'readLock', 'writeLock']) }
+                    .findAll { !(it.name in ['$spock_interceptor']) }
     }
 
     static class MentionPrefixProviderJdaSub extends MentionPrefixProviderJda { }
