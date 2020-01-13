@@ -55,7 +55,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      */
     @Inject
     @Internal
-    private volatile Logger logger;
+    private Logger logger;
 
     /**
      * A {@code JDA} {@link Produces produced} by the framework user if JDA support should be used.
@@ -63,7 +63,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * could be produced, for example if sharding is used.
      */
     @Inject
-    private volatile Instance<JDA> jdas;
+    private Instance<JDA> jdas;
 
     /**
      * A collection of {@code JDA}s {@link Produces produced} by the framework user if JDA support should
@@ -71,7 +71,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * or {@code Collection<ShardManager>} could be produced.
      */
     @Inject
-    private volatile Instance<Collection<JDA>> jdaCollections;
+    private Instance<Collection<JDA>> jdaCollections;
 
     /**
      * A {@code ShardManager} {@link Produces produced} by the framework user if JDA support should be used.
@@ -79,7 +79,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * could be produced.
      */
     @Inject
-    private volatile Instance<ShardManager> shardManagers;
+    private Instance<ShardManager> shardManagers;
 
     /**
      * A collection of {@code ShardManager}s {@link Produces produced} by the framework user if JDA support should
@@ -87,19 +87,19 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * could be produced.
      */
     @Inject
-    private volatile Instance<Collection<ShardManager>> shardManagerCollections;
+    private Instance<Collection<ShardManager>> shardManagerCollections;
 
     /**
      * A CDI event for firing command not allowed events.
      */
     @Inject
-    private volatile Event<CommandNotAllowedEventJda> commandNotAllowedEvent;
+    private Event<CommandNotAllowedEventJda> commandNotAllowedEvent;
 
     /**
      * A CDI event for firing command not found events.
      */
     @Inject
-    private volatile Event<CommandNotFoundEventJda> commandNotFoundEvent;
+    private Event<CommandNotFoundEventJda> commandNotFoundEvent;
 
     /**
      * Constructs a new JDA command handler.

@@ -115,7 +115,7 @@ _**Example:**_
 @ApplicationScoped
 public class JavacordProducer {
     @Inject
-    private volatile Logger logger;
+    private Logger logger;
 
     @Inject
     @Named
@@ -156,7 +156,7 @@ _**Example:**_
 @ApplicationScoped
 public class JdaProducer {
     @Inject
-    private volatile Logger logger;
+    private Logger logger;
 
     @Inject
     @Named

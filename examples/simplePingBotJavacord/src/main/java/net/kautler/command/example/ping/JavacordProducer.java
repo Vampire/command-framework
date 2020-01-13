@@ -29,7 +29,7 @@ import javax.inject.Named;
 @ApplicationScoped
 public class JavacordProducer {
     @Inject
-    private volatile Logger logger;
+    private Logger logger;
 
     @Inject
     @Named

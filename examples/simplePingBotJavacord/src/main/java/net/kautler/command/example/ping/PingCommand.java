@@ -26,7 +26,7 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class PingCommand implements Command<Message> {
     @Inject
-    private volatile Logger logger;
+    private Logger logger;
 
     @Override
     public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {

@@ -55,33 +55,33 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      */
     @Inject
     @Internal
-    private volatile Logger logger;
+    private Logger logger;
 
     /**
      * A {@code DiscordApi} {@link Produces produced} by the framework user if Javacord support should be used.
      * Alternatively a {@code Collection<DiscordApi>} could be produced, for example if sharding is used.
      */
     @Inject
-    private volatile Instance<DiscordApi> discordApis;
+    private Instance<DiscordApi> discordApis;
 
     /**
      * A collection of {@code DiscordApi}s {@link Produces produced} by the framework user if Javacord support should
      * be used for example with sharding. Alternatively a single {@code DiscordApi} could be produced.
      */
     @Inject
-    private volatile Instance<Collection<DiscordApi>> discordApiCollections;
+    private Instance<Collection<DiscordApi>> discordApiCollections;
 
     /**
      * A CDI event for firing command not allowed events.
      */
     @Inject
-    private volatile Event<CommandNotAllowedEventJavacord> commandNotAllowedEvent;
+    private Event<CommandNotAllowedEventJavacord> commandNotAllowedEvent;
 
     /**
      * A CDI event for firing command not found events.
      */
     @Inject
-    private volatile Event<CommandNotFoundEventJavacord> commandNotFoundEvent;
+    private Event<CommandNotFoundEventJavacord> commandNotFoundEvent;
 
     /**
      * The listener managers for the added listeners,

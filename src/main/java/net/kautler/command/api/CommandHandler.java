@@ -73,19 +73,19 @@ public abstract class CommandHandler<M> {
      */
     @Inject
     @Internal
-    private volatile Logger logger;
+    private Logger logger;
 
     /**
      * The default prefix provider that is used if no custom prefix provider was provided.
      */
     @Inject
     @Internal
-    private volatile Instance<PrefixProvider<? super M>> defaultPrefixProvider;
+    private Instance<PrefixProvider<? super M>> defaultPrefixProvider;
 
     /**
      * The actual command by possible aliases for lookup.
      */
-    private volatile LazyReferenceBySupplier<Map<String, Command<? super M>>> commandByAlias =
+    private LazyReferenceBySupplier<Map<String, Command<? super M>>> commandByAlias =
             new LazyReferenceBySupplier<>(() -> {
                 logger.info("Got no commands injected");
                 return Collections.emptyMap();
@@ -94,13 +94,13 @@ public abstract class CommandHandler<M> {
     /**
      * The pattern to match all possible commands.
      */
-    private volatile LazyReferenceBySupplier<Pattern> commandPattern =
+    private LazyReferenceBySupplier<Pattern> commandPattern =
             new LazyReferenceBySupplier<>(() -> Pattern.compile("[^\\w\\W]"));
 
     /**
      * The custom prefix provider that was provided.
      */
-    private volatile Instance<PrefixProvider<? super M>> customPrefixProvider;
+    private Instance<PrefixProvider<? super M>> customPrefixProvider;
 
     /**
      * The actual prefix provider that is used.
@@ -116,17 +116,17 @@ public abstract class CommandHandler<M> {
     /**
      * The alias and parameter string transformer that was provided.
      */
-    private volatile Instance<AliasAndParameterStringTransformer<? super M>> injectedAliasAndParameterStringTransformer;
+    private Instance<AliasAndParameterStringTransformer<? super M>> injectedAliasAndParameterStringTransformer;
 
     /**
      * The alias and parameter string transformer that is used.
      */
-    private volatile LazyReferenceBySupplier<AliasAndParameterStringTransformer<? super M>> aliasAndParameterStringTransformer;
+    private LazyReferenceBySupplier<AliasAndParameterStringTransformer<? super M>> aliasAndParameterStringTransformer;
 
     /**
      * The available restrictions for this command handler.
      */
-    private volatile LazyReferenceBySupplier<RestrictionLookup<M>> availableRestrictions =
+    private LazyReferenceBySupplier<RestrictionLookup<M>> availableRestrictions =
             new LazyReferenceBySupplier<>(() -> {
                 logger.info("Got no restrictions injected");
                 return new RestrictionLookup<M>();

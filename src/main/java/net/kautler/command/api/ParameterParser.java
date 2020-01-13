@@ -77,7 +77,7 @@ public class ParameterParser {
      * The usage pattern builder to transform usage trees to regular expression patterns.
      */
     @Inject
-    private volatile UsagePatternBuilder usagePatternBuilder;
+    private UsagePatternBuilder usagePatternBuilder;
 
     /**
      * A cache for usage trees built from usage specifications so that the usage parser does not need to be invoked

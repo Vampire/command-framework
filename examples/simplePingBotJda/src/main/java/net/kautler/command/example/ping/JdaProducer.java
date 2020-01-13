@@ -30,7 +30,7 @@ import javax.security.auth.login.LoginException;
 @ApplicationScoped
 public class JdaProducer {
     @Inject
-    private volatile Logger logger;
+    private Logger logger;
 
     @Inject
     @Named
