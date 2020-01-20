@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import net.kautler.command.api.restriction.javacord.UserJavacord;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
 import static java.lang.Character.toLowerCase;
@@ -141,7 +142,9 @@ public interface Command<M> {
      * </ul>
 
      * <p>The default implementation of this method returns the usage configured using the {@link Usage @Usage}
-     * annotation. If no usage is configured by annotation, an empty {@code Optional} is used as default.
+     * annotation. If no usage is configured by annotation, an empty {@code Optional} is used as default.<br>
+     * If multiple {@code @Usage} annotations are used, their usage patterns will be combined by {@code |}.<br>
+     * Example: {@code @Usage("'a'") @Usage("'b'")} is the same as {@code @Usage("('a' | 'b')")}.
      *
      * <p>If this method is overwritten and the annotation is present, the method overwrite takes precedence.
      *
@@ -150,9 +153,23 @@ public interface Command<M> {
      * @see ParameterParser
      */
     default Optional<String> getUsage() {
-        return Optional
-                .ofNullable(getClass().getAnnotation(Usage.class))
-                .map(Usage::value);
+        List<String> annotatedUsages = Arrays
+                .stream(getClass().getAnnotationsByType(Usage.class))
+                .map(Usage::value)
+                .collect(toList());
+
+        switch (annotatedUsages.size()) {
+            case 0:
+                return Optional.empty();
+
+            case 1:
+                return Optional.of(annotatedUsages.get(0));
+
+            default:
+                StringJoiner usagePattern = new StringJoiner(" | ", "(", ")");
+                annotatedUsages.forEach(usagePattern::add);
+                return Optional.of(usagePattern.toString());
+        }
     }
 
     /**

@@ -311,10 +311,21 @@ The usage string has to follow this pre-defined format:
 * Whitespace characters between the defined tokens are optional and ignored
 
 _**Examples:**_
-* `@Usage("<coin type> <amount>")}`
-* `@Usage("['all'] ['exact']")}`
-* `@Usage("[<text...>]")}`
-* `@Usage("(<targetLanguage> '|' | <sourceLanguage> <targetLanguage>) <text...>")}`
+* `@Usage("<coin type> <amount>")`
+* `@Usage("['all'] ['exact']")`
+* `@Usage("[<text...>]")`
+* `@Usage("(<targetLanguage> '|' | <sourceLanguage> <targetLanguage>) <text...>")`
+
+_**Multiple `@Usage`:**_ If multiple of these annotations are used, they are combined as alternatives. This means, the following two
+examples are equal.
+```java
+@Usage("'all'")
+@Usage("'some'")
+@Usage("'none'")
+```
+```java
+@Usage("('all' | 'some' | 'none')")
+````
 
 _**Warning:**_ If you have an optional literal parameter following an optional placeholder parameter like for example
 `[<user mention>] ['exact']` and a user invokes the command with only the parameter `exact`, it could fit in both
