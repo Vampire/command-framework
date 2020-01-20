@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *
  * <p>When using the {@link ParameterParser}, the usage string has to follow a pre-defined format that is described
  * there.
+ *
+ * <p>When multiple {@code @Usage} annotations are used, they are combined into one {@code @Usage} annotation following
+ * the pre-defined format by "OR". For example {@code @Usage("'a'") @Usage("'b'")} is the equal to
+ * {@code @Usage("('a' | 'b')")}
  *
  * <p>Alternatively to using this annotation the {@link Command#getUsage()} method can be overwritten.
  * If that method is overwritten and this annotation is used, the method overwrite takes precedence.

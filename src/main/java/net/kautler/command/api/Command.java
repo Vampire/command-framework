@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,8 +159,12 @@ public interface Command<M> {
                 .collect(toList());
 
         switch (annotatedUsages.size()) {
-            case 0: return Optional.empty();
-            case 1: return Optional.of(annotatedUsages.get(0));
+            case 0:
+                return Optional.empty();
+
+            case 1:
+                return Optional.of(annotatedUsages.get(0));
+
             default:
                 StringJoiner usagePattern = new StringJoiner(" | ", "(", ")");
                 annotatedUsages.forEach(usagePattern::add);
