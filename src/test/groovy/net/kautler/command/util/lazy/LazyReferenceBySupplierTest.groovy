@@ -397,7 +397,7 @@ class LazyReferenceBySupplierTest extends Specification {
             toStringResult.contains("$field.name=")
             field.type == String ?
                     toStringResult.contains("'${field.get(testee)}'") :
-                    toStringResult.contains(field.get(testee).toString())
+                    toStringResult.contains(String.valueOf(field.get(testee)))
 
         and:
             readLocks == 0

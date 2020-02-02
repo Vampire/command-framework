@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -493,7 +493,7 @@ class CommandHandlerJavacordTest extends Specification {
             toStringResult.contains("$field.name=")
             field.type == String ?
                     toStringResult.contains("'${field.get(commandHandlerJavacord.ci())}'") :
-                    toStringResult.contains(field.get(commandHandlerJavacord.ci()).toString())
+                    toStringResult.contains(String.valueOf(field.get(commandHandlerJavacord.ci())))
 
         where:
             field << getAllInstanceFields(newInstance(getField(getClass(), 'commandHandlerJavacord').type))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ class CommandNotFoundEventJdaTest extends Specification {
             toStringResult.contains("$field.name=")
             field.type == String ?
                     toStringResult.contains("'${field.get(testee)}'") :
-                    toStringResult.contains(field.get(testee).toString())
+                    toStringResult.contains(String.valueOf(field.get(testee)))
 
         where:
             field << getAllInstanceFields(newInstance(getField(getClass(), 'testee').type))

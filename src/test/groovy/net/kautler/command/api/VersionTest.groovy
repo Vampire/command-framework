@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -216,7 +216,7 @@ class VersionTest extends Specification {
             toStringResult.contains("$field.name=")
             field.type == String ?
                     toStringResult.contains("'${field.get(testee.ci())}'") :
-                    toStringResult.contains(field.get(testee.ci()).toString())
+                    toStringResult.contains(String.valueOf(field.get(testee.ci())))
 
         cleanup:
             versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
