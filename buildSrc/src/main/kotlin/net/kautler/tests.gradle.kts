@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Bjoern Kautler
+ * Copyright 2020 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package net.kautler
 
 import info.solidsoft.gradle.pitest.PitestTask
-import net.kautler.Property.Companion.boolean
 import net.kautler.Property.Companion.double
 import net.kautler.Property.Companion.optionalString
 import org.pitest.mutationtest.engine.gregor.config.Mutator
@@ -188,8 +187,10 @@ val testManualCommandTimeout by double(10 * 60.0)
 val testDiscordToken1 by optionalString()
 val testDiscordToken2 by optionalString()
 val testDiscordServerId by optionalString()
-val includeManualTests by boolean()
 
+val manualIntegTest by tasks.registering {
+    group = "verification"
+}
 val integTest by tasks.registering {
     group = "verification"
 }
@@ -206,47 +207,72 @@ val integTestReport by tasks.registering(TestReport::class) {
     }
 }
 
+val manualIntegTestTasks = mutableListOf<TaskProvider<*>>()
+val integTestTasks = mutableListOf<TaskProvider<*>>()
+
 integTestSourceSets.forEach { (testSourceSetName, referenceSourceSetName) ->
-    val testTask = tasks.register<Test>(testSourceSetName) {
-        extra["testType"] = "integration"
-        description = "Runs the ${testSourceSetName.capitalize()} integration tests."
-        group = "verification"
-        testClassesDirs = sourceSets.getByName(referenceSourceSetName).output.classesDirs
-        classpath = (sourceSets.getByName(testSourceSetName).runtimeClasspath
-                + sourceSets.getByName(referenceSourceSetName).output)
-                .filter { it.exists() }
+    val manualTestTask = tasks
+            .register<Test>("manual${testSourceSetName.capitalize()}")
+            .also(manualIntegTestTasks::add)
+    val testTask = tasks
+            .register<Test>(testSourceSetName)
+            .also(integTestTasks::add)
 
-        if (includeManualTests.not()) {
-            useJUnit {
-                excludeCategories("net.kautler.command.integ.test.ManualTests")
-            }
-        }
+    listOf(manualTestTask, testTask).forEach {
+        it.configure {
+            extra["testType"] = "integration"
+            group = "verification"
+            testClassesDirs = sourceSets.getByName(referenceSourceSetName).output.classesDirs
+            classpath = (sourceSets.getByName(testSourceSetName).runtimeClasspath
+                    + sourceSets.getByName(referenceSourceSetName).output)
+                    .filter { it.exists() }
 
-        systemProperty("testResponseTimeout", testResponseTimeout)
-        systemProperty("testManualCommandTimeout", testManualCommandTimeout)
+            systemProperty("testResponseTimeout", testResponseTimeout)
+            systemProperty("testManualCommandTimeout", testManualCommandTimeout)
 
-        listOf("javacord", "jda").forEach {
-            if (referenceSourceSetName == "${it}IntegTest") {
-                systemProperty("testDiscordToken1", testDiscordToken1 ?: "")
-                systemProperty("testDiscordToken2", testDiscordToken2 ?: "")
-                systemProperty("testDiscordServerId", testDiscordServerId ?: "")
+            listOf("javacord", "jda").forEach {
+                if (referenceSourceSetName == "${it}IntegTest") {
+                    systemProperty("testDiscordToken1", testDiscordToken1 ?: "")
+                    systemProperty("testDiscordToken2", testDiscordToken2 ?: "")
+                    systemProperty("testDiscordServerId", testDiscordServerId ?: "")
 
-                doFirst("verify Discord tokens and server id are set") {
-                    testDiscordToken1.verifyPropertyIsSet("testDiscordToken1", rootProject.name)
-                    testDiscordToken2.verifyPropertyIsSet("testDiscordToken2", rootProject.name)
-                    testDiscordServerId.verifyPropertyIsSet("testDiscordServerId", rootProject.name)
+                    doFirst("verify Discord tokens and server id are set") {
+                        testDiscordToken1.verifyPropertyIsSet("testDiscordToken1", rootProject.name)
+                        testDiscordToken2.verifyPropertyIsSet("testDiscordToken2", rootProject.name)
+                        testDiscordServerId.verifyPropertyIsSet("testDiscordServerId", rootProject.name)
+                    }
                 }
             }
-        }
 
-        finalizedBy(integTestReport)
-        shouldRunAfter(tasks.test)
+            finalizedBy(integTestReport)
+            shouldRunAfter(tasks.test)
+        }
+    }
+
+    manualTestTask {
+        description = "Runs the manual ${testSourceSetName.capitalize()} integration tests."
+        useJUnit {
+            includeCategories("net.kautler.command.integ.test.ManualTests")
+        }
+    }
+
+    testTask {
+        description = "Runs the ${testSourceSetName.capitalize()} integration tests."
+        useJUnit {
+            excludeCategories("net.kautler.command.integ.test.ManualTests")
+        }
+    }
+
+    manualIntegTest {
+        dependsOn(manualTestTask)
     }
 
     integTest {
         dependsOn(testTask)
     }
 }
+
+integTestTasks.forEach { it.configure { shouldRunAfter(manualIntegTestTasks) } }
 
 jacoco {
     toolVersion = versions.safeGet("jacoco")
