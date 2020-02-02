@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import spock.util.mop.Use
 import javax.annotation.PostConstruct
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.ObservesAsync
+import javax.enterprise.inject.Any
 import javax.enterprise.inject.Instance
 import javax.enterprise.util.AnnotationLiteral
 import javax.enterprise.util.TypeLiteral
@@ -121,13 +122,15 @@ class CommandHandlerJdaTest extends Specification {
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .qualifiers(new AnnotationLiteral<Internal>() { })
+                            // work-around for https://github.com/weld/weld-junit/issues/97
+                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
                             .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
                             .creating(defaultPrefixProvider)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .qualifiers(new AnnotationLiteral<Internal>() { })
+                            // work-around for https://github.com/weld/weld-junit/issues/97
+                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
                             .types(TestEventReceiver)
                             .creating(testEventReceiverDelegate)
                             .build()

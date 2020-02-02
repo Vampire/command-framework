@@ -43,6 +43,7 @@ import spock.util.mop.Use
 import javax.annotation.PostConstruct
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.ObservesAsync
+import javax.enterprise.inject.Any
 import javax.enterprise.inject.Instance
 import javax.enterprise.util.AnnotationLiteral
 import javax.enterprise.util.TypeLiteral
@@ -123,13 +124,15 @@ class CommandHandlerJavacordTest extends Specification {
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .qualifiers(new AnnotationLiteral<Internal>() { })
+                            // work-around for https://github.com/weld/weld-junit/issues/97
+                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
                             .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
                             .creating(defaultPrefixProvider)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .qualifiers(new AnnotationLiteral<Internal>() { })
+                            // work-around for https://github.com/weld/weld-junit/issues/97
+                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
                             .types(TestEventReceiver)
                             .creating(testEventReceiverDelegate)
                             .build()
@@ -462,7 +465,8 @@ class CommandHandlerJavacordTest extends Specification {
                     .addBeans(
                             MockBean.builder()
                                     .scope(ApplicationScoped)
-                                    .qualifiers(new AnnotationLiteral<Internal>() { })
+                                    // work-around for https://github.com/weld/weld-junit/issues/97
+                                    .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
                                     .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
                                     .creating(defaultPrefixProvider)
                                     .build()
