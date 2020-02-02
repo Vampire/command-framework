@@ -304,7 +304,7 @@ class CommandHandlerTest extends Specification {
             commandHandler.doSetCustomPrefixProvider(null)
 
         when:
-            commandHandler.doHandleMessage(this, '')
+            commandHandler.doHandleMessage(_, '')
 
         then:
             1 * defaultPrefixProvider.getCommandPrefix(_) >> '!'
@@ -320,7 +320,7 @@ class CommandHandlerTest extends Specification {
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
 
         when:
-            commandHandler.doHandleMessage(this, '')
+            commandHandler.doHandleMessage(_, '')
 
         then:
             1 * defaultPrefixProvider.getCommandPrefix(_) >> '!'
@@ -332,7 +332,7 @@ class CommandHandlerTest extends Specification {
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
 
         when:
-            commandHandler.doHandleMessage(this, '')
+            commandHandler.doHandleMessage(_, '')
 
         then:
             0 * defaultPrefixProvider.getCommandPrefix(_) >> '!'
@@ -389,7 +389,7 @@ class CommandHandlerTest extends Specification {
             1 * defaultPrefixProvider.getCommandPrefix(_) >> ''
 
         when:
-            commandHandler.doHandleMessage(this, '')
+            commandHandler.doHandleMessage(_, '')
 
         then:
             getListAppender('Test Appender')
@@ -404,7 +404,7 @@ class CommandHandlerTest extends Specification {
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
 
         when:
-            commandHandler.doHandleMessage(this, '')
+            commandHandler.doHandleMessage(_, '')
 
         then:
             getListAppender('Test Appender')
@@ -418,7 +418,7 @@ class CommandHandlerTest extends Specification {
             1 * defaultPrefixProvider.getCommandPrefix(_) >> '!'
 
         when:
-            commandHandler.doHandleMessage(this, '')
+            commandHandler.doHandleMessage(_, '')
 
         then:
             getListAppender('Test Appender')
@@ -433,7 +433,7 @@ class CommandHandlerTest extends Specification {
             commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
 
         when:
-            commandHandler.doHandleMessage(this, '')
+            commandHandler.doHandleMessage(_, '')
 
         then:
             getListAppender('Test Appender')
@@ -487,7 +487,7 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, ".${command.aliases.first()}")
+            commandHandler.doHandleMessage(_, ".${command.aliases.first()}")
 
         then:
             commandsInstance.each {
@@ -543,7 +543,7 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(this, "!${command1.aliases.first()}\n  \tfoo \n bar ")
+            commandHandler.doHandleMessage(_, "!${command1.aliases.first()}\n  \tfoo \n bar ")
 
         then:
             1 * command1.execute(_, _, _, 'foo \n bar')
@@ -555,7 +555,7 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(this, '!nocommand')
+            commandHandler.doHandleMessage(_, '!nocommand')
 
         then:
             commandsInstance.each {
@@ -575,7 +575,7 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(_, "!${command.aliases.first()}")
 
         then:
             commandsInstance.each {
@@ -600,7 +600,7 @@ class CommandHandlerTest extends Specification {
             }
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(_, "!${command.aliases.first()}")
 
         then:
             (asynchronous ? 1 : 0) * commandHandlerDelegate.executeAsync(*_)
@@ -652,7 +652,7 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(_, "!${command.aliases.first()}")
 
         then:
             def expectedMessage = "Command $command was not allowed by restrictions"
@@ -687,7 +687,7 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(this, '!nocommand')
+            commandHandler.doHandleMessage(_, '!nocommand')
 
         then:
             def expectedMessage = 'No matching command found'
@@ -704,7 +704,7 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(_, "!${command.aliases.first()}")
 
         then:
             0 * commandHandlerDelegate.fireCommandNotAllowedEvent(*_)
@@ -968,7 +968,7 @@ class CommandHandlerTest extends Specification {
             def threadFuture = new CompletableFuture()
 
         when:
-            commandHandler.executeAsync(this) {
+            commandHandler.executeAsync(_) {
                 threadFuture.complete(currentThread())
             }
 
@@ -979,7 +979,7 @@ class CommandHandlerTest extends Specification {
     @Use([ContextualInstanceCategory,  Whitebox])
     def 'asynchronous command execution should not log an error if none happened'() {
         when:
-            commandHandler.executeAsync(this) { }
+            commandHandler.executeAsync(_) { }
 
         and:
             commandHandler.ci().getInternalState('executorService').get().with {
@@ -1000,7 +1000,7 @@ class CommandHandlerTest extends Specification {
             def exception = new Exception()
 
         when:
-            commandHandler.executeAsync(this) { throw exception }
+            commandHandler.executeAsync(_) { throw exception }
 
         and:
             commandHandler.ci().getInternalState('executorService').get().with {
