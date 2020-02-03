@@ -13,3 +13,4 @@
 # limitations under the License.
 
 net.kautler.command.integ.test.spock.CDIExtension
+net.kautler.command.integ.test.spock.GlobalRetryExtension

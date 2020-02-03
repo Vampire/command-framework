@@ -16,7 +16,7 @@
 
 package net.kautler.command.integ.test.spock
 
-import org.spockframework.runtime.extension.IGlobalExtension
+import org.spockframework.runtime.extension.AbstractGlobalExtension
 import org.spockframework.runtime.model.SpecInfo
 
 import javax.enterprise.inject.se.SeContainerInitializer
@@ -25,11 +25,7 @@ import static java.lang.Boolean.TRUE
 import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
 import static org.junit.Assert.fail
 
-class CDIExtension implements IGlobalExtension {
-    @Override
-    void start() {
-    }
-
+class CDIExtension extends AbstractGlobalExtension {
     @Override
     void visitSpec(SpecInfo spec) {
         spec.allFeatures.featureMethod.each { featureMethod ->
@@ -50,9 +46,5 @@ class CDIExtension implements IGlobalExtension {
                 }
             }
         }
-    }
-
-    @Override
-    void stop() {
     }
 }
