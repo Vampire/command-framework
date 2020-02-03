@@ -26,7 +26,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME
 
 @Retention(RUNTIME)
 @Target([TYPE, METHOD])
-@Repeatable(AddBeans)
-@interface AddBean {
+@Repeatable(VetoBeans)
+@interface VetoBean {
     Class<?> value()
 }

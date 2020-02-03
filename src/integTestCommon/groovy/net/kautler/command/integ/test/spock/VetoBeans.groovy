@@ -16,7 +16,6 @@
 
 package net.kautler.command.integ.test.spock
 
-import java.lang.annotation.Repeatable
 import java.lang.annotation.Retention
 import java.lang.annotation.Target
 
@@ -26,7 +25,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME
 
 @Retention(RUNTIME)
 @Target([TYPE, METHOD])
-@Repeatable(AddBeans)
-@interface AddBean {
-    Class<?> value()
+@interface VetoBeans {
+    VetoBean[] value()
 }

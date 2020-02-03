@@ -21,7 +21,6 @@ import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.Command
-import net.kautler.command.api.annotation.Usage
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
 import net.kautler.command.integ.test.spock.VetoBean
@@ -30,54 +29,67 @@ import net.kautler.command.parameter.parser.missingdependency.MissingDependencyP
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
+import spock.util.concurrent.PollingConditions
 
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.inject.Vetoed
 import javax.inject.Inject
 
-import static java.util.UUID.randomUUID
+import static org.apache.logging.log4j.Level.ERROR
+import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
 
-@Subject(UntypedParameterParser)
-@VetoBean(MissingDependencyParameterParser)
-class UntypedParameterParserIntegTest extends Specification {
+@Subject(MissingDependencyParameterParser)
+@VetoBean(UntypedParameterParser)
+class MissingDependencyParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
-    def 'untyped parameter parser should work properly'(
+    def 'missing dependency parameter parser should throw UnsupportedOperationException'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
-            def random1 = randomUUID()
-            def random2 = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def commandReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == """
-                            pong:
-                            bar: $random2
-                            foo: $random1
-                        """.stripIndent().trim())) {
-                    responseReceived.set(true)
+                        (it.message.author == textChannelAsUser.JDA.selfUser) &&
+                        (it.message.contentRaw == '!ping')) {
+                    commandReceived.set(true)
                 }
             }
             textChannelAsBot.JDA.addEventListener(eventListener)
 
         when:
             textChannelAsUser
-                    .sendMessage("!ping $random1 $random2")
+                    .sendMessage('!ping')
                     .complete()
 
         then:
-            responseReceived.get()
+            commandReceived.get()
+
+        and:
+            new PollingConditions(timeout: System.properties.testResponseTimeout as double).eventually {
+                getListAppender('Test Appender')
+                        .events
+                        .any {
+                            (it.level == ERROR) &&
+                                    (it.thrown instanceof UnsupportedOperationException) &&
+                                    (it.thrown.message == 'ANTLR runtime is missing')
+                        }
+            }
 
         cleanup:
             if (eventListener) {
                 textChannelAsBot.JDA.removeEventListener(eventListener)
             }
+
+        and:
+            getListAppender('Test Appender').@events.removeIf {
+                (it.level == ERROR) &&
+                        (it.thrown instanceof UnsupportedOperationException) &&
+                        (it.thrown.message == 'ANTLR runtime is missing')
+            }
     }
 
-    @Usage('<foo> <bar>')
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
@@ -86,17 +98,7 @@ class UntypedParameterParserIntegTest extends Specification {
 
         @Override
         void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
-            def parameters = parameterParser
-                    .parse(this, incomingMessage, prefix, usedAlias, parameterString)
-                    .with { it.entries }
-                    .collect { "$it.key: $it.value" }
-                    .sort()
-                    .join('\n')
-
-            incomingMessage
-                    .channel
-                    .sendMessage("pong:\n$parameters")
-                    .complete()
+            parameterParser.toString()
         }
     }
 }

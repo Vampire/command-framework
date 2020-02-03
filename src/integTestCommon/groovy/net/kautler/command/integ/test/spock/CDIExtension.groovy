@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,13 @@ class CDIExtension extends AbstractGlobalExtension {
     void visitSpec(SpecInfo spec) {
         spec.allFeatures.featureMethod.each { featureMethod ->
             featureMethod.addInterceptor { invocation ->
+                def annotatedElements = [spec.reflection, featureMethod.reflection]
                 def seContainer = SeContainerInitializer.newInstance()
                         .addProperty('javax.enterprise.inject.scan.implicit', TRUE)
                         .addExtensions(new AddBeansExtension(
-                                featureMethod.reflection.getAnnotationsByType(AddBean)*.value()))
+                                annotatedElements*.getAnnotationsByType(AddBean).flatten()*.value()))
+                        .addExtensions(new VetoBeansExtension(
+                                annotatedElements*.getAnnotationsByType(VetoBean).flatten()*.value()))
                         .initialize()
                 try {
                     invocation.proceed()

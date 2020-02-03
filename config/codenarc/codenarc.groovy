@@ -499,7 +499,10 @@ ruleset {
     UnusedObject
     UnusedPrivateField
     UnusedPrivateMethod {
-        doNotApplyToClassNames = 'net.kautler.command.integ.test.spock.AddBeansExtension'
+        doNotApplyToClassNames = [
+                'net.kautler.command.integ.test.spock.AddBeansExtension',
+                'net.kautler.command.integ.test.spock.VetoBeansExtension'
+        ].join(', ')
     }
     UnusedPrivateMethodParameter
     UnusedVariable

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import java.lang.annotation.Retention
 import java.lang.annotation.Target
 
 import static java.lang.annotation.ElementType.METHOD
+import static java.lang.annotation.ElementType.TYPE
 import static java.lang.annotation.RetentionPolicy.RUNTIME
 
 @Retention(RUNTIME)
-@Target(METHOD)
+@Target([TYPE, METHOD])
 @interface AddBeans {
     AddBean[] value()
 }

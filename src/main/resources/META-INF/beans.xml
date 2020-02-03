@@ -20,6 +20,9 @@
        xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/beans_1_1.xsd"
        bean-discovery-mode="annotated">
     <scan>
+        <exclude name="net.kautler.command.parameter.parser.missingdependency.*">
+            <if-class-available name="org.antlr.v4.runtime.Parser"/>
+        </exclude>
         <exclude name="net.kautler.command.parameter.parser.*">
             <if-class-not-available name="org.antlr.v4.runtime.Parser"/>
         </exclude>

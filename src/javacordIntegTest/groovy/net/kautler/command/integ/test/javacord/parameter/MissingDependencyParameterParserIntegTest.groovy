@@ -17,7 +17,6 @@
 package net.kautler.command.integ.test.javacord.parameter
 
 import net.kautler.command.api.Command
-import net.kautler.command.api.annotation.Usage
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
 import net.kautler.command.integ.test.spock.VetoBean
@@ -25,52 +24,65 @@ import net.kautler.command.parameter.parser.UntypedParameterParser
 import net.kautler.command.parameter.parser.missingdependency.MissingDependencyParameterParser
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.message.Message
-import org.javacord.api.util.logging.ExceptionLogger
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
+import spock.util.concurrent.PollingConditions
 
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.inject.Vetoed
 import javax.inject.Inject
 
-import static java.util.UUID.randomUUID
+import static org.apache.logging.log4j.Level.ERROR
+import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
 
-@Subject(UntypedParameterParser)
-@VetoBean(MissingDependencyParameterParser)
-class UntypedParameterParserIntegTest extends Specification {
+@Subject(MissingDependencyParameterParser)
+@VetoBean(UntypedParameterParser)
+class MissingDependencyParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
-    def 'untyped parameter parser should work properly'(
+    def 'missing dependency parameter parser should throw UnsupportedOperationException'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
-            def random1 = randomUUID()
-            def random2 = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def commandReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == """
-                    pong:
-                    bar: $random2
-                    foo: $random1
-                """.stripIndent().trim())) {
-                    responseReceived.set(true)
+                if ((it.message.userAuthor.orElse(null) == serverTextChannelAsUser.api.yourself) &&
+                        (it.message.content == '!ping')) {
+                    commandReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random1 $random2")
+                    .sendMessage('!ping')
                     .join()
 
         then:
-            responseReceived.get()
+            commandReceived.get()
+
+        and:
+            new PollingConditions(timeout: System.properties.testResponseTimeout as double).eventually {
+                getListAppender('Test Appender')
+                        .events
+                        .any {
+                            (it.level == ERROR) &&
+                                    (it.thrown instanceof UnsupportedOperationException) &&
+                                    (it.thrown.message == 'ANTLR runtime is missing')
+                        }
+            }
 
         cleanup:
             listenerManager?.remove()
+
+        and:
+            getListAppender('Test Appender').@events.removeIf {
+                (it.level == ERROR) &&
+                        (it.thrown instanceof UnsupportedOperationException) &&
+                        (it.thrown.message == 'ANTLR runtime is missing')
+            }
     }
 
-    @Usage('<foo> <bar>')
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
@@ -79,17 +91,7 @@ class UntypedParameterParserIntegTest extends Specification {
 
         @Override
         void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
-            def parameters = parameterParser
-                    .parse(this, incomingMessage, prefix, usedAlias, parameterString)
-                    .with { it.entries }
-                    .collect { "$it.key: $it.value" }
-                    .sort()
-                    .join('\n')
-
-            incomingMessage
-                    .channel
-                    .sendMessage("pong:\n$parameters")
-                    .exceptionally(ExceptionLogger.get())
+            parameterParser.toString()
         }
     }
 }

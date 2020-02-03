@@ -16,17 +16,20 @@
 
 package net.kautler.command.integ.test.spock
 
-import java.lang.annotation.Repeatable
-import java.lang.annotation.Retention
-import java.lang.annotation.Target
+import javax.enterprise.event.Observes
+import javax.enterprise.inject.spi.Extension
+import javax.enterprise.inject.spi.ProcessAnnotatedType
 
-import static java.lang.annotation.ElementType.METHOD
-import static java.lang.annotation.ElementType.TYPE
-import static java.lang.annotation.RetentionPolicy.RUNTIME
+class VetoBeansExtension implements Extension {
+    def beans
 
-@Retention(RUNTIME)
-@Target([TYPE, METHOD])
-@Repeatable(AddBeans)
-@interface AddBean {
-    Class<?> value()
+    VetoBeansExtension(Collection<Class<?>> beans) {
+        this.beans = beans
+    }
+
+    private void vetoBean(@Observes ProcessAnnotatedType processAnnotatedType) {
+        if (processAnnotatedType.annotatedType.javaClass in beans) {
+            processAnnotatedType.veto()
+        }
+    }
 }
