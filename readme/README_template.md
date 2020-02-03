@@ -596,6 +596,8 @@ Version Numbers
 ---------------
 
 Versioning of this library follows the [Semantic Versioning][Semantic Versioning Website] specification.
+But only classes in packages starting with `net.kautler.command.api` are bound to the backwards compatibility
+constraints of semantic versioning. All other classes are considered internal and can have breaking changes anytime.
 
 
 
