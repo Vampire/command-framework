@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package net.kautler.command.integ.test.jda
+package net.kautler.command.integ.test.jda.parameter
 
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.Command
-import net.kautler.command.api.ParameterParser
 import net.kautler.command.api.annotation.Usage
+import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
+import net.kautler.command.parameter.parser.UntypedParameterParser
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
@@ -34,10 +35,10 @@ import javax.inject.Inject
 
 import static java.util.UUID.randomUUID
 
-@Subject(ParameterParser)
-class ParameterParserIntegTest extends Specification {
+@Subject(UntypedParameterParser)
+class UntypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
-    def 'parameter parser should work properly'(
+    def 'untyped parameter parser should work properly'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
             def random1 = randomUUID()
@@ -49,7 +50,11 @@ class ParameterParserIntegTest extends Specification {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong:\nbar: $random2\nfoo: $random1")) {
+                        (it.message.contentRaw == """
+                            pong:
+                            bar: $random2
+                            foo: $random1
+                        """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
             }
@@ -69,9 +74,9 @@ class ParameterParserIntegTest extends Specification {
             }
     }
 
+    @Usage('<foo> <bar>')
     @Vetoed
     @ApplicationScoped
-    @Usage('<foo> <bar>')
     static class PingCommand implements Command<Message> {
         @Inject
         ParameterParser parameterParser
@@ -79,7 +84,8 @@ class ParameterParserIntegTest extends Specification {
         @Override
         void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
             def parameters = parameterParser
-                    .getParsedParameters(this, prefix, usedAlias, parameterString)
+                    .parse(this, incomingMessage, prefix, usedAlias, parameterString)
+                    .with { it.entries }
                     .collect { "$it.key: $it.value" }
                     .sort()
                     .join('\n')

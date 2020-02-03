@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,45 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "hashCode",
                     "()I",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
-                    "Substituted 2 with 3")
+                    "Substituted 2 with 3"),
+            // this just does an unsafe cast, so it cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.parameter.ParametersImpl",
+                    "getAsMap",
+                    "()Ljava/util/Map;",
+                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.NakedReceiverMutator",
+                    "replaced call to net/kautler/command/parameter/ParametersImpl::getParameters with receiver"),
+            // giving a 4 instead of 3 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.parameter.parser.BaseParameterParser",
+                    "parse",
+                    "(Lnet/kautler/command/api/Command;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/function/BiFunction;)Lnet/kautler/command/api/parameter/Parameters;",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 3 with 4"),
+            // giving a 3 instead of 2 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.parameter.parser.BaseParameterParser",
+                    "parse",
+                    "(Lnet/kautler/command/api/Command;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/function/BiFunction;)Lnet/kautler/command/api/parameter/Parameters;",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3",
+                    101),
+            // giving a 3 instead of 2 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.parameter.parser.TypedParameterParser",
+                    CURRENT_JAVA_MAJOR_VERSION >= 9 ? "lambda$parse" : "lambda$null",
+                    "(Ljava/lang/String;Ljava/util/Map;Ljava/util/Collection;Ljava/lang/Object;Lnet/kautler/command/api/Command;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3",
+                    114, 266),
+            // this causes an endless while-loop
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.ExceptionUtil",
+                    "unwrapThrowable",
+                    "(Ljava/lang/Throwable;)Ljava/lang/Throwable;",
+                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.NakedReceiverMutator",
+                    "replaced call to java/lang/Throwable::getCause with receiver",
+                    33)
             ).collect(groupingBy(ExplicitMutationFilterDetails::getClazz));
 
     // work-around for https://github.com/hcoles/pitest/issues/689

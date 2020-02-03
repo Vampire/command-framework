@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package net.kautler.command.integ.test.javacord
+package net.kautler.command.integ.test.javacord.parameter
 
 import net.kautler.command.api.Command
-import net.kautler.command.api.ParameterParser
 import net.kautler.command.api.annotation.Usage
+import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
+import net.kautler.command.parameter.parser.UntypedParameterParser
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.message.Message
 import org.javacord.api.util.logging.ExceptionLogger
@@ -33,10 +34,10 @@ import javax.inject.Inject
 
 import static java.util.UUID.randomUUID
 
-@Subject(ParameterParser)
-class ParameterParserIntegTest extends Specification {
+@Subject(UntypedParameterParser)
+class UntypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
-    def 'parameter parser should work properly'(
+    def 'untyped parameter parser should work properly'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random1 = randomUUID()
@@ -45,7 +46,11 @@ class ParameterParserIntegTest extends Specification {
 
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong:\nbar: $random2\nfoo: $random1")) {
+                if (it.message.author.yourself && (it.message.content == """
+                    pong:
+                    bar: $random2
+                    foo: $random1
+                """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
             }
@@ -62,9 +67,9 @@ class ParameterParserIntegTest extends Specification {
             listenerManager?.remove()
     }
 
+    @Usage('<foo> <bar>')
     @Vetoed
     @ApplicationScoped
-    @Usage('<foo> <bar>')
     static class PingCommand implements Command<Message> {
         @Inject
         ParameterParser parameterParser
@@ -72,7 +77,8 @@ class ParameterParserIntegTest extends Specification {
         @Override
         void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
             def parameters = parameterParser
-                    .getParsedParameters(this, prefix, usedAlias, parameterString)
+                    .parse(this, incomingMessage, prefix, usedAlias, parameterString)
+                    .with { it.entries }
                     .collect { "$it.key: $it.value" }
                     .sort()
                     .join('\n')

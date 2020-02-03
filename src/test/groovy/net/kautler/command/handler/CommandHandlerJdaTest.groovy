@@ -43,7 +43,6 @@ import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.ObservesAsync
 import javax.enterprise.inject.Any
 import javax.enterprise.inject.Instance
-import javax.enterprise.util.AnnotationLiteral
 import javax.enterprise.util.TypeLiteral
 import javax.inject.Inject
 import java.lang.reflect.Type
@@ -123,14 +122,14 @@ class CommandHandlerJdaTest extends Specification {
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
+                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                             .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
                             .creating(defaultPrefixProvider)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
+                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                             .types(TestEventReceiver)
                             .creating(testEventReceiverDelegate)
                             .build()
@@ -412,6 +411,16 @@ class CommandHandlerJdaTest extends Specification {
             ].each {
                 1 * it.removeEventListener(commandHandlerJda.ci())
             }
+    }
+
+    def 'parameterConverterTypeLiteralByMessageType should return proper mapping'() {
+        when:
+            def parameterConverterTypeLiteralByMessageType =
+                    commandHandlerJda.parameterConverterTypeLiteralByMessageType
+
+        then:
+            parameterConverterTypeLiteralByMessageType.key == Message
+            parameterConverterTypeLiteralByMessageType.value instanceof TypeLiteral
     }
 
     @ApplicationScoped

@@ -39,6 +39,10 @@ Table of Contents
     * [Command Restrictions](#command-restrictions)
     * [Command Usage](#command-usage)
     * [Parsing Parameters](#parsing-parameters)
+      * [Simple Splitting of Parameters](#simple-splitting-of-parameters)
+      * [Semantic Parsing and Validation](#semantic-parsing-and-validation)
+      * [Semantic Parsing and Validation with Type Conversions](#semantic-parsing-and-validation-with-type-conversions)
+    * [Customizing Parameter Converters](#customizing-parameter-converters)
     * [Customizing Command Prefix](#customizing-command-prefix)
     * [Customizing Alias Calculation](#customizing-alias-calculation)
   * [CDI Events](#cdi-events)
@@ -286,8 +290,10 @@ is described at [Parsing Parameters](#parsing-parameters).
 
 #### Parsing Parameters
 
-There are two helpers to split the `parameterString` that is provided to `Command#execute(...)` into multiple parameters
-that can then be handled separately.
+There are three helpers to split the `parameterString` that is provided to `Command#execute(...)` into multiple
+parameters that can then be handled separately.
+
+##### Simple Splitting of Parameters
 
 The first is the method `Command.getParameters(...)` which you give the parameter string and the maximum amount of
 parameters to split into. The provided string will then be split at any arbitrary amount of consecutive whitespace
@@ -295,11 +301,13 @@ characters. The last element of the returned array will have all remaining text 
 exactly three parameters without whitespaces, you should set the max parameters to four, so you can easily test the
 length of the returned array whether too many parameters were given to the command.
 
+##### Semantic Parsing and Validation
+
 The second is the [`ParameterParser`][ParameterParser JavaDoc] that you can get injected into your command. For the
 `ParameterParser` to work, the [usage](#command-usage) of the command has to follow a defined syntax language. This
 usage syntax is then parsed and the given parameter string analysed according to the defined syntax. If the given
-parameter string does not adhere to the defined syntax, an `IllegalArgumentException` is thrown that can be caught and
-reported to the user giving wrong arguments. The exception message is suitable to be directly forwarded to user.
+parameter string does not adhere to the defined syntax, a `ParameterParseException` is thrown that can be caught and
+reported to the user giving wrong arguments. The exception message is suitable to be directly forwarded to users.
 
 The usage string has to follow this pre-defined format:
 * Placeholders for free text without whitespaces (in the value) look like `<my placeholder>`
@@ -311,16 +319,50 @@ The usage string has to follow this pre-defined format:
 * Whitespace characters between the defined tokens are optional and ignored
 
 _**Examples:**_
-* `@Usage("<coin type> <amount>")}`
-* `@Usage("['all'] ['exact']")}`
-* `@Usage("[<text...>]")}`
-* `@Usage("(<targetLanguage> '|' | <sourceLanguage> <targetLanguage>) <text...>")}`
+* `@Usage("<coin type> <amount>")`
+* `@Usage("['all'] ['exact']")`
+* `@Usage("[<text...>]")`
+* `@Usage("(<targetLanguage> '|' | <sourceLanguage> <targetLanguage>) <text...>")`
 
-_**Warning:**_ If you have an optional literal parameter following an optional placeholder parameter like for example
-`[<user mention>] ['exact']` and a user invokes the command with only the parameter `exact`, it could fit in both
-parameter slots. You have to decide yourself in which slot it belongs. For cases where the literal parameter can never
-be meant for the placeholder, you can use `ParameterParser#fixupParsedParameter(...)` to correct the parameters map for
-the two given parameters.
+The values for these non-typed parameters are always `String`s unless multiple parameters with the same name have a
+value given by the user like with the pattern `<foo> <foo>`, in which case the value will be a `List<String>`.
+
+_**Warning:**_ If you for example have
+* an optional placeholder followed by an optional literal like in `[<placeholder>] ['literal']` or
+* alternatively a placeholder or literal like in `(<placeholder> | 'literal')`
+
+and a user invokes the command with only the parameter `literal`, it could fit in both parameter slots.
+You have to decide yourself in which slot it belongs. For cases where the literal parameter can never
+be meant for the placeholder, you can use `Parameters#fixup(...)` to correct the parameters instance
+for the two given parameters.
+
+##### Semantic Parsing and Validation with Type Conversions
+
+The third is an addendum to the second method described above. The syntax is basically the same. The only difference is,
+that a colon (':') followed by a parameter type can optionally be added after a parameter name like for example
+`<amount:integer>`. Parameters that do not have a type specified, are implicitly of type `string`. If a colon is needed
+within the actual parameter name, a type has to be specified explicitly, as invalid parameter types are not allowed and
+will trigger an error at runtime.
+
+The parameter types can be freely defined by supplying [parameter converters](#customizing-parameter-converters) to
+define new types or overwrite built-in ones to have a different behavior.
+
+The built-in types currently available are:
+* for all message frameworks
+  * `decimal` for a floating point number converted to `BigDecimal`
+  * `number` or `integer` for a natural number converted to `BigInteger`
+  * `string` or `text` for a no-op conversion which can be used if a colon is needed in the parameter name
+    or if simply all parameters should have a type specified for consistency
+* for Javacord
+  * `user_mention` or `userMention` for a mentioned user converted to `User`
+  * `role_mention` or `roleMention` for a mentioned role converted to `Role`
+  * `channel_mention` or `channelMention` for a mentioned channel converted to `Channel`
+* for JDA
+  * `user_mention` or `userMention` for a mentioned user converted to `User`
+  * `role_mention` or `roleMention` for a mentioned role converted to `Role`
+  * `channel_mention` or `channelMention` for a mentioned channel converted to `TextChannel`
+
+To select the typed parameter parser, add the qualifier `@ParameterParser.Typed` to the injected `ParameterParser`.
 
 _**Examples:**_
 ```java
@@ -333,10 +375,10 @@ public class PingCommand implements Command<Message> {
     @Override
     public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
         try {
-            parameterParser.getParsedParameters(this, prefix, usedAlias, parameterString);
-        } catch (IllegalArgumentException e) {
+            parameterParser.parse(this, incomingMessage, prefix, usedAlias, parameterString);
+        } catch (ParameterParseException ppe) {
             incomingMessage.getChannel()
-                    .sendMessage(format("%s: %s", incomingMessage.getAuthor().getDisplayName(), e.getMessage()))
+                    .sendMessage(format("%s: %s", incomingMessage.getAuthor().getDisplayName(), ppe.getMessage()))
                     .exceptionally(ExceptionLogger.get());
             return;
         }
@@ -350,27 +392,53 @@ public class PingCommand implements Command<Message> {
 
 ```java
 @ApplicationScoped
-@Usage("[<user mention>] ['exact']")
+@Usage("[<user:userMention>] ['exact']")
 public class DoCommand implements Command<Message> {
     @Inject
+    @Typed
     private ParameterParser parameterParser;
 
     @Override
     public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
-        Map<String, String> parameters;
+        Parameters<String> parameters;
         try {
-            parameters = parameterParser.getParsedParameters(this, prefix, usedAlias, parameterString);
-        } catch (IllegalArgumentException e) {
+            parameters = parameterParser.parse(this, incomingMessage, prefix, usedAlias, parameterString);
+        } catch (ParameterParseException ppe) {
             incomingMessage.getChannel()
-                    .sendMessage(format("%s: %s", incomingMessage.getAuthor().getDisplayName(), e.getMessage()))
+                    .sendMessage(format("%s: %s", incomingMessage.getAuthor().getDisplayName(), ppe.getMessage()))
                     .exceptionally(ExceptionLogger.get());
             return;
         }
-        parameterParser.fixupParsedParameter(parameters, "user mention", "exact");
-        boolean exact = parameters.containsKey("exact");
-        boolean otherUserGiven = parameters.containsKey("user mention");
-        String otherUserMention = parameters.get("user mention");
+        parameters.fixup("user mention", "exact");
+        boolean exact = parameters.containsParameter("exact");
+        Optional<String> otherUser = parameters.get("user mention");
         // ...
+    }
+}
+```
+
+#### Customizing Parameter Converters
+
+A custom parameter converter can be configured by providing a CDI bean that implements the
+[`ParameterConverter`][ParameterConverter JavaDoc] interface. In the implementation of the `convert` method the string
+parameter and various context information is given and from this the converted parameter value can be calculated.
+The class also needs to be annotated with one or multiple [`ParameterType`][ParameterType JavaDoc] qualifiers
+that define the parameter type aliases for which the annotated parameter converter works. Without such
+qualifier the converter will simply never be used. It is an error to have multiple parameter converters with the
+same parameter type that can be applied to the same framework message type and this will produce an error latest
+when a parameter with that type is being converted. The only exception are the built-in parameter types.
+A user-supplied converter with the same parameter type as a built-in converter will be preferred,
+but it would still be an error to have multiple such overrides for the same type.
+
+_**Examples:**_
+```java
+@ApplicationScoped
+@ParameterType("strings")
+public class StringsConverter implements ParameterConverter<Object, List<String>> {
+    @Override
+    public List<String> convert(String parameter, String type, Command<?> command, Object message,
+                                String prefix, String usedAlias, String parameterString) {
+        return asList(parameter.split(","));
     }
 }
 ```
@@ -535,7 +603,7 @@ License
 -------
 
 ```
-Copyright 2019 Björn Kautler
+Copyright 2020 Björn Kautler
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -567,7 +635,7 @@ limitations under the License.
 [Mutant Coverage Badge]:
     https://shields.javacord.org/badge/PIT%20Mutant%20Coverage-100%25-brightgreen.svg?style=flat
 [Integration Test Coverage Badge]:
-    https://shields.javacord.org/badge/Integration%20Test%20Coverage-~75%25-brightgreen.svg?style=flat
+    https://shields.javacord.org/badge/Integration%20Test%20Coverage-~70%25-brightgreen.svg?style=flat
 [Supported Java Versions Badge]:
     https://shields.javacord.org/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:
@@ -607,8 +675,12 @@ limitations under the License.
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/annotation/Description.html
 [NoneOf JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/restriction/NoneOf.html
+[ParameterConverter JavaDoc]:
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/parameter/ParameterConverter.html
 [ParameterParser JavaDoc]:
-    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/ParameterParser.html
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/parameter/ParameterParser.html
+[ParameterType JavaDoc]:
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/parameter/ParameterType.html
 [PrefixProvider JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/prefix/PrefixProvider.html
 [AliasAndParameterStringTransformer JavaDoc]:

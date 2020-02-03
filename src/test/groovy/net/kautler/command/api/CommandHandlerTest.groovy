@@ -19,6 +19,7 @@ package net.kautler.command.api
 import net.kautler.command.Internal
 import net.kautler.command.InvalidAnnotationCombinationException
 import net.kautler.command.LoggerProducer
+import net.kautler.command.api.parameter.ParameterConverter
 import net.kautler.command.api.prefix.PrefixProvider
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
@@ -36,9 +37,9 @@ import javax.annotation.PostConstruct
 import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.inject.Any
 import javax.enterprise.inject.Instance
-import javax.enterprise.util.AnnotationLiteral
 import javax.enterprise.util.TypeLiteral
 import javax.inject.Inject
+import java.util.Map.Entry
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
@@ -84,7 +85,7 @@ class CommandHandlerTest extends Specification {
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
+                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                             .types(new TypeLiteral<CommandHandler<Object>>() { }.type)
                             .creating(commandHandlerDelegate)
                             .build(),
@@ -111,7 +112,7 @@ class CommandHandlerTest extends Specification {
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
+                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                             .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
                             .creating(defaultPrefixProvider)
                             .build(),
@@ -287,7 +288,7 @@ class CommandHandlerTest extends Specification {
             }
 
         and:
-            command1.restrictionChain >> { throw new InvalidAnnotationCombinationException() }
+            command1.restrictionChain >> { throw new InvalidAnnotationCombinationException('') }
 
         and:
             commandHandler.doSetCommands(commandsInstance)
@@ -1030,6 +1031,11 @@ class CommandHandlerTest extends Specification {
         @PostConstruct
         void initialize() {
             initialized[0] = true
+        }
+
+        @Override
+        Entry<Class<Object>, TypeLiteral<ParameterConverter<? super Object, ?>>> getParameterConverterTypeLiteralByMessageType() {
+            delegate.parameterConverterTypeLiteralByMessageType
         }
 
         @Override

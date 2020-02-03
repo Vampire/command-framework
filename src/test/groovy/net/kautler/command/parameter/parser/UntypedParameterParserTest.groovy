@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package net.kautler.command.api
+package net.kautler.command.parameter.parser
 
+import net.kautler.command.api.Command
+import net.kautler.command.api.parameter.ParameterParseException
+import net.kautler.command.parameter.ParametersImpl
 import net.kautler.command.usage.UsagePatternBuilder
 import net.kautler.test.ContextualInstanceCategory
 import org.jboss.weld.junit.MockBean
@@ -27,18 +30,17 @@ import spock.util.mop.Use
 
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
-import java.util.regex.Pattern
 
 import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
 import static org.powermock.reflect.Whitebox.newInstance
 
-class ParameterParserTest extends Specification {
+class UntypedParameterParserTest extends Specification {
     UsagePatternBuilder usagePatternBuilder = Stub()
 
     @Rule
     WeldInitiator weld = WeldInitiator
-            .from(ParameterParser)
+            .from(UntypedParameterParser)
             .addBeans(
                     MockBean.builder()
                             .scope(ApplicationScoped)
@@ -51,27 +53,40 @@ class ParameterParserTest extends Specification {
 
     @Inject
     @Subject
-    ParameterParser testee
+    UntypedParameterParser testee
 
     Command command = Stub()
 
     def 'empty parameter string for command that does not expect arguments should result in empty map'() {
         expect:
-            testee.getParsedParameters(command, '!', 'test', '') == [:]
+            testee.parse(command, _, '!', 'test', '') == new ParametersImpl<>([:])
     }
 
     def 'whitespace parameter string for command that does not expect arguments should result in empty map'() {
         expect:
-            testee.getParsedParameters(command, '!', 'test', ' \n\t') == [:]
+            testee.parse(command, _, '!', 'test', ' \n\t') == new ParametersImpl<>([:])
+    }
+
+    def 'non-empty parameter string for command that does not expect arguments should throw exception'() {
+        when:
+            testee.parse(command, _, '!', 'test', 'foo')
+
+        then:
+            ParameterParseException ppe = thrown()
+            ppe.message == 'Command `!test` does not expect arguments'
     }
 
     def 'empty parameter string for command that expects arguments should throw exception'() {
+        given:
+            command.usage >> Optional.of('<foo>')
+            usagePatternBuilder.getPattern(!null) >> ~/(?<foo>\S+)/
+
         when:
-            testee.getParsedParameters(command, '!', 'test', 'foo')
+            testee.parse(command, _, '!', 'test', '')
 
         then:
-            IllegalArgumentException iae = thrown()
-            iae.message == 'Command `!test` does not expect arguments'
+            ParameterParseException ppe = thrown()
+            ppe.message == 'Wrong arguments for command `!test`\nUsage: `!test <foo>`'
     }
 
     def 'non matching arguments should throw exception'() {
@@ -80,51 +95,49 @@ class ParameterParserTest extends Specification {
             usagePatternBuilder.getPattern(!null) >> ~/[^\w\W]/
 
         when:
-            testee.getParsedParameters(command, '!', 'test', 'bar')
+            testee.parse(command, _, '!', 'test', 'bar')
 
         then:
-            IllegalArgumentException iae = thrown()
-            iae.message == 'Wrong arguments for command `!test`\nUsage: `!test \'foo\'`'
+            ParameterParseException ppe = thrown()
+            ppe.message == 'Wrong arguments for command `!test`\nUsage: `!test \'foo\'`'
     }
 
-    def 'matching arguments should be returned comma separated'() {
+    def 'matching arguments should be returned as list'() {
         given:
             command.usage >> Optional.of('<foo> <foo>')
             usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
-            usagePatternBuilder.getPattern(!null) >> Pattern.compile(/(?<foo1>bar) (?<foo2>baz)/)
+            usagePatternBuilder.getPattern(!null) >> ~/(?<foo1>bar) (?<foo2>baz)/
 
         expect:
-            testee.getParsedParameters(command, '!', 'test', 'bar baz') == [foo: 'bar,baz']
+            testee.parse(command, _, '!', 'test', 'bar baz') == new ParametersImpl<>([foo: ['bar', 'baz']])
     }
 
     def 'leading and trailing whitespace around parameter string should be ignored'() {
         given:
-            command.usage >> Optional.of('<foo> <foo>')
+            command.usage >> Optional.of('<foo> [<foo>]')
             usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
-            usagePatternBuilder.getPattern(!null) >> Pattern.compile(/(?<foo1>bar)( (?<foo2>baz))?/)
+            usagePatternBuilder.getPattern(!null) >> ~/(?<foo1>bar)( (?<foo2>baz))?/
 
         expect:
-            testee.getParsedParameters(command, '!', 'test', ' bar ') == [foo: 'bar']
+            testee.parse(command, _, '!', 'test', ' bar ') == new ParametersImpl<>([foo: 'bar'])
     }
 
     def 'missing arguments should not be returned'() {
         given:
             command.usage >> Optional.of('[<foo>] [<foo>]')
             usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
-            usagePatternBuilder.getPattern(!null) >> Pattern.compile(/(?<foo1>bar)?( (?<foo2>baz))?/)
+            usagePatternBuilder.getPattern(!null) >> ~/(?<foo1>bar)?( (?<foo2>baz))?/
 
         expect:
-            testee.getParsedParameters(command, '!', 'test', '') == [:]
+            testee.parse(command, _, '!', 'test', '') == new ParametersImpl<>([:])
     }
 
     def 'invalid usage pattern should throw exception during lexing'() {
         given:
             command.usage >> Optional.of('test')
-            usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
-            usagePatternBuilder.getPattern(!null) >> Pattern.compile(/(?<foo1>bar)?( (?<foo2>baz))?/)
 
         when:
-            testee.getParsedParameters(command, '!', 'test', 'bar baz')
+            testee.parse(command, _, '!', 'test', 'bar baz')
 
         then:
             IllegalArgumentException iae = thrown()
@@ -139,11 +152,9 @@ class ParameterParserTest extends Specification {
 
         and:
             command.usage >> Optional.of('test')
-            usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
-            usagePatternBuilder.getPattern(!null) >> Pattern.compile(/(?<foo1>bar)?( (?<foo2>baz))?/)
 
         when:
-            testee.getParsedParameters(command, '!', 'test', 'bar baz')
+            testee.parse(command, _, '!', 'test', 'bar baz')
 
         then:
             thrown(IllegalArgumentException)
@@ -156,11 +167,9 @@ class ParameterParserTest extends Specification {
     def 'invalid usage pattern should throw exception during parsing'() {
         given:
             command.usage >> Optional.of('[<foo> [<foo>]')
-            usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
-            usagePatternBuilder.getPattern(!null) >> Pattern.compile(/(?<foo1>bar)?( (?<foo2>baz))?/)
 
         when:
-            testee.getParsedParameters(command, '!', 'test', 'bar baz')
+            testee.parse(command, _, '!', 'test', 'bar baz')
 
         then:
             IllegalArgumentException iae = thrown()
@@ -175,11 +184,9 @@ class ParameterParserTest extends Specification {
 
         and:
             command.usage >> Optional.of('[<foo> [<foo>]')
-            usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
-            usagePatternBuilder.getPattern(!null) >> Pattern.compile(/(?<foo1>bar)?( (?<foo2>baz))?/)
 
         when:
-            testee.getParsedParameters(command, '!', 'test', 'bar baz')
+            testee.parse(command, _, '!', 'test', 'bar baz')
 
         then:
             thrown(IllegalArgumentException)
@@ -187,20 +194,6 @@ class ParameterParserTest extends Specification {
 
         cleanup:
             System.err = originalStdErr
-    }
-
-    def 'placeholder and fixed value should be fixed up correctly for #parameters'() {
-        when:
-            testee.fixupParsedParameter(parameters, 'placeholder', 'fixed')
-
-        then:
-            parameters == expectedParameters
-
-        where:
-            parameters                             || expectedParameters
-            [placeholder: 'fixed']                 || [fixed: 'fixed']
-            [placeholder: 'fixed', fixed: 'fixed'] || [placeholder: 'fixed', fixed: 'fixed']
-            [placeholder: 'fixes']                 || [placeholder: 'fixes']
     }
 
     @Use(ContextualInstanceCategory)
@@ -218,7 +211,7 @@ class ParameterParserTest extends Specification {
             toStringResult.contains("$field.name=")
             field.type == String ?
                     toStringResult.contains("'${field.get(testee.ci())}'") :
-                    toStringResult.contains(field.get(testee.ci()).toString())
+                    toStringResult.contains(String.valueOf(field.get(testee.ci())))
 
         where:
             field << getAllInstanceFields(newInstance(getField(getClass(), 'testee').type))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,6 @@ public class InvalidAnnotationCombinationException extends RuntimeException {
      * The serial version UID of this class.
      */
     private static final long serialVersionUID = 1;
-
-    /**
-     * Constructs a new invalid annotation combination exception.
-     */
-    public InvalidAnnotationCombinationException() {
-        super();
-    }
 
     /**
      * Constructs a new invalid annotation combination exception with the given message.

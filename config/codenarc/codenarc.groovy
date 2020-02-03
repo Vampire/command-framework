@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ ruleset {
     ComparisonWithSelf {
         doNotApplyToClassNames = [
                 'net.kautler.command.api.AliasAndParameterStringTest',
+                'net.kautler.command.parameter.ParametersImplTest',
                 'net.kautler.command.util.lazy.LazyReferenceByFunctionTest',
                 'net.kautler.command.util.lazy.LazyReferenceBySupplierTest',
                 'net.kautler.command.util.lazy.LazyReferenceTest'
@@ -304,6 +305,7 @@ ruleset {
     ExplicitCallToEqualsMethod {
         doNotApplyToClassNames = [
                 'net.kautler.command.api.AliasAndParameterStringTest',
+                'net.kautler.command.parameter.ParametersImplTest',
                 'net.kautler.command.util.lazy.LazyReferenceByFunctionTest',
                 'net.kautler.command.util.lazy.LazyReferenceBySupplierTest',
                 'net.kautler.command.util.lazy.LazyReferenceTest'

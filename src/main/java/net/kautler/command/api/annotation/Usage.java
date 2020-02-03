@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package net.kautler.command.api.annotation;
 
 import net.kautler.command.api.Command;
-import net.kautler.command.api.ParameterParser;
+import net.kautler.command.api.parameter.ParameterParser;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -30,8 +30,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * An annotation with which the usage of the command can be configured.
  * This usage can for example be displayed in an own help command.
  *
- * <p>When using the {@link ParameterParser}, the usage string has to follow a pre-defined format that is described
- * there.
+ * <p>When using the {@link ParameterParser}, the usage string has to follow
+ * a pre-defined format that is described there.
  *
  * <p>Alternatively to using this annotation the {@link Command#getUsage()} method can be overwritten.
  * If that method is overwritten and this annotation is used, the method overwrite takes precedence.

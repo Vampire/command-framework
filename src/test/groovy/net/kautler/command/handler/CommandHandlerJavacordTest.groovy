@@ -45,7 +45,6 @@ import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.event.ObservesAsync
 import javax.enterprise.inject.Any
 import javax.enterprise.inject.Instance
-import javax.enterprise.util.AnnotationLiteral
 import javax.enterprise.util.TypeLiteral
 import javax.inject.Inject
 import java.lang.reflect.Type
@@ -125,14 +124,14 @@ class CommandHandlerJavacordTest extends Specification {
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
+                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                             .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
                             .creating(defaultPrefixProvider)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
+                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                             .types(TestEventReceiver)
                             .creating(testEventReceiverDelegate)
                             .build()
@@ -466,7 +465,7 @@ class CommandHandlerJavacordTest extends Specification {
                             MockBean.builder()
                                     .scope(ApplicationScoped)
                                     // work-around for https://github.com/weld/weld-junit/issues/97
-                                    .qualifiers(Any.Literal.INSTANCE, new AnnotationLiteral<Internal>() { })
+                                    .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                                     .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
                                     .creating(defaultPrefixProvider)
                                     .build()
@@ -480,6 +479,16 @@ class CommandHandlerJavacordTest extends Specification {
                     .events
                     .findAll { it.level == ERROR }
                     .empty
+    }
+
+    def 'parameterConverterTypeLiteralByMessageType should return proper mapping'() {
+        when:
+            def parameterConverterTypeLiteralByMessageType =
+                    commandHandlerJavacord.parameterConverterTypeLiteralByMessageType
+
+        then:
+            parameterConverterTypeLiteralByMessageType.key == Message
+            parameterConverterTypeLiteralByMessageType.value instanceof TypeLiteral
     }
 
     @Use(ContextualInstanceCategory)

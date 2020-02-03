@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package net.kautler.command;
+package net.kautler.command.api.parameter;
 
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -29,32 +27,20 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A CDI qualifier that is used for internal beans that should not be injected into client code and injection points
- * where no client beans should get injected.
+ * An annotation which serves as container for applying multiple {@link ParameterType @ParameterType} annotations.
+ * This container annotation is used implicitly and should usually not be applied manually.
+ * Just use multiple {@code @ParameterType} annotations on the same class instead.
+ *
+ * @see ParameterType @ParameterType
  */
 @Retention(RUNTIME)
 @Target({ TYPE, FIELD, METHOD, PARAMETER })
 @Documented
-@Qualifier
-public @interface Internal {
+public @interface ParameterTypes {
     /**
-     * An annotation literal for programmatic CDI lookup.
+     * Returns the parameter types for the annotated parameter converter.
+     *
+     * @return the parameter types for the annotated parameter converter
      */
-    class Literal extends AnnotationLiteral<Internal> implements Internal {
-        /**
-         * The annotation literal instance.
-         */
-        public static final Literal INSTANCE = new Literal();
-
-        /**
-         * The serial version UID of this class.
-         */
-        private static final long serialVersionUID = 1;
-
-        /**
-         * Constructs a new internal annotation literal.
-         */
-        private Literal() {
-        }
-    }
+    ParameterType[] value();
 }

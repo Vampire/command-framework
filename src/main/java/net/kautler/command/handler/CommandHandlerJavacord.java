@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandHandler;
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord;
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord;
+import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.prefix.PrefixProvider;
 import net.kautler.command.api.restriction.Restriction;
 import org.apache.logging.log4j.Logger;
@@ -36,8 +37,11 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
+import java.util.Map.Entry;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
@@ -200,9 +204,24 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     }
 
     @Override
+    public Entry<Class<Message>, TypeLiteral<ParameterConverter<? super Message, ?>>> getParameterConverterTypeLiteralByMessageType() {
+        return new SimpleEntry<>(Message.class, new JavacordParameterConverterTypeLiteral());
+    }
+
+    @Override
     public String toString() {
         return new StringJoiner(", ", CommandHandlerJavacord.class.getSimpleName() + "[", "]")
                 .add("listenerManagers=" + listenerManagers)
                 .toString();
+    }
+
+    /**
+     * A parameter converter type literal for Javacord.
+     */
+    private static class JavacordParameterConverterTypeLiteral extends TypeLiteral<ParameterConverter<? super Message, ?>> {
+        /**
+         * The serial version UID of this class.
+         */
+        private static final long serialVersionUID = 1;
     }
 }

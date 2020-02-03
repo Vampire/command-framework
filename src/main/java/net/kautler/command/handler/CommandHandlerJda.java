@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandHandler;
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda;
 import net.kautler.command.api.event.jda.CommandNotFoundEventJda;
+import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.prefix.PrefixProvider;
 import net.kautler.command.api.restriction.Restriction;
 import org.apache.logging.log4j.Logger;
@@ -39,8 +40,11 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
+import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -226,5 +230,20 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     @Override
     protected void fireCommandNotFoundEvent(Message message, String prefix, String usedAlias) {
         commandNotFoundEvent.fireAsync(new CommandNotFoundEventJda(message, prefix, usedAlias));
+    }
+
+    @Override
+    public Entry<Class<Message>, TypeLiteral<ParameterConverter<? super Message, ?>>> getParameterConverterTypeLiteralByMessageType() {
+        return new SimpleEntry<>(Message.class, new JdaParameterConverterTypeLiteral());
+    }
+
+    /**
+     * A parameter converter type literal for JDA.
+     */
+    private static class JdaParameterConverterTypeLiteral extends TypeLiteral<ParameterConverter<? super Message, ?>> {
+        /**
+         * The serial version UID of this class.
+         */
+        private static final long serialVersionUID = 1;
     }
 }

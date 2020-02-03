@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import net.kautler.command.api.annotation.Description;
 import net.kautler.command.api.annotation.RestrictedTo;
 import net.kautler.command.api.annotation.RestrictionPolicy;
 import net.kautler.command.api.annotation.Usage;
+import net.kautler.command.api.parameter.ParameterParser;
 import net.kautler.command.api.restriction.AllOf;
 import net.kautler.command.api.restriction.AnyOf;
 import net.kautler.command.api.restriction.Everyone;
@@ -117,29 +118,9 @@ public interface Command<M> {
      * Returns the usage of this command.
      * This usage can for example be displayed in an own help command.
      *
-     * <p>When using the {@link ParameterParser}, the usage string has to follow a pre-defined format.
-     * <ul>
-     *     <li>Placeholders for free text without whitespaces (in the value) look like {@code <my placeholder>}</li>
-     *     <li>
-     *         One placeholder for free text with whitespaces (in the value) is allowed as effectively last parameter
-     *         and looks like {@code <my placeholder...>}
-     *     </li>
-     *     <li>Literal parameters look like {@code 'literal'}</li>
-     *     <li>Optional parts are enclosed in square brackets like {@code [<optional placeholder>]}</li>
-     *     <li>
-     *         Alternatives are enclosed in parentheses and are separated by pipe characters
-     *         like {@code ('all'  | 'some'  | 'none')}
-     *     </li>
-     *     <li>Whitespace characters between the defined tokens are optional and ignored</li>
-     * </ul>
-     * <b>Examples:</b>
-     * <ul>
-     *     <li>{@code @Usage("<coin type> <amount>")}</li>
-     *     <li>{@code @Usage("['all'] ['exact']")}</li>
-     *     <li>{@code @Usage("[<text...>]")}</li>
-     *     <li>{@code @Usage("(<targetLanguage> '|' | <sourceLanguage> <targetLanguage>) <text...>")}</li>
-     * </ul>
-
+     * <p>When using the {@link ParameterParser}, the usage string has to follow
+     * a pre-defined format that is described there.
+     *
      * <p>The default implementation of this method returns the usage configured using the {@link Usage @Usage}
      * annotation. If no usage is configured by annotation, an empty {@code Optional} is used as default.
      *

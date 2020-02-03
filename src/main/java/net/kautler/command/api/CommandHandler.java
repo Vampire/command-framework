@@ -19,6 +19,7 @@ package net.kautler.command.api;
 import net.kautler.command.Internal;
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord;
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord;
+import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.prefix.PrefixProvider;
 import net.kautler.command.api.restriction.Restriction;
 import net.kautler.command.restriction.RestrictionLookup;
@@ -33,11 +34,13 @@ import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.event.ObservesAsync;
 import javax.enterprise.inject.Instance;
+import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
-import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -207,10 +210,10 @@ public abstract class CommandHandler<M> {
             // build the alias to command map
             result.putAll(actualCommands.stream()
                     .flatMap(command -> command.getAliases().stream()
-                            .map(alias -> new AbstractMap.SimpleImmutableEntry<>(alias, command)))
+                            .map(alias -> new SimpleImmutableEntry<>(alias, command)))
                     .collect(toMap(
-                            Map.Entry::getKey,
-                            Map.Entry::getValue,
+                            Entry::getKey,
+                            Entry::getValue,
                             (cmd1, cmd2) -> {
                                 throw new IllegalStateException(format(
                                         "The same alias was defined for the two commands '%s' and '%s'",
@@ -438,4 +441,11 @@ public abstract class CommandHandler<M> {
                     }
                 });
     }
+
+    /**
+     * Returns the map entry for mapping the message class to a parameter converter type literal.
+     *
+     * @return the map entry for mapping the message class to a parameter converter type literal
+     */
+    public abstract Entry<Class<M>, TypeLiteral<ParameterConverter<? super M, ?>>> getParameterConverterTypeLiteralByMessageType();
 }

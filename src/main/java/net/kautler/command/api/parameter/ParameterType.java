@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package net.kautler.command;
+package net.kautler.command.api.parameter;
 
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
 import java.lang.annotation.Documented;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -29,32 +30,48 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * A CDI qualifier that is used for internal beans that should not be injected into client code and injection points
- * where no client beans should get injected.
+ * A CDI qualifier for {@link ParameterConverter}s that defines the parameter type aliases for which the annotated
+ * parameter converter works.
  */
 @Retention(RUNTIME)
 @Target({ TYPE, FIELD, METHOD, PARAMETER })
 @Documented
+@Repeatable(ParameterTypes.class)
 @Qualifier
-public @interface Internal {
+public @interface ParameterType {
+    /**
+     * Returns the parameter type alias for the annotated converter.
+     *
+     * @return the parameter type alias for the annotated converter
+     */
+    String value();
+
     /**
      * An annotation literal for programmatic CDI lookup.
      */
-    class Literal extends AnnotationLiteral<Internal> implements Internal {
-        /**
-         * The annotation literal instance.
-         */
-        public static final Literal INSTANCE = new Literal();
-
+    class Literal extends AnnotationLiteral<ParameterType> implements ParameterType {
         /**
          * The serial version UID of this class.
          */
         private static final long serialVersionUID = 1;
 
         /**
-         * Constructs a new internal annotation literal.
+         * The parameter type alias for the annotated converter.
          */
-        private Literal() {
+        private final String alias;
+
+        /**
+         * Constructs a new parameter type annotation literal.
+         *
+         * @param alias the parameter type alias for the annotated converter
+         */
+        public Literal(String alias) {
+            this.alias = alias;
+        }
+
+        @Override
+        public String value() {
+            return alias;
         }
     }
 }
