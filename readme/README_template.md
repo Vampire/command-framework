@@ -58,7 +58,8 @@ Table of Contents
 Prerequisites
 -------------
 * Java 8+
-* One of the supported [message frameworks](#supported-message-frameworks)
+* At least one of the supported [message frameworks](#supported-message-frameworks) unless an own `CommandHandler` is
+  used; without one there will be no error, but this framework will simply have nothing to do
 * An implementation of CDI that implements CDI $cdiVersion like [Weld SE][Weld SE Website]
 * [Optional] ANTLR runtime $antlrVersion if the [`ParameterParser`][ParameterParser JavaDoc] is used
 
