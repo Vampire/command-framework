@@ -36,6 +36,7 @@ import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.util.concurrent.BlockingVariable
 import spock.util.mop.Use
 
 import javax.annotation.PostConstruct
@@ -46,10 +47,8 @@ import javax.enterprise.inject.Instance
 import javax.enterprise.util.TypeLiteral
 import javax.inject.Inject
 import java.lang.reflect.Type
-import java.util.concurrent.CountDownLatch
 
 import static java.util.Arrays.asList
-import static java.util.concurrent.TimeUnit.SECONDS
 import static org.apache.logging.log4j.Level.INFO
 import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
 
@@ -357,11 +356,11 @@ class CommandHandlerJdaTest extends Specification {
     def 'command not allowed event should be fired on restricted command'() {
         given:
             message.contentRaw >> '!test'
-            def countDownLatch = new CountDownLatch(1)
+            def commandNotAllowedEventFired = new BlockingVariable<Boolean>(5)
 
         when:
             commandHandlerJda.ci().onEvent(messageReceivedEvent)
-            countDownLatch.await(5, SECONDS)
+            commandNotAllowedEventFired.get()
 
         then:
             with(testEventReceiverDelegate) {
@@ -369,7 +368,7 @@ class CommandHandlerJdaTest extends Specification {
                     it.message == this.message
                     it.prefix == '!'
                     it.usedAlias == this.command.aliases.first()
-                } >> { countDownLatch.countDown() }
+                } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
     }
@@ -378,11 +377,11 @@ class CommandHandlerJdaTest extends Specification {
     def 'message with correct prefix but wrong trigger should fire command not found event'() {
         given:
             message.contentRaw >> '!nocommand'
-            def countDownLatch = new CountDownLatch(1)
+            def commandNotFoundEventReceived = new BlockingVariable<Boolean>(5)
 
         when:
             commandHandlerJda.ci().onEvent(messageReceivedEvent)
-            countDownLatch.await(5, SECONDS)
+            commandNotFoundEventReceived.get()
 
         then:
             with(testEventReceiverDelegate) {
@@ -390,7 +389,7 @@ class CommandHandlerJdaTest extends Specification {
                     it.message == this.message
                     it.prefix == '!'
                     it.usedAlias == 'nocommand'
-                } >> { countDownLatch.countDown() }
+                } >> { commandNotFoundEventReceived.set(true) }
                 0 * _
             }
     }

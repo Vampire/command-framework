@@ -31,6 +31,7 @@ import org.junit.Rule
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.util.concurrent.BlockingVariable
 import spock.util.mop.Use
 
 import javax.annotation.PostConstruct
@@ -40,12 +41,10 @@ import javax.enterprise.inject.Instance
 import javax.enterprise.util.TypeLiteral
 import javax.inject.Inject
 import java.util.Map.Entry
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 
 import static java.lang.Thread.currentThread
 import static java.util.concurrent.TimeUnit.DAYS
-import static java.util.concurrent.TimeUnit.SECONDS
 import static org.apache.logging.log4j.Level.DEBUG
 import static org.apache.logging.log4j.Level.ERROR
 import static org.apache.logging.log4j.Level.INFO
@@ -966,15 +965,15 @@ class CommandHandlerTest extends Specification {
 
     def 'asynchronous command execution should happen asynchronously'() {
         given:
-            def threadFuture = new CompletableFuture()
+            def executingThread = new BlockingVariable<Thread>(5)
 
         when:
             commandHandler.executeAsync(_) {
-                threadFuture.complete(currentThread())
+                executingThread.set(currentThread())
             }
 
         then:
-            threadFuture.get(5, SECONDS) != currentThread()
+            executingThread.get() != currentThread()
     }
 
     @Use([ContextualInstanceCategory,  Whitebox])
