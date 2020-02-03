@@ -40,6 +40,12 @@ import static org.pitest.mutationtest.build.InterceptorType.FILTER;
  */
 public class ExplicitMutationFilter implements MutationInterceptor {
     /**
+     * The major version of the currently running JRE
+     */
+    private static final int CURRENT_JAVA_MAJOR_VERSION =
+            parseInt(System.getProperty("java.version").split("\\.")[0]);
+
+    /**
      * The mutation details that are used to filter the unwanted mutations.
      */
     private static final Map<String, List<ExplicitMutationFilterDetails>> filter = Stream.of(
@@ -87,7 +93,7 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             // giving a 3 instead of 2 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
-                    "lambda$doSetCommands",
+                    CURRENT_JAVA_MAJOR_VERSION >= 9 ? "lambda$doSetCommands" : "lambda$null",
                     "(Lnet/kautler/command/api/Command;Lnet/kautler/command/api/Command;)Lnet/kautler/command/api/Command;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
@@ -179,7 +185,7 @@ public class ExplicitMutationFilter implements MutationInterceptor {
 
     // work-around for https://github.com/hcoles/pitest/issues/689
     static {
-        if (parseInt(System.getProperty("java.version").split("\\.")[0]) >= 11) {
+        if (CURRENT_JAVA_MAJOR_VERSION >= 11) {
             Stream.of(
                     new ExplicitMutationFilterDetails(
                             "net.kautler.command.api.Version",
