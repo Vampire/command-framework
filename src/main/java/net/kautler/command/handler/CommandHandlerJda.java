@@ -212,7 +212,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     }
 
     /**
-     * Handles the actual non-private messages received.
+     * Handles the actual messages received.
      *
      * @param messageReceivedEvent the message received event
      */
