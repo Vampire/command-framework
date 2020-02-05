@@ -61,8 +61,8 @@ public interface Parameters<V> {
      * example select {@code String} for {@code R} and then try to get a {@code User} object from the returned
      * optional, you will get a {@link ClassCastException} at runtime.
      *
-     * @param <R>           the class to which the value is implicitly downcasted
      * @param parameterName the parameter name whose associated value is to be returned
+     * @param <R>           the class to which the value is implicitly downcasted
      * @return the value to which the specified parameter name is mapped
      */
     <R extends V> Optional<R> get(String parameterName);
@@ -93,9 +93,9 @@ public interface Parameters<V> {
      * If you for example select {@code String} for {@code R} and then try to get a {@code User} object,
      * you will get a {@link ClassCastException} at runtime.
      *
-     * @param <R>           the class to which the value is implicitly downcasted
      * @param parameterName the parameter name whose associated value is to be returned
      * @param defaultValue  the default value to return if there is no mapping
+     * @param <R>           the class to which the value is implicitly downcasted
      * @return the value to which the specified parameter name is mapped or the default value
      */
     <R extends V> R get(String parameterName, R defaultValue);
@@ -126,9 +126,9 @@ public interface Parameters<V> {
      * If you for example select {@code String} for {@code R} and then try to get a {@code User} object,
      * you will get a {@link ClassCastException} at runtime.
      *
-     * @param <R>                  the class to which the value is implicitly downcasted
      * @param parameterName        the parameter name whose associated value is to be returned
      * @param defaultValueSupplier the supplier for the default value to return if there is no mapping
+     * @param <R>                  the class to which the value is implicitly downcasted
      * @return the value to which the specified parameter name is mapped or the computed default value
      */
     <R extends V> R get(String parameterName, Supplier<R> defaultValueSupplier);
