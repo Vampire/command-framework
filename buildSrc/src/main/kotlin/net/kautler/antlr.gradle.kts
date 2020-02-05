@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Bjoern Kautler
+ * Copyright 2020 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ plugins {
 
 java {
     val main by sourceSets
-    registerFeature("usageParser") {
+    registerFeature("parameterParser") {
         usingSourceSet(main)
     }
 }
@@ -39,7 +39,7 @@ configurations {
 dependencies {
     val versions: Map<String, String> by project
     antlr("org.antlr:antlr4:${versions["antlr"]}")
-    "usageParserImplementation"("org.antlr:antlr4-runtime:${versions["antlr"]}")
+    "parameterParserImplementation"("org.antlr:antlr4-runtime:${versions["antlr"]}")
 }
 
 tasks.withType<AntlrTask>().configureEach {
