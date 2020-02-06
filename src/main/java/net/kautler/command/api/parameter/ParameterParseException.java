@@ -16,6 +16,9 @@
 
 package net.kautler.command.api.parameter;
 
+import java.util.Objects;
+import java.util.StringJoiner;
+
 /**
  * A parameter parse exception that is thrown if an exception happens during calling a {@link ParameterConverter}.
  * The message should be written in a way so that it can be directly presented to the end user.
@@ -120,5 +123,40 @@ public class ParameterParseException extends IllegalArgumentException {
      */
     public void setParameterValue(String parameterValue) {
         this.parameterValue = parameterValue;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if ((obj == null) || (getClass() != obj.getClass())) {
+            return false;
+        }
+        ParameterParseException that = (ParameterParseException) obj;
+        return Objects.equals(parameterName, that.parameterName) &&
+                Objects.equals(parameterValue, that.parameterValue) &&
+                Objects.equals(getMessage(), that.getMessage()) &&
+                Objects.equals(getCause(), that.getCause());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(parameterName, parameterValue, getMessage(), getCause());
+    }
+
+    @Override
+    public String toString() {
+        Class<? extends ParameterParseException> clazz = getClass();
+        String className = clazz.getSimpleName();
+        if (className.isEmpty()) {
+            className = clazz.getTypeName().substring(clazz.getPackage().getName().length() + 1);
+        }
+        return new StringJoiner(", ", className + "[", "]")
+                .add("detailMessage='" + getMessage() + "'")
+                .add("cause=" + getCause())
+                .add("parameterName='" + parameterName + "'")
+                .add("parameterValue='" + parameterValue + "'")
+                .toString();
     }
 }

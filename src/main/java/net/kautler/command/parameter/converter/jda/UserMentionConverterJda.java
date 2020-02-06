@@ -20,7 +20,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.kautler.command.Internal;
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
 import net.kautler.command.api.parameter.InvalidParameterValueException;
 import net.kautler.command.api.parameter.ParameterConverter;
@@ -50,8 +50,7 @@ class UserMentionConverterJda implements ParameterConverter<Message, User> {
     }
 
     @Override
-    public User convert(String parameter, String type, Command<?> command, Message message,
-                        String prefix, String usedAlias, String parameterString) {
+    public User convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher userMatcher = USER.getPattern().matcher(parameter);
         if (!userMatcher.matches()) {
             throw new InvalidParameterFormatException(format("'%s' is not a valid user mention", parameter));
@@ -66,7 +65,8 @@ class UserMentionConverterJda implements ParameterConverter<Message, User> {
         }
 
         try {
-            return message
+            return commandContext
+                    .getMessage()
                     .getJDA()
                     .retrieveUserById(userId)
                     .complete();

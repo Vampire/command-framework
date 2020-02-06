@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package net.kautler.command.example.ping;
 
 import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.message.Message;
 
@@ -29,10 +30,15 @@ public class PingCommand implements Command<Message> {
     private Logger logger;
 
     @Override
-    public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
-        incomingMessage
+    public void execute(CommandContext<? extends Message> commandContext) {
+        commandContext
+                .getMessage()
                 .getChannel()
-                .sendMessage("pong: " + parameterString)
+                .sendMessage(commandContext
+                        .getParameterString()
+                        .filter(parameterString -> !parameterString.isEmpty())
+                        .map(parameterString -> "pong: " + parameterString)
+                        .orElse("pong"))
                 .whenComplete((sentMessage, throwable) -> {
                     if (throwable != null) {
                         logger.error("Exception while executing ping command", throwable);

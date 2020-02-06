@@ -16,7 +16,7 @@
 
 package net.kautler.command.api.event.javacord
 
-import org.javacord.api.entity.message.Message
+import net.kautler.command.api.CommandContext
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -25,17 +25,14 @@ import static org.powermock.reflect.Whitebox.getField
 import static org.powermock.reflect.Whitebox.newInstance
 
 class CommandNotAllowedEventJavacordTest extends Specification {
-    Message message = Stub()
+    CommandContext<Object> commandContext = Stub()
 
     @Subject
-    CommandNotAllowedEventJavacord testee =
-            new CommandNotAllowedEventJavacord(message, 'thePrefix', 'theUsedAlias')
+    CommandNotAllowedEventJavacord testee = new CommandNotAllowedEventJavacord(commandContext)
 
-    def 'fields are properly set from constructor'() {
+    def 'field is properly set from constructor'() {
         expect:
-            testee.message?.is(message)
-            testee.prefix == 'thePrefix'
-            testee.usedAlias == 'theUsedAlias'
+            testee.commandContext?.is(commandContext)
     }
 
     def '#className toString should start with class name'() {
@@ -43,9 +40,9 @@ class CommandNotAllowedEventJavacordTest extends Specification {
             testee.toString().startsWith("$className[")
 
         where:
-            testee                                                   | _
-            new CommandNotAllowedEventJavacord(null, null, null)     | _
-            new CommandNotAllowedEventJavacord(null, null, null) { } | _
+            testee                                       | _
+            new CommandNotAllowedEventJavacord(null)     | _
+            new CommandNotAllowedEventJavacord(null) { } | _
 
         and:
             clazz = testee.getClass()

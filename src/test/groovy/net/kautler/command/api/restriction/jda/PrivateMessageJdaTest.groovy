@@ -17,6 +17,7 @@
 package net.kautler.command.api.restriction.jda
 
 import net.dv8tion.jda.api.entities.Message
+import net.kautler.command.api.CommandContext
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
@@ -37,14 +38,16 @@ class PrivateMessageJdaTest extends Specification {
     @Subject
     PrivateMessageJda privateMessageJda
 
-    Message message = Stub()
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message)
+    }
 
     def 'private message "#privateMessage" should #be allowed'() {
         given:
-            message.isFromType(PRIVATE) >> privateMessage
+            commandContext.message.isFromType(PRIVATE) >> privateMessage
 
         expect:
-            privateMessageJda.allowCommand(message) == allowed
+            privateMessageJda.allowCommand(commandContext) == allowed
 
         where:
             privateMessage || allowed | be

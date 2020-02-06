@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.Response
 import net.dv8tion.jda.api.requests.RestAction
 import net.kautler.command.Internal
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
 import net.kautler.command.api.parameter.InvalidParameterValueException
 import org.jboss.weld.junit4.WeldInitiator
@@ -59,7 +60,7 @@ class UserMentionConverterJdaTest extends Specification {
                         ]))
 
         when:
-            testee.convert("<@$userId>", null, null, null, null, null, null)
+            testee.convert("<@$userId>", null, null)
 
         then:
             InvalidParameterFormatException ipfe = thrown()
@@ -83,17 +84,19 @@ class UserMentionConverterJdaTest extends Specification {
         given:
             User user = Stub()
 
-            Message message = Stub {
-                it.JDA >> Mock(JDA) {
-                    retrieveUserById(1) >> Stub(RestAction) {
-                        complete() >> user
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.JDA >> Mock(JDA) {
+                        retrieveUserById(1) >> Stub(RestAction) {
+                            complete() >> user
+                        }
+                        0 * retrieveUserById(_)
                     }
-                    0 * retrieveUserById(_)
                 }
             }
 
         expect:
-            testee.convert("<@$userId>", null, null, message, null, null, null) == user
+            testee.convert("<@$userId>", null, commandContext) == user
 
         where:
             userId || _
@@ -103,17 +106,19 @@ class UserMentionConverterJdaTest extends Specification {
 
     def '<@#userId> should throw InvalidParameterValueException if user is not found'() {
         given:
-            Message message = Stub {
-                it.JDA >> Mock(JDA) {
-                    retrieveUserById(1) >> Stub(RestAction) {
-                        complete() >> { throw ErrorResponseException.create(UNKNOWN_USER, Stub(Response)) }
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.JDA >> Mock(JDA) {
+                        retrieveUserById(1) >> Stub(RestAction) {
+                            complete() >> { throw ErrorResponseException.create(UNKNOWN_USER, Stub(Response)) }
+                        }
+                        0 * retrieveUserById(_)
                     }
-                    0 * retrieveUserById(_)
                 }
             }
 
         when:
-            testee.convert("<@$userId>", null, null, message, null, null, null)
+            testee.convert("<@$userId>", null, commandContext)
 
         then:
             InvalidParameterValueException ipve = thrown()
@@ -129,17 +134,19 @@ class UserMentionConverterJdaTest extends Specification {
         given:
             def error = ErrorResponseException.create(SERVER_ERROR, Stub(Response))
 
-            Message message = Stub {
-                it.JDA >> Mock(JDA) {
-                    retrieveUserById(1) >> Stub(RestAction) {
-                        complete() >> { throw error }
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.JDA >> Mock(JDA) {
+                        retrieveUserById(1) >> Stub(RestAction) {
+                            complete() >> { throw error }
+                        }
+                        0 * retrieveUserById(_)
                     }
-                    0 * retrieveUserById(_)
                 }
             }
 
         when:
-            testee.convert("<@$userId>", null, null, message, null, null, null)
+            testee.convert("<@$userId>", null, commandContext)
 
         then:
             ErrorResponseException ere = thrown()

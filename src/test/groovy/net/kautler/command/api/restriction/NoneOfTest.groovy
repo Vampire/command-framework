@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction
 
+import net.kautler.command.api.CommandContext
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -33,7 +34,7 @@ class NoneOfTest extends Specification {
             restriction2.allowCommand(_) >> restriction2Allowed
 
         expect:
-            noneOf.allowCommand(_) == allowed
+            noneOf.allowCommand(Stub(CommandContext)) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<

@@ -17,6 +17,7 @@
 package net.kautler.command.integ.test.javacord
 
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.annotation.Alias
 import net.kautler.command.api.annotation.Asynchronous
 import net.kautler.command.integ.test.ManualTests
@@ -127,10 +128,11 @@ class PingIntegTest extends Specification {
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
         @Override
-        void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
-            incomingMessage
+        void execute(CommandContext<? extends Message> commandContext) {
+            commandContext
+                    .message
                     .channel
-                    .sendMessage("pong: $parameterString")
+                    .sendMessage("pong: ${commandContext.parameterString.orElse('')}")
                     .exceptionally(ExceptionLogger.get())
         }
     }

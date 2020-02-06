@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,26 @@
 package net.kautler.command.api.event.jda;
 
 import net.dv8tion.jda.api.entities.Message;
-import net.kautler.command.api.event.MessageEvent;
-import net.kautler.command.api.prefix.PrefixProvider;
+import net.kautler.command.api.CommandContext;
+import net.kautler.command.api.event.CommandEvent;
 
 import javax.enterprise.event.ObservesAsync;
 
 /**
- * An event that is sent asynchronously via the CDI event mechanism if a command was not found for a message that
- * started with the configured command prefix. It can be handled using {@link ObservesAsync @ObservesAsync}.
+ * An event that is sent asynchronously via the CDI event mechanism if a command was not found for a message.
+ * This event is only sent for messages that could have been a command like for example
+ * they started with the correct prefix but the alias did not match any available command.
+ * It can be handled using {@link ObservesAsync @ObservesAsync}.
  *
  * @see ObservesAsync @ObservesAsync
- * @see PrefixProvider
  */
-public class CommandNotFoundEventJda extends MessageEvent<Message> {
+public class CommandNotFoundEventJda extends CommandEvent<Message> {
     /**
-     * Constructs a new command not found event with the given JDA message, prefix, and used alias as payload.
+     * Constructs a new command not found event with the given command context as payload.
      *
-     * @param message   the JDA message that contains the command that was not found
-     * @param prefix    the command prefix that was used to trigger the command
-     * @param usedAlias the alias that was used to trigger the command
+     * @param commandContext the command context, usually populated according to current phase
      */
-    public CommandNotFoundEventJda(Message message, String prefix, String usedAlias) {
-        super(message, prefix, usedAlias);
+    public CommandNotFoundEventJda(CommandContext<Message> commandContext) {
+        super(commandContext);
     }
 }

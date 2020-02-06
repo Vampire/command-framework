@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.message.MessageAuthor
 import org.jboss.weld.junit4.WeldInitiator
@@ -36,16 +37,18 @@ class BotOwnerJavacordTest extends Specification {
     @Subject
     BotOwnerJavacord botOwnerJavacord
 
-    Message message = Stub {
-        it.author >> Stub(MessageAuthor)
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.author >> Stub(MessageAuthor)
+        }
     }
 
     def 'bot owner "#botOwner" should #be allowed'() {
         given:
-            message.author.botOwner >> botOwner
+            commandContext.message.author.botOwner >> botOwner
 
         expect:
-            botOwnerJavacord.allowCommand(message) == allowed
+            botOwnerJavacord.allowCommand(commandContext) == allowed
 
         where:
             botOwner || allowed | be

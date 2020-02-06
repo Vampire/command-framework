@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Role
 import net.kautler.command.Internal
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
 import net.kautler.command.api.parameter.InvalidParameterValueException
 import org.jboss.weld.junit4.WeldInitiator
@@ -54,7 +55,7 @@ class RoleMentionConverterJdaTest extends Specification {
                         ]))
 
         when:
-            testee.convert("<@&$roleId>", null, null, null, null, null, null)
+            testee.convert("<@&$roleId>", null, null)
 
         then:
             InvalidParameterFormatException ipfe = thrown()
@@ -73,28 +74,32 @@ class RoleMentionConverterJdaTest extends Specification {
         given:
             Role role = Stub()
 
-            Message message = Stub {
-                it.JDA >> Mock(JDA) {
-                    getRoleById(1) >> role
-                    0 * getRoleById(_)
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.JDA >> Mock(JDA) {
+                        getRoleById(1) >> role
+                        0 * getRoleById(_)
+                    }
                 }
             }
 
         expect:
-            testee.convert('<@&1>', null, null, message, null, null, null) == role
+            testee.convert('<@&1>', null, commandContext) == role
     }
 
     def '<@&1> should throw InvalidParameterValueException if role is not found'() {
         given:
-            Message message = Stub {
-                it.JDA >> Mock(JDA) {
-                    getRoleById(1) >> null
-                    0 * getRoleById(_)
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.JDA >> Mock(JDA) {
+                        getRoleById(1) >> null
+                        0 * getRoleById(_)
+                    }
                 }
             }
 
         when:
-            testee.convert('<@&1>', null, null, message, null, null, null)
+            testee.convert('<@&1>', null, commandContext)
 
         then:
             InvalidParameterValueException ipve = thrown()

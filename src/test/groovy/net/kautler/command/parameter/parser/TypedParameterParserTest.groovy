@@ -18,6 +18,7 @@ package net.kautler.command.parameter.parser
 
 import net.kautler.command.Internal
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.parameter.ParameterConverter
 import net.kautler.command.api.parameter.ParameterParseException
@@ -195,18 +196,42 @@ class TypedParameterParserTest extends Specification {
     Command command = Stub()
 
     def 'empty parameter string for command that does not expect arguments should result in empty map'() {
+        given:
+            def commandContext = new CommandContext.Builder(_, '!test')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('')
+                    .withCommand(command)
+                    .build()
+
         expect:
-            testee.parse(command, _, '!', 'test', '') == new ParametersImpl<>([:])
+            testee.parse(commandContext) == new ParametersImpl<>([:])
     }
 
     def 'whitespace parameter string for command that does not expect arguments should result in empty map'() {
+        given:
+            def commandContext = new CommandContext.Builder(_, '!test  \n\t')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString(' \n\t')
+                    .withCommand(command)
+                    .build()
+
         expect:
-            testee.parse(command, _, '!', 'test', ' \n\t') == new ParametersImpl<>([:])
+            testee.parse(commandContext) == new ParametersImpl<>([:])
     }
 
     def 'non-empty parameter string for command that does not expect arguments should throw exception'() {
+        given:
+            def commandContext = new CommandContext.Builder(_, '!test foo')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('foo')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, _, '!', 'test', 'foo')
+            testee.parse(commandContext)
 
         then:
             ParameterParseException ppe = thrown()
@@ -218,8 +243,16 @@ class TypedParameterParserTest extends Specification {
             command.usage >> Optional.of('<foo>')
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>\S+)/
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, _, '!', 'test', '')
+            testee.parse(commandContext)
 
         then:
             ParameterParseException ppe = thrown()
@@ -231,8 +264,16 @@ class TypedParameterParserTest extends Specification {
             command.usage >> Optional.of("'foo'")
             usagePatternBuilder.getPattern(!null) >> ~/[^\w\W]/
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, _, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             ParameterParseException ppe = thrown()
@@ -245,8 +286,16 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo1>bar) (?<foo2>baz)/
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test bar baz')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar baz')
+                    .withCommand(command)
+                    .build()
+
         expect:
-            testee.parse(command, _, '!', 'test', 'bar baz') == new ParametersImpl<>([foo: ['bar', 'baz']])
+            testee.parse(commandContext) == new ParametersImpl<>([foo: ['bar', 'baz']])
     }
 
     def 'leading and trailing whitespace around parameter string should be ignored'() {
@@ -255,8 +304,16 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo1>bar)( (?<foo2>baz))?/
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test  bar ')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString(' bar ')
+                    .withCommand(command)
+                    .build()
+
         expect:
-            testee.parse(command, _, '!', 'test', ' bar ') == new ParametersImpl<>([foo: 'bar'])
+            testee.parse(commandContext) == new ParametersImpl<>([foo: 'bar'])
     }
 
     def 'missing arguments should not be returned'() {
@@ -265,16 +322,32 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> [foo: ['foo1', 'foo2']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo1>bar)?( (?<foo2>baz))?/
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('')
+                    .withCommand(command)
+                    .build()
+
         expect:
-            testee.parse(command, _, '!', 'test', '') == new ParametersImpl<>([:])
+            testee.parse(commandContext) == new ParametersImpl<>([:])
     }
 
     def 'invalid usage pattern should throw exception during lexing'() {
         given:
             command.usage >> Optional.of('test')
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test bar baz')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar baz')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, _, '!', 'test', 'bar baz')
+            testee.parse(commandContext)
 
         then:
             IllegalArgumentException iae = thrown()
@@ -290,8 +363,16 @@ class TypedParameterParserTest extends Specification {
         and:
             command.usage >> Optional.of('test')
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test bar baz')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar baz')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, _, '!', 'test', 'bar baz')
+            testee.parse(commandContext)
 
         then:
             thrown(IllegalArgumentException)
@@ -305,8 +386,16 @@ class TypedParameterParserTest extends Specification {
         given:
             command.usage >> Optional.of('[<foo> [<foo>]')
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test bar baz')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar baz')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, _, '!', 'test', 'bar baz')
+            testee.parse(commandContext)
 
         then:
             IllegalArgumentException iae = thrown()
@@ -322,8 +411,16 @@ class TypedParameterParserTest extends Specification {
         and:
             command.usage >> Optional.of('[<foo> [<foo>]')
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test bar baz')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar baz')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, _, '!', 'test', 'bar baz')
+            testee.parse(commandContext)
 
         then:
             thrown(IllegalArgumentException)
@@ -339,8 +436,16 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> ['foo:internal': ['foo']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
+        and:
+            def commandContext = new CommandContext.Builder(_, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, _, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             IllegalArgumentException iae = thrown()
@@ -359,8 +464,16 @@ class TypedParameterParserTest extends Specification {
                     new ParameterType.Literal('for exception'))
                     .resolvable
 
+        and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             IllegalArgumentException iae = thrown()
@@ -373,8 +486,16 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> ['foo:internal twice': ['foo']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
+        and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             thrown(AmbiguousResolutionException)
@@ -386,8 +507,16 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> ['foo:custom twice': ['foo']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
+        and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             thrown(AmbiguousResolutionException)
@@ -399,8 +528,16 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> ['foo:custom override twice': ['foo']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
+        and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             thrown(AmbiguousResolutionException)
@@ -432,8 +569,16 @@ class TypedParameterParserTest extends Specification {
                 }
             }
 
+        and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             1 * customParameterConverter.convert(*_) >> this
@@ -446,8 +591,16 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> ['foo:custom': ['foo']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
+        and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             1 * customParameterConverter.convert(*_) >> this
@@ -459,8 +612,16 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getGroupNamesByTokenName(_) >> ['foo:internal': ['foo']]
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
+        and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             1 * internalParameterConverter.convert(*_) >> this
@@ -473,10 +634,18 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
         and:
-            internalParameterConverter.convert('bar', *_) >> null
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
+        and:
+            internalParameterConverter.convert('bar', 'internal', commandContext) >> null
 
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             NullPointerException npe = thrown()
@@ -490,11 +659,19 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
         and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
+        and:
             def exception = new ParameterParseException('')
-            internalParameterConverter.convert('bar', *_) >> { throw exception }
+            internalParameterConverter.convert('bar', 'internal', commandContext) >> { throw exception }
 
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             ParameterParseException ppe = thrown()
@@ -512,11 +689,19 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
         and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
+        and:
             def exception = new Exception()
-            internalParameterConverter.convert('bar', *_) >> { throw exception }
+            internalParameterConverter.convert('bar', 'internal', commandContext) >> { throw exception }
 
         when:
-            testee.parse(command, this, '!', 'test', 'bar')
+            testee.parse(commandContext)
 
         then:
             ParameterParseException ppe = thrown()
@@ -535,11 +720,19 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo>bar)/
 
         and:
+            def commandContext = new CommandContext.Builder(this, '!test bar')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar')
+                    .withCommand(command)
+                    .build()
+
+        and:
             def random = randomUUID()
-            internalParameterConverter.convert('bar', *_) >> random
+            internalParameterConverter.convert('bar', 'internal', commandContext) >> random
 
         expect:
-            testee.parse(command, this, '!', 'test', 'bar') == new ParametersImpl<>([foo: random])
+            testee.parse(commandContext) == new ParametersImpl<>([foo: random])
     }
 
     def 'parameters with same untyped name should be combined in result parameters'() {
@@ -549,13 +742,21 @@ class TypedParameterParserTest extends Specification {
             usagePatternBuilder.getPattern(!null) >> ~/(?<foo1>bar) (?<foo2>baz)/
 
         and:
+            def commandContext = new CommandContext.Builder(this, '!test bar baz')
+                    .withPrefix('!')
+                    .withAlias('test')
+                    .withParameterString('bar baz')
+                    .withCommand(command)
+                    .build()
+
+        and:
             def random1 = randomUUID()
             def random2 = randomUUID()
-            internalParameterConverter.convert('bar', *_) >> random1
-            customParameterConverter.convert('baz', *_) >> random2
+            internalParameterConverter.convert('bar', 'internal', commandContext) >> random1
+            customParameterConverter.convert('baz', 'custom', commandContext) >> random2
 
         expect:
-            testee.parse(command, this, '!', 'test', 'bar baz') == new ParametersImpl<>([foo: [random1, random2]])
+            testee.parse(commandContext) == new ParametersImpl<>([foo: [random1, random2]])
     }
 
     @Use(ContextualInstanceCategory)

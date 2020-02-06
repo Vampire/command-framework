@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.message.Message
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
@@ -35,14 +36,16 @@ class PrivateMessageJavacordTest extends Specification {
     @Subject
     PrivateMessageJavacord privateMessageJavacord
 
-    Message message = Stub()
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message)
+    }
 
     def 'private message "#privateMessage" should #be allowed'() {
         given:
-            message.privateMessage >> privateMessage
+            commandContext.message.privateMessage >> privateMessage
 
         expect:
-            privateMessageJavacord.allowCommand(message) == allowed
+            privateMessageJavacord.allowCommand(commandContext) == allowed
 
         where:
             privateMessage || allowed | be

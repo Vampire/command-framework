@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.user.User
 import org.jboss.weld.junit4.WeldInitiator
@@ -36,16 +37,18 @@ class RegularUserJavacordTest extends Specification {
     @Subject
     RegularUserJavacord regularUserJavacord
 
-    Message message = Stub {
-        it.userAuthor >> Optional.of(Stub(User))
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.userAuthor >> Optional.of(Stub(User))
+        }
     }
 
     def 'regular user "#regularUser" should #be allowed'() {
         given:
-            message.userAuthor.get().bot >> !regularUser
+            commandContext.message.userAuthor.get().bot >> !regularUser
 
         expect:
-            regularUserJavacord.allowCommand(message) == allowed
+            regularUserJavacord.allowCommand(commandContext) == allowed
 
         where:
             regularUser || allowed | be

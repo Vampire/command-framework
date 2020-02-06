@@ -16,6 +16,7 @@
 
 package net.kautler.command.integ.test.javacord.event
 
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
@@ -62,7 +63,7 @@ class CommandNotAllowedEventJavacordIntegTest extends Specification {
     @ApplicationScoped
     static class False implements Restriction<Object> {
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             false
         }
     }

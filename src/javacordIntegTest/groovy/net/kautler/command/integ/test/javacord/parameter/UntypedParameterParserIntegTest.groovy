@@ -17,6 +17,7 @@
 package net.kautler.command.integ.test.javacord.parameter
 
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.annotation.Usage
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
@@ -78,15 +79,16 @@ class UntypedParameterParserIntegTest extends Specification {
         ParameterParser parameterParser
 
         @Override
-        void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
+        void execute(CommandContext<? extends Message> commandContext) {
             def parameters = parameterParser
-                    .parse(this, incomingMessage, prefix, usedAlias, parameterString)
+                    .parse(commandContext)
                     .with { it.entries }
                     .collect { "$it.key: $it.value" }
                     .sort()
                     .join('\n')
 
-            incomingMessage
+            commandContext
+                    .message
                     .channel
                     .sendMessage("pong:\n$parameters")
                     .exceptionally(ExceptionLogger.get())

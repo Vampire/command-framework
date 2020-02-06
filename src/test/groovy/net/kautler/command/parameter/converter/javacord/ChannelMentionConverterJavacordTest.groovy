@@ -17,6 +17,7 @@
 package net.kautler.command.parameter.converter.javacord
 
 import net.kautler.command.Internal
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
 import net.kautler.command.api.parameter.InvalidParameterValueException
 import org.javacord.api.DiscordApi
@@ -54,7 +55,7 @@ class ChannelMentionConverterJavacordTest extends Specification {
                         ]))
 
         when:
-            testee.convert("<#$channelId>", null, null, null, null, null, null)
+            testee.convert("<#$channelId>", null, null)
 
         then:
             InvalidParameterFormatException ipfe = thrown()
@@ -73,28 +74,32 @@ class ChannelMentionConverterJavacordTest extends Specification {
         given:
             Channel channel = Stub()
 
-            Message message = Stub {
-                it.api >> Mock(DiscordApi) {
-                    getChannelById(1) >> Optional.of(channel)
-                    0 * getChannelById(_)
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.api >> Mock(DiscordApi) {
+                        getChannelById(1) >> Optional.of(channel)
+                        0 * getChannelById(_)
+                    }
                 }
             }
 
         expect:
-            testee.convert('<#1>', null, null, message, null, null, null) == channel
+            testee.convert('<#1>', null, commandContext) == channel
     }
 
     def '<#1> should throw InvalidParameterValueException if channel is not found'() {
         given:
-            Message message = Stub {
-                it.api >> Mock(DiscordApi) {
-                    getChannelById(1) >> Optional.empty()
-                    0 * getChannelById(_)
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.api >> Mock(DiscordApi) {
+                        getChannelById(1) >> Optional.empty()
+                        0 * getChannelById(_)
+                    }
                 }
             }
 
         when:
-            testee.convert('<#1>', null, null, message, null, null, null)
+            testee.convert('<#1>', null, commandContext)
 
         then:
             InvalidParameterValueException ipve = thrown()

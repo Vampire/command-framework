@@ -17,6 +17,7 @@
 package net.kautler.command.integ.test.javacord.restriction
 
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.annotation.Alias
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.annotation.RestrictionPolicy
@@ -331,7 +332,7 @@ class RestrictionPolicyIntegTest extends Specification {
         static allow
 
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             allow
         }
     }
@@ -342,7 +343,7 @@ class RestrictionPolicyIntegTest extends Specification {
         static allow
 
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             allow
         }
     }

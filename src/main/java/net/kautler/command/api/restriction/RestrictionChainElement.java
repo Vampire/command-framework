@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package net.kautler.command.api.restriction;
 
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.restriction.RestrictionLookup;
 
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
 
@@ -50,19 +52,19 @@ public class RestrictionChainElement {
     }
 
     /**
-     * Returns whether the command triggered by the given message should be allowed or not.
+     * Returns whether the command triggered by the given command context should be allowed or not.
      *
-     * @param message               the message that triggered the command
-     * @param availableRestrictions the look up to find the actual restriction implementations
-     * @param <M>                   the class of the message
-     * @return whether the command triggered by the given message should be allowed or not
+     * @param commandContext        the command context, usually fully populated
+     * @param availableRestrictions the lookup to find the actual restriction implementations
+     * @param <M>                   the class of the message in the command context
+     * @return whether the command triggered by the given command context should be allowed or not
      */
-    public <M> boolean isCommandAllowed(M message, RestrictionLookup<? super M> availableRestrictions) {
+    public <M> boolean isCommandAllowed(CommandContext<M> commandContext, RestrictionLookup<? super M> availableRestrictions) {
         Restriction<? super M> restriction = availableRestrictions.getRestriction(this.restriction);
         if (restriction == null) {
             throw new IllegalArgumentException(format("The restriction '%s' was not found in the given available restrictions '%s'", this.restriction, availableRestrictions));
         }
-        return restriction.allowCommand(message);
+        return restriction.allowCommand(commandContext);
     }
 
     /**
@@ -119,6 +121,23 @@ public class RestrictionChainElement {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if ((obj == null) || (getClass() != obj.getClass())) {
+            return false;
+        }
+        RestrictionChainElement that = (RestrictionChainElement) obj;
+        return Objects.equals(restriction, that.restriction);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(restriction);
+    }
+
+    @Override
     public String toString() {
         return new StringJoiner(", ", RestrictionChainElement.class.getSimpleName() + "[", "]")
                 .add("restriction=" + restriction)
@@ -152,9 +171,27 @@ public class RestrictionChainElement {
         }
 
         @Override
-        public <M> boolean isCommandAllowed(M message, RestrictionLookup<? super M> availableRestrictions) {
+        public <M> boolean isCommandAllowed(CommandContext<M> commandContext, RestrictionLookup<? super M> availableRestrictions) {
             return Stream.of(left, right)
-                    .allMatch(chainElement -> chainElement.isCommandAllowed(message, availableRestrictions));
+                    .allMatch(chainElement -> chainElement.isCommandAllowed(commandContext, availableRestrictions));
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if ((obj == null) || (getClass() != obj.getClass())) {
+                return false;
+            }
+            AndCombination that = (AndCombination) obj;
+            return Objects.equals(left, that.left) &&
+                    Objects.equals(right, that.right);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(left, right);
         }
 
         @Override
@@ -193,9 +230,27 @@ public class RestrictionChainElement {
         }
 
         @Override
-        public <M> boolean isCommandAllowed(M message, RestrictionLookup<? super M> availableRestrictions) {
+        public <M> boolean isCommandAllowed(CommandContext<M> commandContext, RestrictionLookup<? super M> availableRestrictions) {
             return Stream.of(left, right)
-                    .anyMatch(chainElement -> chainElement.isCommandAllowed(message, availableRestrictions));
+                    .anyMatch(chainElement -> chainElement.isCommandAllowed(commandContext, availableRestrictions));
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if ((obj == null) || (getClass() != obj.getClass())) {
+                return false;
+            }
+            OrCombination that = (OrCombination) obj;
+            return Objects.equals(left, that.left) &&
+                    Objects.equals(right, that.right);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(left, right);
         }
 
         @Override
@@ -226,8 +281,25 @@ public class RestrictionChainElement {
         }
 
         @Override
-        public <M> boolean isCommandAllowed(M message, RestrictionLookup<? super M> availableRestrictions) {
-            return !negated.isCommandAllowed(message, availableRestrictions);
+        public <M> boolean isCommandAllowed(CommandContext<M> commandContext, RestrictionLookup<? super M> availableRestrictions) {
+            return !negated.isCommandAllowed(commandContext, availableRestrictions);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if ((obj == null) || (getClass() != obj.getClass())) {
+                return false;
+            }
+            Negation negation = (Negation) obj;
+            return Objects.equals(negated, negation.negated);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(negated);
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package net.kautler.command.api.restriction;
+
+import net.kautler.command.api.CommandContext;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -32,7 +34,7 @@ public class Everyone implements Restriction<Object> {
     }
 
     @Override
-    public boolean allowCommand(Object message) {
+    public boolean allowCommand(CommandContext<?> commandContext) {
         return true;
     }
 }

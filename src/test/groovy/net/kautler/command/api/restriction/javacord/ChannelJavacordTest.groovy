@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.channel.TextChannel
@@ -29,17 +30,21 @@ import java.util.regex.Pattern
 
 @Subject(ChannelJavacord)
 class ChannelJavacordTest extends Specification {
-    Message message = Stub {
-        it.channel >> Stub(TextChannel) {
-            asTextChannel() >> Optional.of(it)
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.channel >> Stub(TextChannel) {
+                asTextChannel() >> Optional.of(it)
+            }
         }
     }
 
-    Message serverMessage = Stub {
-        it.channel >> Stub(ServerTextChannel) {
-            asServerChannel() >> Optional.of(it)
-            asTextChannel() >> Optional.of(it)
-            asServerTextChannel() >> Optional.of(it)
+    CommandContext<Message> serverCommandContext = Stub {
+        it.message >> Stub(Message) {
+            it.channel >> Stub(ServerTextChannel) {
+                asServerChannel() >> Optional.of(it)
+                asTextChannel() >> Optional.of(it)
+                asServerTextChannel() >> Optional.of(it)
+            }
         }
     }
 
@@ -48,10 +53,10 @@ class ChannelJavacordTest extends Specification {
             ChannelJavacord channelJavacord = Spy(constructorArgs: [expectedChannelId])
 
         and:
-            message.channel.id >> actualChannelId
+            commandContext.message.channel.id >> actualChannelId
 
         expect:
-            channelJavacord.allowCommand(message) == allowed
+            channelJavacord.allowCommand(commandContext) == allowed
 
         where:
             [expectedChannelId, actualChannelId] <<
@@ -65,11 +70,11 @@ class ChannelJavacordTest extends Specification {
             ChannelJavacord channelJavacord = Spy(constructorArgs: [expectedChannelName])
 
         and:
-            serverMessage.channel.asServerChannel().get().name >> actualChannelName
+            serverCommandContext.message.channel.asServerChannel().get().name >> actualChannelName
 
         expect:
-            !channelJavacord.allowCommand(message)
-            channelJavacord.allowCommand(serverMessage) == allowed
+            !channelJavacord.allowCommand(commandContext)
+            channelJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedChannelName, actualChannelName] <<
@@ -83,11 +88,11 @@ class ChannelJavacordTest extends Specification {
             ChannelJavacord channelJavacord = Spy(constructorArgs: [expectedChannelName, false])
 
         and:
-            serverMessage.channel.asServerChannel().get().name >> actualChannelName
+            serverCommandContext.message.channel.asServerChannel().get().name >> actualChannelName
 
         expect:
-            !channelJavacord.allowCommand(message)
-            channelJavacord.allowCommand(serverMessage) == allowed
+            !channelJavacord.allowCommand(commandContext)
+            channelJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedChannelName, actualChannelName] <<
@@ -101,11 +106,11 @@ class ChannelJavacordTest extends Specification {
             ChannelJavacord channelJavacord = Spy(constructorArgs: [expectedChannelPattern])
 
         and:
-            serverMessage.channel.asServerChannel().get().name >> actualChannelName
+            serverCommandContext.message.channel.asServerChannel().get().name >> actualChannelName
 
         expect:
-            !channelJavacord.allowCommand(message)
-            channelJavacord.allowCommand(serverMessage) == allowed
+            !channelJavacord.allowCommand(commandContext)
+            channelJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedChannelPattern, actualChannelName] << [

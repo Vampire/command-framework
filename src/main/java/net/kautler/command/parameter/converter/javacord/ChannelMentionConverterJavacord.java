@@ -17,7 +17,7 @@
 package net.kautler.command.parameter.converter.javacord;
 
 import net.kautler.command.Internal;
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
 import net.kautler.command.api.parameter.InvalidParameterValueException;
 import net.kautler.command.api.parameter.ParameterConverter;
@@ -48,8 +48,7 @@ class ChannelMentionConverterJavacord implements ParameterConverter<Message, Cha
     }
 
     @Override
-    public Channel convert(String parameter, String type, Command<?> command, Message message,
-                           String prefix, String usedAlias, String parameterString) {
+    public Channel convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher channelMatcher = CHANNEL_MENTION.matcher(parameter);
         if (!channelMatcher.matches()) {
             throw new InvalidParameterFormatException(format("'%s' is not a valid channel mention", parameter));
@@ -63,7 +62,8 @@ class ChannelMentionConverterJavacord implements ParameterConverter<Message, Cha
             throw new InvalidParameterFormatException(format("'%s' is not a valid channel mention", parameter), nfe);
         }
 
-        return message
+        return commandContext
+                .getMessage()
                 .getApi()
                 .getChannelById(channelId)
                 .orElseThrow(() -> new InvalidParameterValueException(format("channel for id '%s' was not found", channelIdString)));

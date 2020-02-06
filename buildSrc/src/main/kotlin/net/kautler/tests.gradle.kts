@@ -491,8 +491,8 @@ pitest {
     detectInlinedCode(true)
     timestampedReports(false)
     features(listOf("-FLOGCALL"))
-    timeoutFactor(2.toBigDecimal())
-    timeoutConstInMillis(SECONDS.toMillis(15).toInt())
+    timeoutFactor(3.toBigDecimal())
+    timeoutConstInMillis(SECONDS.toMillis(30).toInt())
     excludedClasses(setOf(
             "net.kautler.command.usage.UsageBaseVisitor",
             "net.kautler.command.usage.UsageLexer",

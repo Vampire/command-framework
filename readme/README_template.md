@@ -36,6 +36,7 @@ Table of Contents
   * [Creating Commands](#creating-commands)
     * [Command Aliases](#command-aliases)
     * [Asynchronous Command Execution](#asynchronous-command-execution)
+    * [Command Description](#command-description)
     * [Command Restrictions](#command-restrictions)
     * [Command Usage](#command-usage)
     * [Parsing Parameters](#parsing-parameters)
@@ -45,6 +46,15 @@ Table of Contents
     * [Customizing Parameter Converters](#customizing-parameter-converters)
     * [Customizing Command Prefix](#customizing-command-prefix)
     * [Customizing Alias Calculation](#customizing-alias-calculation)
+    * [Customizing the Command Recognition and Resolution Process](#customizing-the-command-recognition-and-resolution-process)
+      * [Before Prefix Computation Sub Phase](#before-prefix-computation-sub-phase)
+      * [After Prefix Computation Sub Phase](#after-prefix-computation-sub-phase)
+      * [Before Alias and Parameter String Computation Sub Phase](#before-alias-and-parameter-string-computation-sub-phase)
+      * [After Alias and Parameter String Computation Sub Phase](#after-alias-and-parameter-string-computation-sub-phase)
+      * [Before Command Computation Sub Phase](#before-command-computation-sub-phase)
+      * [After Command Computation Sub Phase](#after-command-computation-sub-phase)
+      * [Hooking into a Sub Phase](#hooking-into-a-sub-phase)
+    * [Storing Additional Data in the Command Context](#storing-additional-data-in-the-command-context)
   * [CDI Events](#cdi-events)
     * [Handling Missing Commands](#handling-missing-commands)
     * [Handling Disallowed Commands](#handling-disallowed-commands)
@@ -68,12 +78,12 @@ Prerequisites
 Supported Message Frameworks
 ----------------------------
 
-The following message frameworks are currently supported:
+The following message frameworks are currently supported out of the box:
 
 * [Javacord](#javacord)
 * [JDA](#jda)
 
-If you want to have support for an additional, do not hesitate to open a PR or feature request issue.
+If you want to have support for an additional, do not hesitate to open a pull request or feature request issue.
 
 
 
@@ -171,7 +181,8 @@ public class JdaProducer {
     @ApplicationScoped
     private JDA produceJda() {
         try {
-            return new JDABuilder(discordToken)
+            return JDABuilder
+                    .createLight(discordToken)
                     .build()
                     .awaitReady();
         } catch (InterruptedException | LoginException e) {
@@ -198,9 +209,11 @@ _**Example:**_
 @ApplicationScoped
 public class PingCommand implements Command<Message> {
     @Override
-    public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
-        incomingMessage.getChannel()
-                .sendMessage("pong: " + parameterString)
+    public void execute(CommandContext<? extends Message> commandContext) {
+        commandContext
+                .getMessage()
+                .getChannel()
+                .sendMessage("pong: " + commandContext.getParameterString().orElse(""))
                 .exceptionally(ExceptionLogger.get());
     }
 }
@@ -210,7 +223,7 @@ With everything else using the default, this is already enough to have a working
 A fully self-contained example can be found at `examples/simplePingBotJavacord`.
 
 To further customize the behavior of a command you can either annotate the command class or overwrite the according
-methods in your command implementation to replace the default implementation which evaluates the annotations.
+methods in your command implementation to replace the default implementations which evaluate the annotations.
 Having annotations applied and at the same time overwriting the according methods makes only sense if you want the
 annotations only for documentary purpose or evaluate them yourself, as the default implementations of those methods
 are the only places where the annotations are evaluated by default. Every other place like for example command handler
@@ -316,7 +329,7 @@ The usage string has to follow this pre-defined format:
   `<my placeholder...>`
 * Literal parameters look like `'literal'`
 * Optional parts are enclosed in square brackets like `[<optional placeholder>]`
-* Alternatives are enclosed in parentheses and are separated by pipe characters like `('all'  | 'some'  | 'none')`
+* Alternatives are enclosed in parentheses and are separated by pipe characters like `('all' | 'some' | 'none')`
 * Whitespace characters between the defined tokens are optional and ignored
 
 _**Examples:**_
@@ -374,9 +387,11 @@ public class PingCommand implements Command<Message> {
     private ParameterParser parameterParser;
 
     @Override
-    public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
+    public void execute(CommandContext<? extends Message> commandContext) {
+        Message incomingMessage = commandContext.getMessage();
+
         try {
-            parameterParser.parse(this, incomingMessage, prefix, usedAlias, parameterString);
+            parameterParser.parse(commandContext);
         } catch (ParameterParseException ppe) {
             incomingMessage.getChannel()
                     .sendMessage(format("%s: %s", incomingMessage.getAuthor().getDisplayName(), ppe.getMessage()))
@@ -385,7 +400,7 @@ public class PingCommand implements Command<Message> {
         }
 
         incomingMessage.getChannel()
-                .sendMessage("pong: " + parameterString)
+                .sendMessage("pong: " + commandContext.getParameterString().orElse(""))
                 .exceptionally(ExceptionLogger.get());
     }
 }
@@ -400,11 +415,12 @@ public class DoCommand implements Command<Message> {
     private ParameterParser parameterParser;
 
     @Override
-    public void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
+    public void execute(CommandContext<? extends Message> commandContext) {
         Parameters<String> parameters;
         try {
-            parameters = parameterParser.parse(this, incomingMessage, prefix, usedAlias, parameterString);
+            parameters = parameterParser.parse(commandContext);
         } catch (ParameterParseException ppe) {
+            Message incomingMessage = commandContext.getMessage();
             incomingMessage.getChannel()
                     .sendMessage(format("%s: %s", incomingMessage.getAuthor().getDisplayName(), ppe.getMessage()))
                     .exceptionally(ExceptionLogger.get());
@@ -422,7 +438,7 @@ public class DoCommand implements Command<Message> {
 
 A custom parameter converter can be configured by providing a CDI bean that implements the
 [`ParameterConverter`][ParameterConverter JavaDoc] interface. In the implementation of the `convert` method the string
-parameter and various context information is given and from this the converted parameter value can be calculated.
+parameter, parameter type, and command context are given and from this the converted parameter value can be calculated.
 The class also needs to be annotated with one or multiple [`ParameterType`][ParameterType JavaDoc] qualifiers
 that define the parameter type aliases for which the annotated parameter converter works. Without such
 qualifier the converter will simply never be used. It is an error to have multiple parameter converters with the
@@ -437,44 +453,149 @@ _**Examples:**_
 @ParameterType("strings")
 public class StringsConverter implements ParameterConverter<Object, List<String>> {
     @Override
-    public List<String> convert(String parameter, String type, Command<?> command, Object message,
-                                String prefix, String usedAlias, String parameterString) {
+    public List<String> convert(String parameter, String type, CommandContext<?> commandContext) {
         return asList(parameter.split(","));
     }
 }
 ```
 
-#### Customizing Command Prefix
+#### Customizing the Command Recognition and Resolution Process
 
-A custom command prefix can be configured by providing a CDI bean that implements the
-[`PrefixProvider`][PrefixProvider JavaDoc] interface. In the implementation of the `getCommandPrefix` method you can
-determine from the message that caused the command what the command prefix should be. This way you can for example have
-different command prefixes for different servers your bot is serving. If no custom prefix provider is found, a default
-one is used, that always returns `"!"` as the prefix.
+The command recognition and resolution process consists of five phases. Actually these phases can vary, as a command
+handler or a command context transformer can fast-forward the process to a later phase to skip unnecessary work, or
+some phase can fail the process with a command not found event.
 
-There are also helper classes that can be used as super classes for own prefix providers like for example a provider
-that returns the mention string for the bot as command prefix if Javacord is used as the underlying message framework.
+The five phases that are handled are in order:
+- Initialization
+- Prefix Computation
+- Alias and Parameter String Computation
+- Command Computation
+- Command Execution
 
-_**Warning:**_ The command prefix can technically be configured to be empty, but this means that every message will be
-checked against a regular expression and that for every non-matching message a CDI event will be sent. It is better for
-the performance if a command prefix is set instead of including it in the aliases directly. Due to this potential
-performance issue, a warning is logged each time a message is handled with an empty command prefix. If you do not care
-and want the warning to vanish, you have to configure your logging framework to ignore this warning, as it also costs
-additional performance and might hide other important log messages. ;-)
+For all but the first and last, there is a before and an after sub phase each during which the command context
+transformer is called.
+
+If at the end of the initialization phase, any before, or any after sub phase the command is set
+in the context, processing is fast forwarded immediately to the command execution phase and all other
+inbetween phases and sub phases are skipped.
+
+If at the end of the initialization phase, any before, or any after sub phase before the
+`BEFORE_COMMAND_COMPUTATION` sub phase, the alias is set in the context, processing is
+fast forwarded immediately to the before command computation sub phase and all other inbetween
+phases and sub phases are skipped.
+
+If at the end of the initialization phase, any before, or any after sub phase before the
+`BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION` sub phase, the prefix is set in the context,
+processing is fast forwarded immediately to the before alias and parameter string computation
+sub phase and all other inbetween phases and sub phases are skipped.
+
+##### Before Prefix Computation Sub Phase
+
+At the start of this sub phase, usually only the message, and message content are set.
+
+##### After Prefix Computation Sub Phase
+
+At the start of this sub phase, usually only the message, message content, and prefix are set.
+
+If at the end of this sub phase no fast forward was done and no prefix is set,
+a command not found event is being fired and processing stops completely.
+
+##### Before Alias and Parameter String Computation Sub Phase
+
+At the start of this sub phase, usually only the message, message content, and prefix are set.
+
+If at the end of this sub phase no fast forward was done and no prefix is set,
+a command not found event is being fired and processing stops completely.
+
+If at the end of this sub phase a prefix is set and it does not match the start of the message content,
+the message is ignored and processing stops completely. This is the only way to stop processing cleanly
+without getting a command not found event fired. This can also be achieved by fast forwarding to this
+phase by setting the prefix in an earlier phase and not doing anything in this phase actually,
+or not even registering for it.
+
+##### After Alias and Parameter String Computation Sub Phase
+
+At the start of this phase, usually only the message, message content, prefix, alias,
+and parameter string are set.
+
+If at the end of this phase no fast forward was done and no alias is set,
+a command not found event is being fired and processing stops completely.
+
+##### Before Command Computation Sub Phase
+
+At the start of this phase, usually only the message, message content, prefix, alias,
+and parameter string are set.
+
+If at the end of this phase no fast forward was done and no alias is set,
+a command not found event is being fired and processing stops completely.
+
+##### After Command Computation Sub Phase
+
+At the start of this phase, usually the command context is fully populated.
+
+If at the end of this phase no command is set,
+a command not found event is being fired and processing stops completely.
+
+##### Hooking into a Sub Phase
+
+For each of the described sub phases exactly one context transformer that is compatible with the framework message
+can be registered. If you need multiple such transformers, then make one distributing transformer that calls the
+other transformers in the intended order. You can also register one context transformer for multiple phases.
+The `transform` method gets the current phase as argument and can then decide what to do based on that phase parameter.
+
+A command context transformer can be registered by providing a CDI bean that implements the
+[`CommandContextTransformer`][CommandContextTransformer JavaDoc] interface. In the implementation of the `transform`
+method you can determine from the current command context and the given phase how you like the command context to
+be and return the adapted command context or even a completely new command context.
+Additionally the bean has to be annotated with at least one [`@InPhase`][@InPhase JavaDoc] qualifier annotation, or it
+will simply not be used silently. The transformer will be called for each sub phase that is added with that annotation.
+
+There are also helper classes that can be used as super classes for own command context transformers like for example
+a provider that returns the mention string for the bot as command prefix if Javacord is used as the underlying
+message framework.
+
+_**Warning:**_ The command prefix can technically be configured to be empty, but this means that if the alias and
+parameter string computation phase is executed, every message will be checked against a regular expression and that
+for every non-matching message a CDI event will be sent. It is better for the performance if a command prefix is set
+instead of including it in the aliases directly. Due to this potential performance issue, a warning is logged each
+time a message is handled with an empty command prefix. If you do not care and want the warning to vanish,
+you have to configure your logging framework to ignore this warning, as it also costs additional performance
+and might hide other important log messages. ;-)
+
+Example use-cases for command context transformers are:
+
+- Custom command prefixes depending on some database
+
+- Dynamic commands stored in some database
+
+- Fuzzy-searching for mistyped aliases and their automatic correction (this could also be used for just a
+  "did you mean X" response, but for that the command not found events are maybe better suited)
+
+- Having a command that forwards to one command in one channel but to another command in another channel,
+  like `!player` that forwards to `!mc:player` in an MC channel but to `!s4:player` in an S4 channel
+
+- Supporting something like `!runas @other-user foo bar baz`, where the transformer will transform that to alias
+  `foo` and parameter string `bar baz`, storing the `other-user` as additional data in the command context,
+  and then a custom `Restriction` can check whether the message author has the permissions to use `!runas`
+  and for example whether the `other-user` would have permissions for the `foo` command and only then
+  allow it to proceed
+
+- forwarding to a `!help` command if an unknown command was issued
 
 _**Examples:**_
 ```java
 @ApplicationScoped
-public class MyPrefixProvider implements PrefixProvider<Message> {
+@InPhase(BEFORE_PREFIX_COMPUTATION)
+public class MyPrefixTransformer implements CommandContextTransformer<Message> {
     @Override
-    public String getCommandPrefix(Message message) {
-        Optional<Server> server = message.getServer();
+    public <T extends Message> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+        Optional<Server> server = commandContext.getMessage().getServer();
         if (!server.isPresent()) {
-            return "!";
+            return commandContext.withPrefix("!").build();
         } else if (server.get().getId() == 12345L) {
-            return "bot ";
+            return commandContext.withPrefix("bot ").build();
         } else {
-            return ":";
+            return commandContext.withPrefix(":").build();
         }
     }
 }
@@ -482,52 +603,43 @@ public class MyPrefixProvider implements PrefixProvider<Message> {
 
 ```java
 @ApplicationScoped
-public class MentionPrefixProvider extends MentionPrefixProviderJavacord {
+@InPhase(BEFORE_PREFIX_COMPUTATION)
+public class MentionPrefixTransformer extends MentionPrefixTransformerJavacord {
 }
 ```
 
-#### Customizing Alias Calculation
-
-The alias calculation can be customized by providing a CDI bean that implements the
-[`AliasAndParameterStringTransformer`][AliasAndParameterStringTransformer JavaDoc] interface. In the implementation of
-the `transformAliasAndParameterString` method you can determine from the message that caused the processing what the
-alias and parameter string should be. The transformer is called after the alias and parameter string are determined from
-the message using all registered aliases and before the command is resolved from the alias. If an alias was found from
-the registered aliases, the `aliasAndParameterString` parameter contains the found information. If no alias was found,
-the parameter will be `null`. The fields in the `AliasAndParameterString` object are always non-`null`.
-
-The transformer can then either accept the found alias and parameter string by returning the argument directly, or it
-can determine a new alias and parameter string and return these. The return value of the transformer will be used for
-further processing. If the alias in the returned object is not one of the registered aliases or the transformer returns
-`null`, there will not be any command found and the respective CDI event will be fired.
-
-Example use-cases for this are:
-
-- fuzzy-searching for mistyped aliases and their automatic correction (this could also be used for just a
-  "did you mean X" response, but for that the command not found events are probably better suited)
-
-- having a command that forwards to one command in one channel but to another command in another channel,
-  like `!player` that forwards to `!mc:player` in an MC channel but to `!s4:player` in an S4 channel
-
-- supporting something like `!runas @other-user foo bar baz`, where the transformer will transform that to alias
-  `foo` and parameter string `bar baz` and then a custom `Restriction` can check whether the message author has
-  the permissions to use `!runas` and then for example whether the `other-user` would have permissions for the
-  `foo` command and only then allow it to proceed
-
-- forwarding to a `!help` command if an unknown command was issued
-
-_**Example:**_
 ```java
 @ApplicationScoped
-public class MyAliasAndParameterStringTransformer implements AliasAndParameterStringTransformer<Message> {
+@InPhase(AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION)
+public class MyAliasAndParameterStringTransformer implements CommandContextTransformer<Message> {
     @Override
-    public AliasAndParameterString transformAliasAndParameterString(
-            Message message, AliasAndParameterString aliasAndParameterString) {
-        return (aliasAndParameterString == null)
-                ? new AliasAndParameterString("help", "")
-                : aliasAndParameterString;
+    public <T extends Message> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+        return (!commandContext.getAlias().isPresent())
+               ? commandContext.withAlias("help").build()
+               : commandContext;
     }
 }
+```
+
+#### Storing Additional Data in the Command Context
+
+The `CommandContext` is also a store for arbitrary additional information that you can attach to a command invocation.
+You can for example attach some information during execution of a command context transformer and then later
+evaluate this information in a custom restriction class or in the implementation of the actual command.
+
+The methods regarding additional data all have a generic type argument, as they all return a value, either the current
+one or the previous one, depending on the method. This value can be cast to the correct type for you, but be careful
+to select the proper type. As this is an unsafe operation the type has to be chosen wisely. If you for example select
+`String` as type and then try to get a `User` object from the returned optional, you will get a `ClassCastException`
+at runtime.
+
+The type can be specified explicitly like
+```java
+commandContext.<User>getAdditionalData("user");
+```
+or using implicit type inference like with
+```java
+Optional<User> user = commandContext.getAdditionalData("user");
 ```
 
 ### CDI Events
@@ -684,10 +796,10 @@ limitations under the License.
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/parameter/ParameterParser.html
 [ParameterType JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/parameter/ParameterType.html
-[PrefixProvider JavaDoc]:
-    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/prefix/PrefixProvider.html
-[AliasAndParameterStringTransformer JavaDoc]:
-    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/AliasAndParameterStringTransformer.html
+[CommandContextTransformer JavaDoc]:
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/CommandContextTransformer.html
+[@InPhase JavaDoc]:
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/CommandContextTransformer.InPhase.html
 [@RestrictedTo JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/annotation/RestrictedTo.html
 [Restriction JavaDoc]:

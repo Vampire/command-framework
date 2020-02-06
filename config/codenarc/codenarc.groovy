@@ -32,8 +32,12 @@ ruleset {
     ComparisonOfTwoConstants
     ComparisonWithSelf {
         doNotApplyToClassNames = [
-                'net.kautler.command.api.AliasAndParameterStringTest',
+                'net.kautler.command.api.CommandContextBuilderTest',
+                'net.kautler.command.api.CommandContextTest',
+                'net.kautler.command.api.parameter.ParameterParseExceptionTest',
+                'net.kautler.command.api.restriction.RestrictionChainElementTest',
                 'net.kautler.command.parameter.ParametersImplTest',
+                'net.kautler.command.restriction.RestrictionLookupTest',
                 'net.kautler.command.util.lazy.LazyReferenceByFunctionTest',
                 'net.kautler.command.util.lazy.LazyReferenceBySupplierTest',
                 'net.kautler.command.util.lazy.LazyReferenceTest'
@@ -304,8 +308,12 @@ ruleset {
     ExplicitCallToDivMethod
     ExplicitCallToEqualsMethod {
         doNotApplyToClassNames = [
-                'net.kautler.command.api.AliasAndParameterStringTest',
+                'net.kautler.command.api.CommandContextBuilderTest',
+                'net.kautler.command.api.CommandContextTest',
+                'net.kautler.command.api.parameter.ParameterParseExceptionTest',
+                'net.kautler.command.api.restriction.RestrictionChainElementTest',
                 'net.kautler.command.parameter.ParametersImplTest',
+                'net.kautler.command.restriction.RestrictionLookupTest',
                 'net.kautler.command.util.lazy.LazyReferenceByFunctionTest',
                 'net.kautler.command.util.lazy.LazyReferenceBySupplierTest',
                 'net.kautler.command.util.lazy.LazyReferenceTest'
@@ -430,9 +438,7 @@ ruleset {
 
     // rulesets/size.xml
     //AbcMetric   // Requires the GMetrics jar
-    ClassSize {
-        maxLines = 1500
-    }
+    //ClassSize
     //CrapMetric   // Requires the GMetrics jar and a Cobertura coverage file
     //CyclomaticComplexity   // Requires the GMetrics jar
     //MethodCount
@@ -440,7 +446,12 @@ ruleset {
     NestedBlockDepth {
         maxNestedBlockDepth = 6
     }
-    ParameterCount
+    ParameterCount {
+        doNotApplyToClassNames = [
+                'net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest',
+                'net.kautler.command.integ.test.jda.CommandContextTransformerIntegTest'
+        ].join(', ')
+    }
 
     // rulesets/unnecessary.xml
     AddEmptyString
@@ -466,7 +477,9 @@ ruleset {
     UnnecessaryFinalOnPrivateMethod
     UnnecessaryFloatInstantiation
     UnnecessaryGString
-    UnnecessaryGetter
+    UnnecessaryGetter {
+        ignoreMethodNames = 'isEmpty'
+    }
     UnnecessaryIfStatement
     UnnecessaryInstanceOfCheck
     UnnecessaryInstantiationToGetClass

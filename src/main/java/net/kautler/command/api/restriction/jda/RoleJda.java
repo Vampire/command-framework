@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -242,7 +243,8 @@ public abstract class RoleJda implements Restriction<Message> {
     }
 
     @Override
-    public boolean allowCommand(Message message) {
+    public boolean allowCommand(CommandContext<? extends Message> commandContext) {
+        Message message = commandContext.getMessage();
         return ((roleName == null) && (rolePattern == null))
                 ? allowCommandByRoleId(message)
                 : allowCommandByRoleName(message);

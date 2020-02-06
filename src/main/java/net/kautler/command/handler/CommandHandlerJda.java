@@ -24,13 +24,13 @@ import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.hooks.SubscribeEvent;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.kautler.command.Internal;
-import net.kautler.command.api.AliasAndParameterStringTransformer;
 import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
+import net.kautler.command.api.CommandContextTransformer;
 import net.kautler.command.api.CommandHandler;
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda;
 import net.kautler.command.api.event.jda.CommandNotFoundEventJda;
 import net.kautler.command.api.parameter.ParameterConverter;
-import net.kautler.command.api.prefix.PrefixProvider;
 import net.kautler.command.api.restriction.Restriction;
 import org.apache.logging.log4j.Logger;
 
@@ -38,6 +38,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.util.TypeLiteral;
@@ -112,6 +113,17 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     }
 
     /**
+     * Sets the command context transformers for this command handler.
+     *
+     * @param commandContextTransformers the command context transformers for this command handler
+     */
+    @Inject
+    private void setCommandContextTransformers(
+            @Any Instance<CommandContextTransformer<? super Message>> commandContextTransformers) {
+        doSetCommandContextTransformers(commandContextTransformers);
+    }
+
+    /**
      * Sets the available restrictions for this command handler.
      *
      * @param availableRestrictions the available restrictions for this command handler
@@ -129,27 +141,6 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     @Inject
     private void setCommands(Instance<Command<? super Message>> commands) {
         doSetCommands(commands);
-    }
-
-    /**
-     * Sets the custom prefix provider for this command handler.
-     *
-     * @param customPrefixProvider the custom prefix provider for this command handler
-     */
-    @Inject
-    private void setCustomPrefixProvider(Instance<PrefixProvider<? super Message>> customPrefixProvider) {
-        doSetCustomPrefixProvider(customPrefixProvider);
-    }
-
-    /**
-     * Sets the alias and parameter string transformer for this command handler.
-     *
-     * @param aliasAndParameterStringTransformer the alias and parameter string transformer for this command handler
-     */
-    @Inject
-    private void setAliasAndParameterStringTransformer(
-            Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer) {
-        doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer);
     }
 
     /**
@@ -219,17 +210,17 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     @SubscribeEvent
     private void onMessageReceived(MessageReceivedEvent messageReceivedEvent) {
         Message message = messageReceivedEvent.getMessage();
-        doHandleMessage(message, message.getContentRaw());
+        doHandleMessage(new CommandContext.Builder(message, message.getContentRaw()).build());
     }
 
     @Override
-    protected void fireCommandNotAllowedEvent(Message message, String prefix, String usedAlias) {
-        commandNotAllowedEvent.fireAsync(new CommandNotAllowedEventJda(message, prefix, usedAlias));
+    protected void fireCommandNotAllowedEvent(CommandContext<Message> commandContext) {
+        commandNotAllowedEvent.fireAsync(new CommandNotAllowedEventJda(commandContext));
     }
 
     @Override
-    protected void fireCommandNotFoundEvent(Message message, String prefix, String usedAlias) {
-        commandNotFoundEvent.fireAsync(new CommandNotFoundEventJda(message, prefix, usedAlias));
+    protected void fireCommandNotFoundEvent(CommandContext<Message> commandContext) {
+        commandNotFoundEvent.fireAsync(new CommandNotFoundEventJda(commandContext));
     }
 
     @Override

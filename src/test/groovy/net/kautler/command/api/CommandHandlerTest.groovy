@@ -16,11 +16,23 @@
 
 package net.kautler.command.api
 
+import java.util.Map.Entry
+import java.util.concurrent.ExecutorService
+
+import javax.annotation.PostConstruct
+import javax.enterprise.context.ApplicationScoped
+import javax.enterprise.inject.Any
+import javax.enterprise.inject.Default
+import javax.enterprise.inject.Instance
+import javax.enterprise.util.TypeLiteral
+import javax.inject.Inject
+
 import net.kautler.command.Internal
 import net.kautler.command.InvalidAnnotationCombinationException
 import net.kautler.command.LoggerProducer
+import net.kautler.command.api.CommandContextTransformer.InPhase
+import net.kautler.command.api.CommandContextTransformer.Phase
 import net.kautler.command.api.parameter.ParameterConverter
-import net.kautler.command.api.prefix.PrefixProvider
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
 import net.kautler.command.util.lazy.LazyReferenceBySupplier
@@ -34,20 +46,18 @@ import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 import spock.util.mop.Use
 
-import javax.annotation.PostConstruct
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Any
-import javax.enterprise.inject.Instance
-import javax.enterprise.util.TypeLiteral
-import javax.inject.Inject
-import java.util.Map.Entry
-import java.util.concurrent.ExecutorService
-
 import static java.lang.Thread.currentThread
 import static java.util.concurrent.TimeUnit.DAYS
+import static net.kautler.command.api.CommandContextTransformer.Phase.AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION
+import static net.kautler.command.api.CommandContextTransformer.Phase.AFTER_COMMAND_COMPUTATION
+import static net.kautler.command.api.CommandContextTransformer.Phase.AFTER_PREFIX_COMPUTATION
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 import static org.apache.logging.log4j.Level.DEBUG
 import static org.apache.logging.log4j.Level.ERROR
 import static org.apache.logging.log4j.Level.INFO
+import static org.apache.logging.log4j.Level.TRACE
 import static org.apache.logging.log4j.Level.WARN
 import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
 
@@ -64,11 +74,9 @@ class CommandHandlerTest extends Specification {
 
     Command<Object> command2 = Mock()
 
-    PrefixProvider<Object> customPrefixProvider = Mock()
+    CommandContextTransformer<Object> commandContextTransformer = Mock()
 
-    PrefixProvider<Object> defaultPrefixProvider = Mock()
-
-    AliasAndParameterStringTransformer<Object> aliasAndParameterStringTransformer = Mock()
+    CommandContextTransformer<Object> beforePrefixComputationCommandContextTransformer = Mock()
 
     @Rule
     WeldInitiator weld = WeldInitiator
@@ -110,20 +118,26 @@ class CommandHandlerTest extends Specification {
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
-                            .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
-                            .creating(defaultPrefixProvider)
+                            .qualifiers(
+                                    // work-around for https://github.com/weld/weld-junit/issues/97
+                                    Any.Literal.INSTANCE,
+                                    *Phase
+                                            .values()
+                                            .findAll { it != BEFORE_PREFIX_COMPUTATION }
+                                            .collect { new InPhase.Literal(it) }
+                            )
+                            .types(new TypeLiteral<CommandContextTransformer<Object>>() { }.type)
+                            .creating(commandContextTransformer)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
-                            .creating(customPrefixProvider)
-                            .build(),
-                    MockBean.builder()
-                            .scope(ApplicationScoped)
-                            .types(new TypeLiteral<AliasAndParameterStringTransformer<Object>>() { }.type)
-                            .creating(aliasAndParameterStringTransformer)
+                            .qualifiers(
+                                    // work-around for https://github.com/weld/weld-junit/issues/97
+                                    Any.Literal.INSTANCE,
+                                    new InPhase.Literal(BEFORE_PREFIX_COMPUTATION)
+                            )
+                            .types(new TypeLiteral<CommandContextTransformer<Object>>() { }.type)
+                            .creating(beforePrefixComputationCommandContextTransformer)
                             .build()
             )
             .inject(this)
@@ -140,10 +154,8 @@ class CommandHandlerTest extends Specification {
     Instance<Command<? super Object>> commandsInstance
 
     @Inject
-    Instance<PrefixProvider<? super Object>> customPrefixProviderInstance
-
-    @Inject
-    Instance<AliasAndParameterStringTransformer<? super Object>> aliasAndParameterStringTransformerInstance
+    @Any
+    Instance<CommandContextTransformer<? super Object>> commandContextTransformersInstance
 
     def 'command handlers should be automatically initialized on container startup'() {
         expect:
@@ -156,11 +168,22 @@ class CommandHandlerTest extends Specification {
             commandHandler.ci().getInternalState('availableRestrictions').get()
 
         then:
-            def expectedMessage = 'Got no restrictions injected'
             getListAppender('Test Appender')
                     .events
                     .findAll { it.level == INFO }
-                    .any { it.message.formattedMessage == expectedMessage }
+                    .any { it.message.formattedMessage == 'Got no restrictions injected' }
+    }
+
+    @Use([ContextualInstanceCategory, Whitebox])
+    def 'setting no commands should be logged properly'() {
+        when:
+            commandHandler.ci().getInternalState('commandByAlias').get()
+
+        then:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == INFO }
+                    .any { it.message.formattedMessage == 'Got no commands injected' }
     }
 
     @Use([ContextualInstanceCategory, Whitebox])
@@ -183,16 +206,16 @@ class CommandHandlerTest extends Specification {
                     .stream()
                     .limit(amount)
                     .each { restriction ->
-                        def expectedMessage = "Got restriction ${restriction.getClass().name} injected"
-                        assert debugEvents.any { it.message.formattedMessage == expectedMessage }
+                        assert debugEvents.any {
+                            it.message.formattedMessage == "Got restriction ${restriction.getClass().name} injected"
+                        }
                     } ?: true
 
         and:
-            def expectedMessage = "Got $amount $restrictions injected"
             getListAppender('Test Appender')
                     .events
                     .findAll { it.level == INFO }
-                    .any { it.message.formattedMessage == expectedMessage }
+                    .any { it.message.formattedMessage == "Got $amount $restrictions injected" }
 
         where:
             amount | restrictions
@@ -202,16 +225,9 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use([ContextualInstanceCategory, Whitebox])
-    def 'setting no commands should be logged properly'() {
-        when:
-            commandHandler.ci().getInternalState('commandByAlias').get()
-
-        then:
-            def expectedMessage = 'Got no commands injected'
-            getListAppender('Test Appender')
-                    .events
-                    .findAll { it.level == INFO }
-                    .any { it.message.formattedMessage == expectedMessage }
+    def 'default command pattern should never match if no commands were set'() {
+        expect:
+            commandHandler.ci().getInternalState('commandPattern').get().pattern() == /[^\w\W]/
     }
 
     @Use([ContextualInstanceCategory, Whitebox])
@@ -239,16 +255,16 @@ class CommandHandlerTest extends Specification {
                     .stream()
                     .limit(amount)
                     .each { command ->
-                        def expectedMessage = "Got command ${command.getClass().name} injected"
-                        assert debugEvents.any { it.message.formattedMessage == expectedMessage }
+                        assert debugEvents.any {
+                            it.message.formattedMessage == "Got command ${command.getClass().name} injected"
+                        }
                     } ?: true
 
         and:
-            def expectedMessage = "Got $amount $command injected"
             getListAppender('Test Appender')
                     .events
                     .findAll { it.level == INFO }
-                    .any { it.message.formattedMessage == expectedMessage }
+                    .any { it.message.formattedMessage == "Got $amount $command injected" }
 
         where:
             amount | command
@@ -299,46 +315,6 @@ class CommandHandlerTest extends Specification {
             thrown(InvalidAnnotationCombinationException)
     }
 
-    def 'the default prefix provider should be chosen if no custom prefix provider is set'() {
-        given:
-            commandHandler.doSetCustomPrefixProvider(null)
-
-        when:
-            commandHandler.doHandleMessage(_, '')
-
-        then:
-            1 * defaultPrefixProvider.getCommandPrefix(_) >> '!'
-            0 * customPrefixProvider.getCommandPrefix(_) >> '.'
-    }
-
-    def 'the default prefix provider should be chosen if no custom prefix provider is available'() {
-        given:
-            def customPrefixProviderInstance = Spy(customPrefixProviderInstance)
-            customPrefixProviderInstance.unsatisfied >> true
-
-        and:
-            commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-
-        when:
-            commandHandler.doHandleMessage(_, '')
-
-        then:
-            1 * defaultPrefixProvider.getCommandPrefix(_) >> '!'
-            0 * customPrefixProvider.getCommandPrefix(_) >> '.'
-    }
-
-    def 'a custom prefix provider should be chosen over the default prefix provider'() {
-        given:
-            commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-
-        when:
-            commandHandler.doHandleMessage(_, '')
-
-        then:
-            0 * defaultPrefixProvider.getCommandPrefix(_) >> '!'
-            1 * customPrefixProvider.getCommandPrefix(_) >> '.'
-    }
-
     @Use([ContextualInstanceCategory, Whitebox])
     def 'shutting down the container should shut down an existing executor service'() {
         given:
@@ -384,67 +360,7 @@ class CommandHandlerTest extends Specification {
                     .empty
     }
 
-    def 'an empty default command prefix should log warning'() {
-        given:
-            1 * defaultPrefixProvider.getCommandPrefix(_) >> ''
-
-        when:
-            commandHandler.doHandleMessage(_, '')
-
-        then:
-            getListAppender('Test Appender')
-                    .events
-                    .findAll { it.level == WARN }
-                    .any { it.message.formattedMessage.contains('command prefix is empty') }
-    }
-
-    def 'an empty custom command prefix should log warning'() {
-        given:
-            1 * customPrefixProvider.getCommandPrefix(_) >> ''
-            commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-
-        when:
-            commandHandler.doHandleMessage(_, '')
-
-        then:
-            getListAppender('Test Appender')
-                    .events
-                    .findAll { it.level == WARN }
-                    .any { it.message.formattedMessage.contains('command prefix is empty') }
-    }
-
-    def 'a non-empty default command prefix should not log warning'() {
-        given:
-            1 * defaultPrefixProvider.getCommandPrefix(_) >> '!'
-
-        when:
-            commandHandler.doHandleMessage(_, '')
-
-        then:
-            getListAppender('Test Appender')
-                    .events
-                    .findAll { it.level == WARN }
-                    .empty
-    }
-
-    def 'a non-empty custom command prefix should not log warning'() {
-        given:
-            1 * customPrefixProvider.getCommandPrefix(_) >> '!'
-            commandHandler.doSetCustomPrefixProvider(customPrefixProviderInstance)
-
-        when:
-            commandHandler.doHandleMessage(_, '')
-
-        then:
-            getListAppender('Test Appender')
-                    .events
-                    .findAll { it.level == WARN }
-                    .empty
-    }
-
-    def prepareCommandHandlerForCommandExecution(prefix = '!') {
-        defaultPrefixProvider.getCommandPrefix(_) >> prefix
-
+    def prepareCommandHandlerForCommandExecution() {
         commandsInstance.eachWithIndex { command, i ->
             with(command.ci()) {
                 it.aliases >> ["test$i" as String]
@@ -457,19 +373,2117 @@ class CommandHandlerTest extends Specification {
             it.ci().allowCommand(_) >> true
         }
         commandHandler.doSetAvailableRestrictions(availableRestrictionsInstance)
+
+        commandContextTransformersInstance.each {
+            it.ci().transform(*_) >> { it.first() }
+        }
+        commandHandler.doSetCommandContextTransformers(commandContextTransformersInstance)
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'each transformer phase should be called in normal message processing'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            [
+                    [TRACE, 'Handle message for CommandContext['],
+                    [TRACE, 'Entering prefix computation phase for CommandContext['],
+                    [TRACE, 'Calling before prefix computation transformer for CommandContext['],
+                    [TRACE, 'Before prefix computation transformer result is CommandContext['],
+                    [TRACE, 'Calling after prefix computation transformer for CommandContext['],
+                    [TRACE, 'After prefix computation transformer result is CommandContext['],
+                    [TRACE, 'Entering alias and parameter string computation phase for CommandContext['],
+                    [TRACE, 'Calling before alias and parameter string computation transformer for CommandContext['],
+                    [TRACE, 'Before alias and parameter string computation transformer result is CommandContext['],
+                    [TRACE, 'Message content starts with prefix'],
+                    [TRACE, 'Searching for alias and parameter string with command matcher'],
+                    [TRACE, 'Command matcher found alias and parameter string'],
+                    [DEBUG, 'Calling after alias and parameter string computation transformer for CommandContext['],
+                    [DEBUG, 'After alias and parameter string computation transformer result is CommandContext['],
+                    [DEBUG, 'Entering command computation phase for CommandContext['],
+                    [DEBUG, 'Calling before command computation transformer for CommandContext['],
+                    [DEBUG, 'Before command computation transformer result is CommandContext['],
+                    [DEBUG, 'Calling after command computation transformer for CommandContext['],
+                    [DEBUG, 'After command computation transformer result is CommandContext['],
+                    [DEBUG, 'Entering command execution phase for CommandContext[']
+            ].each { expectedLevel, expectedMessageStart ->
+                assert getListAppender('Test Appender')
+                        .events
+                        .findAll { it.level == expectedLevel }
+                        .any { it.message.formattedMessage.startsWith(expectedMessageStart) } :
+                        "'$expectedMessageStart' on level '$expectedLevel' not found"
+            }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'only alias and command computation phases should be called if initial command context already contains a prefix'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, ".${command1.aliases.first()}")
+                            .withPrefix('.')
+                            .build())
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to alias and parameter string computation')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'only command computation phases should be called if initial command context already contains an alias'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand')
+                            .withAlias(command1.aliases.first())
+                            .build())
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command computation')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'no transformer phase should be called if initial command context already contains a command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand')
+                            .withCommand(command1)
+                            .build())
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command execution')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'after prefix phase should be skipped if before prefix phase set a prefix'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, ".${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first().withPrefix('.').build()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'only command computation phases should be called after before prefix phase set an alias'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first().withAlias(command1.aliases.first()).build()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command computation')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'no transformer phase should be called after before prefix phase set a command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first().withCommand(command1).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command execution')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'prefix set in after prefix phase should be used'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, ".${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first().withPrefix('.').build()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'only command computation phases should be called after after prefix phase set an alias'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first().withAlias(command1.aliases.first()).build()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command computation')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'no transformer phase should be called after after prefix phase set a command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first().withCommand(command1).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command execution')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'command not found event should be fired after after prefix phase unset the prefix'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first().withPrefix(null).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+            1 * commandHandlerDelegate.fireCommandNotFoundEvent {
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == TRACE }
+                    .any { it.message.formattedMessage.contains('No matching command found (prefix missing)') }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'prefix set in before alias phase should be used'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, ".${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first().withPrefix('.').build()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == ".${command1.aliases.first()}"
+                it.prefix.orElse(null) == '.'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'only command computation phases should be called after before alias phase set an alias'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first().withAlias(command1.aliases.first()).build()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command computation')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'no transformer phase should be called after before alias phase set a command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first().withCommand(command1).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command execution')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'command not found event should be fired after before alias phase unset the prefix'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first().withPrefix(null).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+            1 * commandHandlerDelegate.fireCommandNotFoundEvent {
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == TRACE }
+                    .any { it.message.formattedMessage.contains('No matching command found (prefix missing)') }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'command not found event should not be fired after before alias phase set a prefix that does not match'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first().withPrefix('.').build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == TRACE }
+                    .any { it.message.formattedMessage.contains('Message content does not start with prefix, ignoring message') }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'alias set in after alias phase should be used'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first().withAlias(command1.aliases.first()).build()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        and:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'no transformer phase should be called after after alias phase set a command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first().withCommand(command1).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command execution')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'command not found event should be fired after after alias phase unset the alias'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first().withAlias(null).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+            1 * commandHandlerDelegate.fireCommandNotFoundEvent {
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any { it.message.formattedMessage.contains('No matching command found (alias missing)') }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'no transformer phase should be called after before command phase set a command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first().withCommand(command2).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command2.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any {
+                        it.message.formattedMessage.with {
+                            it.startsWith('Fast forwarding CommandContext[') &&
+                                    it.endsWith('] to command execution')
+                        }
+                    }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'command not found event should be fired after before command phase unset the alias'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first().withAlias(null).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+            1 * commandHandlerDelegate.fireCommandNotFoundEvent {
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any { it.message.formattedMessage.contains('No matching command found (alias missing)') }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'command set in after command phase should be used'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first().withCommand(command2).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command2.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'command not found event should be fired after after command phase unset the command'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        expect:
+            Phase.values() == [
+                    BEFORE_PREFIX_COMPUTATION,
+                    AFTER_PREFIX_COMPUTATION,
+                    BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
+                    BEFORE_COMMAND_COMPUTATION,
+                    AFTER_COMMAND_COMPUTATION
+            ]
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            1 * beforePrefixComputationCommandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == null
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_PREFIX_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }, BEFORE_COMMAND_COMPUTATION) >> {
+                it.first()
+            }
+
+        then:
+            1 * commandContextTransformer.transform({
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command1
+            }, AFTER_COMMAND_COMPUTATION) >> {
+                it.first().withCommand(null).build()
+            }
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+            1 * commandHandlerDelegate.fireCommandNotFoundEvent {
+                it.message == _
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == null
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any { it.message.formattedMessage.contains('No matching command found (command missing)') }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'processing should work properly even if command context transformers are not set or set to null'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetCommandContextTransformers(null)
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'processing should work properly even if no command context transformers are provided'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+            commandHandler.doSetCommandContextTransformers(
+                    commandContextTransformersInstance.select(Default.Literal.INSTANCE))
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}").build())
+
+        then:
+            commandContextTransformersInstance.each {
+                0 * it.ci().transform(*_)
+            }
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'an empty custom command prefix should log warning'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '')
+                            .withPrefix('')
+                            .build())
+
+        then:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == WARN }
+                    .any { it.message.formattedMessage.contains('command prefix is empty') }
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'a non-empty custom command prefix should not log warning'() {
+        given:
+            prepareCommandHandlerForCommandExecution()
+
+        when:
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '')
+                            .withPrefix('asdf')
+                            .build())
+
+        then:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == WARN }
+                    .empty
     }
 
     @Use(ContextualInstanceCategory)
     def 'message with empty prefix should trigger #command'() {
         given:
-            prepareCommandHandlerForCommandExecution('')
+            prepareCommandHandlerForCommandExecution()
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, command.aliases.first())
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, command.aliases.first())
+                            .withPrefix('')
+                            .build())
 
         then:
-            1 * command.execute(this, '', command.aliases.first(), '')
+            1 * command.execute {
+                it.message == _
+                it.messageContent == command.aliases.first()
+                it.prefix.orElse(null) == ''
+                it.alias.orElse(null) == command.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command
+            }
             commandsInstance.each {
                 0 * it.ci().execute(*_)
             }
@@ -487,7 +2501,8 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(_, ".${command.aliases.first()}")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, ".${command.aliases.first()}").build())
 
         then:
             commandsInstance.each {
@@ -507,10 +2522,18 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(this, "!${command.aliases.first()}").build())
 
         then:
-            1 * command.execute(this, '!', command.aliases.first(), '')
+            1 * command.execute {
+                it.message == this
+                it.messageContent == "!${command.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command
+            }
             commandsInstance.each {
                 0 * it.ci().execute(*_)
             }
@@ -528,10 +2551,19 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(this, "!${command1.aliases.first()}")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(this, "!${command1.aliases.first()}").build())
 
         then:
-            1 * command1.execute(this, '!', command1.aliases.first(), '')
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute {
+                it.message == this
+                it.messageContent == "!${command1.aliases.first()}"
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == command1.aliases.first()
+                it.parameterString.orElse(null) == ''
+                it.command.orElse(null)?.ci() == command1
+            }
             commandsInstance.each {
                 0 * it.ci().execute(*_)
             }
@@ -543,10 +2575,15 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(_, "!${command1.aliases.first()}\n  \tfoo \n bar ")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command1.aliases.first()}\n  \tfoo \n bar ").build())
 
         then:
-            1 * command1.execute(_, _, _, 'foo \n bar')
+            0 * commandHandlerDelegate.fireCommandNotFoundEvent(*_)
+            1 * command1.execute {
+                it.parameterString.orElse(null) == 'foo \n bar'
+                it.command.orElse(null)?.ci() == command1
+            }
     }
 
     @Use(ContextualInstanceCategory)
@@ -555,7 +2592,8 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(_, '!nocommand')
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
 
         then:
             commandsInstance.each {
@@ -575,7 +2613,8 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(_, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command.aliases.first()}").build())
 
         then:
             commandsInstance.each {
@@ -588,7 +2627,7 @@ class CommandHandlerTest extends Specification {
             'command2' | _
     }
 
-    @Use(ContextualInstanceCategory)
+    @Use([ContextualInstanceCategory, Whitebox])
     def '#command should be executed asynchronously: #asynchronous'() {
         given:
             prepareCommandHandlerForCommandExecution()
@@ -600,10 +2639,23 @@ class CommandHandlerTest extends Specification {
             }
 
         when:
-            commandHandler.doHandleMessage(_, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command.aliases.first()}").build())
+
+        and:
+            commandHandler.ci().getInternalState('executorService').get().with {
+                it.shutdown()
+                it.awaitTermination(Long.MAX_VALUE, DAYS)
+            }
 
         then:
             (asynchronous ? 1 : 0) * commandHandlerDelegate.executeAsync(*_)
+
+        and:
+            1 * command.execute(*_)
+            commandsInstance.each {
+                0 * it.ci().execute(*_)
+            }
 
         where:
             [command, asynchronous] << [
@@ -624,11 +2676,19 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(this, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(this, "!${command.aliases.first()}").build())
 
         then:
             if (restricted) {
-                1 * commandHandlerDelegate.fireCommandNotAllowedEvent(this, '!', command.aliases.first())
+                1 * commandHandlerDelegate.fireCommandNotAllowedEvent {
+                    it.message == this
+                    it.messageContent == "!${command.aliases.first()}"
+                    it.prefix.orElse(null) == '!'
+                    it.alias.orElse(null) == command.aliases.first()
+                    it.parameterString.orElse(null) == ''
+                    it.command.orElse(null)?.ci() == command
+                }
             } else {
                 0 * commandHandlerDelegate.fireCommandNotAllowedEvent(*_)
             }
@@ -652,14 +2712,14 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(_, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command.aliases.first()}").build())
 
         then:
-            def expectedMessage = "Command $command was not allowed by restrictions"
             def logMessage = getListAppender('Test Appender')
                     .events
                     .findAll { it.level == DEBUG }
-                    .any { it.message.formattedMessage == expectedMessage }
+                    .any { it.message.formattedMessage == "Command $command was not allowed by restrictions" }
             restricted ? logMessage : !logMessage
 
         where:
@@ -675,10 +2735,24 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(this, '!nocommand')
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(this, '!nocommand').build())
 
         then:
-            1 * commandHandlerDelegate.fireCommandNotFoundEvent(this, '!', 'nocommand')
+            1 * commandHandlerDelegate.fireCommandNotFoundEvent {
+                it.message == this
+                it.messageContent == '!nocommand'
+                it.prefix.orElse(null) == '!'
+                it.alias.orElse(null) == null
+                it.parameterString.orElse(null) == null
+                it.command.orElse(null)?.ci() == null
+            }
+
+        and:
+            getListAppender('Test Appender')
+                    .events
+                    .findAll { it.level == DEBUG }
+                    .any { it.message.formattedMessage.contains('No matching command found (alias missing)') }
     }
 
     @Use(ContextualInstanceCategory)
@@ -687,14 +2761,14 @@ class CommandHandlerTest extends Specification {
             prepareCommandHandlerForCommandExecution()
 
         when:
-            commandHandler.doHandleMessage(_, '!nocommand')
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, '!nocommand').build())
 
         then:
-            def expectedMessage = 'No matching command found'
             getListAppender('Test Appender')
                     .events
                     .findAll { it.level == DEBUG }
-                    .any { it.message.formattedMessage == expectedMessage }
+                    .any { it.message.formattedMessage == 'No matching command found (alias missing)' }
     }
 
     @Use(ContextualInstanceCategory)
@@ -704,7 +2778,8 @@ class CommandHandlerTest extends Specification {
             command = this."$command"
 
         when:
-            commandHandler.doHandleMessage(_, "!${command.aliases.first()}")
+            commandHandler.doHandleMessage(
+                    new CommandContext.Builder(_, "!${command.aliases.first()}").build())
 
         then:
             0 * commandHandlerDelegate.fireCommandNotAllowedEvent(*_)
@@ -715,260 +2790,12 @@ class CommandHandlerTest extends Specification {
             'command2' | _
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'no alias and parameter string transformer should be used if none is available'() {
-        given:
-            def aliasAndParameterStringTransformerInstance = Spy(aliasAndParameterStringTransformerInstance)
-            aliasAndParameterStringTransformerInstance.unsatisfied >> true
-
-        and:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-
-        when:
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-
-        then:
-            commandHandler.ci().getInternalState('aliasAndParameterStringTransformer') == null
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'message with correct prefix but wrong trigger should call alias and parameter string transformer with null argument'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-
-        when:
-            commandHandler.doHandleMessage(this, '!nocommand')
-
-        then:
-            1 * aliasAndParameterStringTransformer.transformAliasAndParameterString(this, null)
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'message with correct prefix and trigger should call alias and parameter string transformer with respective argument for #command'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-            command = this."$command"
-
-        when:
-            commandHandler.doHandleMessage(this, "!${command.aliases.first()} foo bar")
-
-        then:
-            1 * aliasAndParameterStringTransformer.transformAliasAndParameterString(this) {
-                it.alias == command.aliases.first()
-                it.parameterString == 'foo bar'
-            }
-
-        where:
-            command    | _
-            'command1' | _
-            'command2' | _
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'command not found event should be fired if alias and parameter string transformer returns null for #command'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-            command = command ? this."$command" : null
-            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
-
-        and:
-            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >> null
-
-        when:
-            commandHandler.doHandleMessage(this, "!$alias")
-
-        then:
-            1 * commandHandlerDelegate.fireCommandNotFoundEvent(this, '!', alias ?: '')
-
-        where:
-            command    | _
-            'command1' | _
-            'command2' | _
-            null       | _
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'command not found event should be logged if alias and parameter string transformer returns null for #command'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-            command = command ? this."$command" : null
-            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
-
-        and:
-            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >> null
-
-        when:
-            commandHandler.doHandleMessage(this, "!$alias")
-
-        then:
-            def expectedMessage = 'No matching command found'
-            getListAppender('Test Appender')
-                    .events
-                    .findAll { it.level == DEBUG }
-                    .any { it.message.formattedMessage == expectedMessage }
-
-        where:
-            command    | _
-            'command1' | _
-            'command2' | _
-            null       | _
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'command not found event should be fired if alias and parameter string transformer returns non-existent alias for #command'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-            command = command ? this."$command" : null
-            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
-
-        and:
-            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >>
-                    new AliasAndParameterString('nocommand', '')
-
-        when:
-            commandHandler.doHandleMessage(this, "!$alias")
-
-        then:
-            1 * commandHandlerDelegate.fireCommandNotFoundEvent(this, '!', 'nocommand')
-
-        where:
-            command    | _
-            'command1' | _
-            'command2' | _
-            null       | _
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'command not found event should be logged if alias and parameter string transformer returns non-existent alias for #command'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-            command = command ? this."$command" : null
-            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
-
-        and:
-            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >> new AliasAndParameterString('nocommand', '')
-
-        when:
-            commandHandler.doHandleMessage(this, "!$alias")
-
-        then:
-            def expectedMessage = 'No matching command found'
-            getListAppender('Test Appender')
-                    .events
-                    .findAll { it.level == DEBUG }
-                    .any { it.message.formattedMessage == expectedMessage }
-
-        where:
-            command    | _
-            'command1' | _
-            'command2' | _
-            null       | _
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'command not found event should not be fired if alias and parameter string transformer returns existent alias for #command'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-            command = command ? this."$command" : null
-            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
-
-        and:
-            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >>
-                    new AliasAndParameterString(command1.aliases.first(), '')
-
-        when:
-            commandHandler.doHandleMessage(this, "!$alias")
-
-        then:
-            0 * commandHandlerDelegate.fireCommandNotFoundEvent(this, *_)
-
-        where:
-            command    | _
-            'command1' | _
-            'command2' | _
-            null       | _
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'command not found event should not be logged if alias and parameter string transformer returns existent alias for #command'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-            command = command ? this."$command" : null
-            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
-
-        and:
-            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >>
-                    new AliasAndParameterString(command1.aliases.first(), '')
-
-        when:
-            commandHandler.doHandleMessage(this, "!$alias")
-
-        then:
-            def notExpectedMessage = 'No matching command found'
-            getListAppender('Test Appender')
-                    .events
-                    .findAll { it.level == DEBUG }
-                    .every { it.message.formattedMessage != notExpectedMessage }
-
-        where:
-            command    | _
-            'command1' | _
-            'command2' | _
-            null       | _
-    }
-
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'command1 should be triggered if alias and parameter string transformer returns its alias for #command'() {
-        given:
-            prepareCommandHandlerForCommandExecution()
-            commandHandler.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformerInstance)
-            commandHandler.ci().invokeMethod('determineAliasAndParameterStringTransformer')
-            command = command ? this."$command" : null
-            def alias = "${command?.aliases?.first() ?: 'nocommand'}"
-
-        and:
-            aliasAndParameterStringTransformer.transformAliasAndParameterString(this, _) >>
-                    new AliasAndParameterString(command1.aliases.first(), '')
-
-        when:
-            commandHandler.doHandleMessage(this, "!$alias")
-
-        then:
-            1 * command1.execute(this, '!', command1.aliases.first(), '')
-            commandsInstance.each {
-                0 * it.ci().execute(*_)
-            }
-
-        where:
-            command    | _
-            'command1' | _
-            'command2' | _
-            null       | _
-    }
-
     def 'asynchronous command execution should happen asynchronously'() {
         given:
             def executingThread = new BlockingVariable<Thread>(5)
 
         when:
-            commandHandler.executeAsync(_) {
+            commandHandler.executeAsync(Stub(CommandContext)) {
                 executingThread.set(currentThread())
             }
 
@@ -976,10 +2803,10 @@ class CommandHandlerTest extends Specification {
             executingThread.get() != currentThread()
     }
 
-    @Use([ContextualInstanceCategory,  Whitebox])
+    @Use([ContextualInstanceCategory, Whitebox])
     def 'asynchronous command execution should not log an error if none happened'() {
         when:
-            commandHandler.executeAsync(_) { }
+            commandHandler.executeAsync(Stub(CommandContext)) { }
 
         and:
             commandHandler.ci().getInternalState('executorService').get().with {
@@ -1000,7 +2827,7 @@ class CommandHandlerTest extends Specification {
             def exception = new Exception()
 
         when:
-            commandHandler.executeAsync(_) { throw exception }
+            commandHandler.executeAsync(Stub(CommandContext)) { throw exception }
 
         and:
             commandHandler.ci().getInternalState('executorService').get().with {
@@ -1038,19 +2865,19 @@ class CommandHandlerTest extends Specification {
         }
 
         @Override
-        protected void executeAsync(Object message, Runnable commandExecutor) {
-            delegate.executeAsync(message, commandExecutor)
-            super.executeAsync(message, commandExecutor)
+        protected void executeAsync(CommandContext<Object> commandContext, Runnable commandExecutor) {
+            delegate.executeAsync(commandContext, commandExecutor)
+            super.executeAsync(commandContext, commandExecutor)
         }
 
         @Override
-        protected void fireCommandNotAllowedEvent(Object message, String prefix, String usedAlias) {
-            delegate.fireCommandNotAllowedEvent(message, prefix, usedAlias)
+        protected void fireCommandNotAllowedEvent(CommandContext<Object> commandContext) {
+            delegate.fireCommandNotAllowedEvent(commandContext)
         }
 
         @Override
-        protected void fireCommandNotFoundEvent(Object message, String prefix, String usedAlias) {
-            delegate.fireCommandNotFoundEvent(message, prefix, usedAlias)
+        protected void fireCommandNotFoundEvent(CommandContext<Object> commandContext) {
+            delegate.fireCommandNotFoundEvent(commandContext)
         }
     }
 }

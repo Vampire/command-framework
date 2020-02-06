@@ -19,6 +19,7 @@ package net.kautler.command.integ.test.jda.restriction
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
@@ -243,7 +244,7 @@ class RestrictionChainElementIntegTest extends Specification {
     @ApplicationScoped
     static class True implements Restriction<Object> {
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             true
         }
     }
@@ -252,7 +253,7 @@ class RestrictionChainElementIntegTest extends Specification {
     @ApplicationScoped
     static class False implements Restriction<Object> {
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             false
         }
     }

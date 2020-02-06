@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 package net.kautler.command.integ.test.javacord.prefix
 
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.CommandHandler
-import net.kautler.command.api.prefix.PrefixProvider
+import net.kautler.command.api.prefix.javacord.MentionPrefixTransformerJavacord
 import net.kautler.command.integ.test.javacord.PingIntegTest.PingCommand
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
@@ -29,19 +30,15 @@ import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.inject.Vetoed
 
 import static java.util.UUID.randomUUID
-import static org.apache.logging.log4j.Level.WARN
-import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
-@Subject([PrefixProvider, CommandHandler])
-class PrefixProviderIntegTest extends Specification {
-    @AddBean(MyPrefix)
+@Subject([MentionPrefixTransformerJavacord, CommandHandler])
+class MentionPrefixTransformerJavacordIntegTest extends Specification {
+    @AddBean(MyPrefixTransformer)
     @AddBean(PingCommand)
-    def 'ping command should respond if custom prefix is used'(
+    def 'ping command should respond if bot mention prefix is used'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
-            MyPrefix.prefix = ':'
-
-        and:
             def random = randomUUID()
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
@@ -54,7 +51,7 @@ class PrefixProviderIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage(":ping $random")
+                    .sendMessage("$serverTextChannelAsBot.api.yourself.mentionTag ping $random")
                     .join()
 
         then:
@@ -64,14 +61,11 @@ class PrefixProviderIntegTest extends Specification {
             listenerManager?.remove()
     }
 
-    @AddBean(MyPrefix)
+    @AddBean(MyPrefixTransformer)
     @AddBean(PingCommand)
-    def 'ping command should respond if empty prefix is used'(
+    def 'ping command should respond if bot nickname mention prefix is used'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
-            MyPrefix.prefix = ''
-
-        and:
             def random = randomUUID()
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
@@ -84,7 +78,7 @@ class PrefixProviderIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("ping $random")
+                    .sendMessage("$serverTextChannelAsBot.api.yourself.nicknameMentionTag ping $random")
                     .join()
 
         then:
@@ -92,21 +86,11 @@ class PrefixProviderIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
-
-        and:
-            getListAppender('Test Appender').@events.removeIf {
-                (it.level == WARN) && it.message.formattedMessage.contains('The command prefix is empty')
-            }
     }
 
     @Vetoed
     @ApplicationScoped
-    static class MyPrefix implements PrefixProvider<Object> {
-        static prefix
-
-        @Override
-        String getCommandPrefix(Object message) {
-            prefix
-        }
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class MyPrefixTransformer extends MentionPrefixTransformerJavacord {
     }
 }

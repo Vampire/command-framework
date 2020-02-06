@@ -55,7 +55,7 @@ val versions by extra(mapOf(
         "jacoco" to "0.8.5",
         "pitest" to "1.4.10",
         "pmd" to "6.18.0",
-        "sb-contrib" to "7.4.6",
+        "sb-contrib" to "7.4.7",
         "spotbugs" to "3.1.12",
 
         // test versions

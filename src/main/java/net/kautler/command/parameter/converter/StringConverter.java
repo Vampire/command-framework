@@ -17,7 +17,7 @@
 package net.kautler.command.parameter.converter;
 
 import net.kautler.command.Internal;
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.parameter.ParameterType;
 
@@ -40,8 +40,7 @@ class StringConverter implements ParameterConverter<Object, String> {
     }
 
     @Override
-    public String convert(String parameter, String type, Command<?> command, Object message,
-                          String prefix, String usedAlias, String parameterString) {
+    public String convert(String parameter, String type, CommandContext<?> commandContext) {
         return parameter;
     }
 }

@@ -30,6 +30,6 @@ class StringConverterTest extends Specification {
             def parameter = randomUUID() as String
 
         expect:
-            testee.convert(parameter, null, null, null, null, null, null).is(parameter)
+            testee.convert(parameter, null, null).is(parameter)
     }
 }

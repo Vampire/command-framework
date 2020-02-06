@@ -239,17 +239,15 @@ public interface Command<M> {
     }
 
     /**
-     * Executes this command. The given parameter string can be split into single parameters using
-     * {@link #getParameters(String, int)} or semantically parsed into parameters using the {@link ParameterParser}.
+     * Executes this command. The parameter string in the given command context can be
+     * split into single parameters using {@link #getParameters(String, int)} or
+     * semantically parsed into parameters using the {@link ParameterParser}.
      *
-     * @param incomingMessage the incoming message that caused this command to be executed
-     * @param prefix          the command prefix that was used to trigger this command
-     * @param usedAlias       the alias that was used to trigger this command
-     * @param parameterString the remaining text after the command prefix and alias
+     * @param commandContext the command context, usually fully populated but not necessarily
      * @see #getParameters(String, int)
      * @see ParameterParser
      */
-    void execute(M incomingMessage, String prefix, String usedAlias, String parameterString);
+    void execute(CommandContext<? extends M> commandContext);
 
     /**
      * Returns an array of parameters from the given parameter string. The parameter string is split at any sequence of

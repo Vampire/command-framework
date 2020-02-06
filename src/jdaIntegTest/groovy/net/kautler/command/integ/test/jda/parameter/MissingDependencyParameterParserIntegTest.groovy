@@ -16,11 +16,11 @@
 
 package net.kautler.command.integ.test.jda.parameter
 
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
 import net.kautler.command.integ.test.spock.VetoBean
@@ -92,12 +92,12 @@ class MissingDependencyParameterParserIntegTest extends Specification {
 
     @Vetoed
     @ApplicationScoped
-    static class PingCommand implements Command<Message> {
+    static class PingCommand implements Command<Object> {
         @Inject
         ParameterParser parameterParser
 
         @Override
-        void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
+        void execute(CommandContext<?> commandContext) {
             parameterParser.toString()
         }
     }

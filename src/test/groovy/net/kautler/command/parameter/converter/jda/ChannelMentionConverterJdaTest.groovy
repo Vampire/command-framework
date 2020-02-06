@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
 import net.kautler.command.Internal
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
 import net.kautler.command.api.parameter.InvalidParameterValueException
 import org.jboss.weld.junit4.WeldInitiator
@@ -54,7 +55,7 @@ class ChannelMentionConverterJdaTest extends Specification {
                         ]))
 
         when:
-            testee.convert("<#$channelId>", null, null, null, null, null, null)
+            testee.convert("<#$channelId>", null, null)
 
         then:
             InvalidParameterFormatException ipfe = thrown()
@@ -73,28 +74,32 @@ class ChannelMentionConverterJdaTest extends Specification {
         given:
             TextChannel channel = Stub()
 
-            Message message = Stub {
-                it.JDA >> Mock(JDA) {
-                    getTextChannelById(1) >> channel
-                    0 * getTextChannelById(_)
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.JDA >> Mock(JDA) {
+                        getTextChannelById(1) >> channel
+                        0 * getTextChannelById(_)
+                    }
                 }
             }
 
         expect:
-            testee.convert('<#1>', null, null, message, null, null, null) == channel
+            testee.convert('<#1>', null, commandContext) == channel
     }
 
     def '<#1> should throw InvalidParameterValueException if channel is not found'() {
         given:
-            Message message = Stub {
-                it.JDA >> Mock(JDA) {
-                    getTextChannelById(1) >> null
-                    0 * getTextChannelById(_)
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.JDA >> Mock(JDA) {
+                        getTextChannelById(1) >> null
+                        0 * getTextChannelById(_)
+                    }
                 }
             }
 
         when:
-            testee.convert('<#1>', null, null, message, null, null, null)
+            testee.convert('<#1>', null, commandContext)
 
         then:
             InvalidParameterValueException ipve = thrown()

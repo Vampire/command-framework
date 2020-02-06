@@ -17,13 +17,13 @@
 package net.kautler.command.integ.test.javacord.parameter
 
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
 import net.kautler.command.integ.test.spock.VetoBean
 import net.kautler.command.parameter.parser.UntypedParameterParser
 import net.kautler.command.parameter.parser.missingdependency.MissingDependencyParameterParser
 import org.javacord.api.entity.channel.ServerTextChannel
-import org.javacord.api.entity.message.Message
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
@@ -85,12 +85,12 @@ class MissingDependencyParameterParserIntegTest extends Specification {
 
     @Vetoed
     @ApplicationScoped
-    static class PingCommand implements Command<Message> {
+    static class PingCommand implements Command<Object> {
         @Inject
         ParameterParser parameterParser
 
         @Override
-        void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
+        void execute(CommandContext<?> commandContext) {
             parameterParser.toString()
         }
     }

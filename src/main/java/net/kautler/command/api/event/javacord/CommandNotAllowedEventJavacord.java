@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,28 @@
 
 package net.kautler.command.api.event.javacord;
 
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.annotation.RestrictedTo;
-import net.kautler.command.api.event.MessageEvent;
+import net.kautler.command.api.event.CommandEvent;
 import org.javacord.api.entity.message.Message;
 
 import javax.enterprise.event.ObservesAsync;
 
 /**
  * An event that is sent asynchronously via the CDI event mechanism if a command was not allowed due to some
- * configured restriction by the Javacord command handler. It can be handled using {@link ObservesAsync @ObservesAsync}.
+ * configured {@link RestrictedTo restriction} by the Javacord command handler. It can be handled using
+ * {@link ObservesAsync @ObservesAsync}.
  *
  * @see ObservesAsync @ObservesAsync
  * @see RestrictedTo @RestrictedTo
  */
-public class CommandNotAllowedEventJavacord extends MessageEvent<Message> {
+public class CommandNotAllowedEventJavacord extends CommandEvent<Message> {
     /**
-     * Constructs a new command not allowed event with the given Javacord message, prefix, and used alias as payload.
+     * Constructs a new command not allowed event with the given command context as payload.
      *
-     * @param message   the Javacord message that contains the command but was not allowed
-     * @param prefix    the command prefix that was used to trigger the command
-     * @param usedAlias the alias that was used to trigger the command
+     * @param commandContext the command context, usually fully populated
      */
-    public CommandNotAllowedEventJavacord(Message message, String prefix, String usedAlias) {
-        super(message, prefix, usedAlias);
+    public CommandNotAllowedEventJavacord(CommandContext<Message> commandContext) {
+        super(commandContext);
     }
 }

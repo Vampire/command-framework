@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.entities.ApplicationInfo
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.requests.RestAction
+import net.kautler.command.api.CommandContext
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
@@ -39,13 +40,15 @@ class BotOwnerJdaTest extends Specification {
     @Subject
     BotOwnerJda botOwnerJda
 
-    Message message = Stub {
-        it.author >> Stub(User)
-        it.JDA >> Stub(JDA) {
-            retrieveApplicationInfo() >> Stub(RestAction) {
-                complete() >> Stub(ApplicationInfo) {
-                    it.owner >> Stub(User) {
-                        it.idLong >> 1
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.author >> Stub(User)
+            it.JDA >> Stub(JDA) {
+                retrieveApplicationInfo() >> Stub(RestAction) {
+                    complete() >> Stub(ApplicationInfo) {
+                        it.owner >> Stub(User) {
+                            it.idLong >> 1
+                        }
                     }
                 }
             }
@@ -54,10 +57,10 @@ class BotOwnerJdaTest extends Specification {
 
     def 'message author with ID #messageAuthorId should #be allowed'() {
         given:
-            message.author.idLong >> messageAuthorId
+            commandContext.message.author.idLong >> messageAuthorId
 
         expect:
-            botOwnerJda.allowCommand(message) == allowed
+            botOwnerJda.allowCommand(commandContext) == allowed
 
         where:
             messageAuthorId || allowed | be

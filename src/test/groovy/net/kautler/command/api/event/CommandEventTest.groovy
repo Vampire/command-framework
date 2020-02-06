@@ -14,32 +14,25 @@
  * limitations under the License.
  */
 
-package net.kautler.command.api.prefix.javacord
+package net.kautler.command.api.event
 
-import org.javacord.api.DiscordApi
-import org.javacord.api.entity.message.Message
-import org.javacord.api.entity.user.User
+import net.kautler.command.api.CommandContext
 import spock.lang.Specification
 import spock.lang.Subject
 
 import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
+import static org.powermock.reflect.Whitebox.newInstance
 
-class MentionPrefixProviderJavacordTest extends Specification {
-    Message message = Stub {
-        it.api >> Stub(DiscordApi) {
-            it.yourself >> Stub(User) {
-                it.mentionTag >> '<@12345>'
-            }
-        }
-    }
+class CommandEventTest extends Specification {
+    CommandContext<Object> commandContext = Stub()
 
     @Subject
-    MentionPrefixProviderJavacord testee = Spy()
+    CommandEvent testee = new CommandEvent(commandContext)
 
-    def 'mention tag should be returned as prefix'() {
+    def 'field is properly set from constructor'() {
         expect:
-            testee.getCommandPrefix(message) == '<@12345> '
+            testee.commandContext?.is(commandContext)
     }
 
     def '#className toString should start with class name'() {
@@ -47,10 +40,10 @@ class MentionPrefixProviderJavacordTest extends Specification {
             testee.toString().startsWith("$className[")
 
         where:
-            testee                                  | _
-            Spy(MentionPrefixProviderJavacord)      | _
-            new MentionPrefixProviderJavacord() { } | _
-            new MentionPrefixProviderJavacordSub()  | _
+            testee                     | _
+            new CommandEvent(null)     | _
+            new CommandEvent(null) { } | _
+            new CommandEventSub()      | _
 
         and:
             clazz = testee.getClass()
@@ -68,9 +61,12 @@ class MentionPrefixProviderJavacordTest extends Specification {
                     toStringResult.contains(String.valueOf(field.get(testee)))
 
         where:
-            field << getAllInstanceFields(Stub(getField(getClass(), 'testee').type))
-                    .findAll { !(it.name in ['$spock_interceptor']) }
+            field << getAllInstanceFields(newInstance(getField(getClass(), 'testee').type))
     }
 
-    static class MentionPrefixProviderJavacordSub extends MentionPrefixProviderJavacord { }
+    static class CommandEventSub extends CommandEvent {
+        protected CommandEventSub() {
+            super(null)
+        }
+    }
 }

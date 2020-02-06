@@ -18,6 +18,7 @@ package net.kautler.command.api.restriction.jda
 
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
+import net.kautler.command.api.CommandContext
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
@@ -38,11 +39,13 @@ class NsfwChannelJdaTest extends Specification {
     @Subject
     NsfwChannelJda nsfwChannelJda
 
-    Message message = Stub()
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message)
+    }
 
     def 'nsfw channel "#nsfw" should #be allowed'() {
         given:
-            with(message) {
+            with(commandContext.message) {
                 isFromType(TEXT) >> true
                 it.textChannel >> Stub(TextChannel) {
                     it.NSFW >> nsfw
@@ -50,7 +53,7 @@ class NsfwChannelJdaTest extends Specification {
             }
 
         expect:
-            nsfwChannelJda.allowCommand(message) == allowed
+            nsfwChannelJda.allowCommand(commandContext) == allowed
 
         where:
             nsfw  || allowed | be
@@ -60,12 +63,12 @@ class NsfwChannelJdaTest extends Specification {
 
     def 'non-guild channel should not be allowed'() {
         given:
-            with(message) {
+            with(commandContext.message) {
                 isFromType(TEXT) >> false
                 it.textChannel >> { throw new IllegalStateException() }
             }
 
         expect:
-            !nsfwChannelJda.allowCommand(message)
+            !nsfwChannelJda.allowCommand(commandContext)
     }
 }

@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.annotation.Alias
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.annotation.RestrictionPolicy
@@ -357,7 +358,7 @@ class RestrictionPolicyIntegTest extends Specification {
         static allow
 
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             allow
         }
     }
@@ -368,7 +369,7 @@ class RestrictionPolicyIntegTest extends Specification {
         static allow
 
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             allow
         }
     }

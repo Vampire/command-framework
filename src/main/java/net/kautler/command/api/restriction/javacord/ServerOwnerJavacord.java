@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord;
 
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 import org.javacord.api.entity.message.Message;
 
@@ -36,7 +37,8 @@ public class ServerOwnerJavacord implements Restriction<Message> {
     }
 
     @Override
-    public boolean allowCommand(Message message) {
+    public boolean allowCommand(CommandContext<? extends Message> commandContext) {
+        Message message = commandContext.getMessage();
         return message.getServer()
                 .flatMap(server -> message.getUserAuthor().map(server::isOwner))
                 // if message is not on a server

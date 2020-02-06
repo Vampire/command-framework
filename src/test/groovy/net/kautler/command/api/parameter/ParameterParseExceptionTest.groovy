@@ -20,9 +20,14 @@ import spock.lang.Specification
 import spock.lang.Subject
 
 import static java.util.UUID.randomUUID
+import static org.powermock.reflect.Whitebox.getAllInstanceFields
+import static org.powermock.reflect.Whitebox.getField
+import static org.powermock.reflect.Whitebox.newInstance
 
-@Subject(ParameterParseException)
 class ParameterParseExceptionTest extends Specification {
+    @Subject
+    ParameterParseException testee = new ParameterParseException('name', 'value', 'message', new Exception('error'))
+
     def 'constructor should set message'() {
         given:
             def random = randomUUID() as String
@@ -101,5 +106,131 @@ class ParameterParseExceptionTest extends Specification {
 
         then:
             testee.parameterValue == random
+    }
+
+    def 'equals should return #result for [messageA: #messageA, messageB: #messageB, causeA: #causeA, causeB: #causeB, parameterNameA: #parameterNameA, parameterNameB: #parameterNameB, parameterValueA: #parameterValueA, parameterValueB: #parameterValueB]'() {
+        given:
+            Throwable cause1 = Stub {
+                it.cause >> null
+            }
+            Throwable cause2 = Stub {
+                it.cause >> null
+            }
+            def causes = [cause1: cause1, cause2: cause2]
+            causeA = causes."$causeA"
+            causeB = causes."$causeB"
+
+        and:
+            def parameterParseExceptionA =
+                    new ParameterParseException(parameterNameA, parameterValueA, messageA, causeA)
+            def parameterParseExceptionB =
+                    new ParameterParseException(parameterNameB, parameterValueB, messageB, causeB)
+
+        expect:
+            (parameterParseExceptionA == parameterParseExceptionB) == result
+
+        where:
+            [messageA, messageB, causeA, causeB, parameterNameA, parameterNameB, parameterValueA, parameterValueB] <<
+            [
+                    ([[null, 'message1', 'message2']] * 2).combinations(),
+                    ([[null, 'cause1', 'cause2']] * 2).combinations(),
+                    ([[null, 'name1', 'name2']] * 2).combinations(),
+                    ([[null, 'value1', 'value2']] * 2).combinations(),
+            ].combinations()*.flatten()
+
+        and:
+            result = (messageA == messageB) &&
+                    (causeA == causeB) &&
+                    (parameterNameA == parameterNameB) &&
+                    (parameterValueA == parameterValueB)
+    }
+
+    def 'equals should return false for null'() {
+        expect:
+            !new ParameterParseException(null).equals(null)
+    }
+
+    def 'equals should return false for foreign class instance'() {
+        expect:
+            new ParameterParseException(null) != _
+    }
+
+    def 'equals should return true for the same instance'() {
+        expect:
+            testee.equals(testee)
+    }
+
+    def 'hash code should #be the same for [messageA: #messageA, messageB: #messageB, causeA: #causeA, causeB: #causeB, parameterNameA: #parameterNameA, parameterNameB: #parameterNameB, parameterValueA: #parameterValueA, parameterValueB: #parameterValueB]'() {
+        given:
+            Throwable cause1 = Stub {
+                it.cause >> null
+            }
+            Throwable cause2 = Stub {
+                it.cause >> null
+            }
+            def causes = [cause1: cause1, cause2: cause2]
+            causeA = causes."$causeA"
+            causeB = causes."$causeB"
+
+        and:
+            def parameterParseExceptionA =
+                    new ParameterParseException(parameterNameA, parameterValueA, messageA, causeA)
+            def parameterParseExceptionB =
+                    new ParameterParseException(parameterNameB, parameterValueB, messageB, causeB)
+
+        expect:
+            (parameterParseExceptionA.hashCode() == parameterParseExceptionB.hashCode()) == result
+
+        where:
+            [messageA, messageB, causeA, causeB, parameterNameA, parameterNameB, parameterValueA, parameterValueB] <<
+                    [
+                            ([[null, 'message1', 'message2']] * 2).combinations(),
+                            ([[null, 'cause1', 'cause2']] * 2).combinations(),
+                            ([[null, 'name1', 'name2']] * 2).combinations(),
+                            ([[null, 'value1', 'value2']] * 2).combinations(),
+                    ].combinations()*.flatten()
+
+        and:
+            result = (messageA == messageB) &&
+                    (causeA == causeB) &&
+                    (parameterNameA == parameterNameB) &&
+                    (parameterValueA == parameterValueB)
+            be = result ? 'be' : 'not be'
+    }
+
+    def '#className toString should start with class name'() {
+        expect:
+            testee.toString().startsWith("$className[")
+
+        where:
+            testee                                | _
+            new ParameterParseException(null)     | _
+            new ParameterParseException(null) { } | _
+            new ParameterParseExceptionSub()      | _
+
+        and:
+            clazz = testee.getClass()
+            className = clazz.simpleName ?: clazz.typeName[(clazz.package.name.length() + 1)..-1]
+    }
+
+    def 'toString should contain field name and value for "#field.name"'() {
+        when:
+            def toStringResult = testee.toString()
+
+        then:
+            toStringResult.contains("$field.name=")
+            field.type == String ?
+                    toStringResult.contains("'${field.get(testee)}'") :
+                    toStringResult.contains(String.valueOf(field.get(testee)))
+
+        where:
+            field << getAllInstanceFields(newInstance(getField(getClass(), 'testee').type))
+                    .findAll { !(it.name in ['stackTrace', 'suppressedExceptions', 'backtrace', 'depth']) }
+    }
+
+    static class ParameterParseExceptionSub extends ParameterParseException {
+        ParameterParseExceptionSub(String message) {
+            super(null)
+        }
     }
 }

@@ -16,6 +16,7 @@
 
 package net.kautler.command.integ.test.javacord.restriction
 
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
@@ -223,7 +224,7 @@ class RestrictionChainElementIntegTest extends Specification {
     @ApplicationScoped
     static class True implements Restriction<Object> {
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             true
         }
     }
@@ -232,7 +233,7 @@ class RestrictionChainElementIntegTest extends Specification {
     @ApplicationScoped
     static class False implements Restriction<Object> {
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             false
         }
     }
