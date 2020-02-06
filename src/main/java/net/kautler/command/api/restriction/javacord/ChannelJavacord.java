@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord;
 
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.message.Message;
@@ -181,7 +182,8 @@ public abstract class ChannelJavacord implements Restriction<Message> {
     }
 
     @Override
-    public boolean allowCommand(Message message) {
+    public boolean allowCommand(CommandContext<? extends Message> commandContext) {
+        Message message = commandContext.getMessage();
         return ((channelName == null) && (channelPattern == null))
                 ? allowCommandByChannelId(message)
                 : allowCommandByChannelName(message);

@@ -17,6 +17,7 @@
 package net.kautler.command.integ.test.jda.event
 
 import net.dv8tion.jda.api.entities.TextChannel
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
@@ -62,7 +63,7 @@ class CommandNotAllowedEventJdaIntegTest extends Specification {
     @ApplicationScoped
     static class False implements Restriction<Object> {
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             false
         }
     }

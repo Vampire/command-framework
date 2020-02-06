@@ -32,13 +32,6 @@
         </Or>
     </Match>
 
-    <Match>
-        <Class name="net.kautler.command.api.CommandHandler"/>
-        <Field name="injectedAliasAndParameterStringTransformer" type="javax.enterprise.inject.Instance"/>
-        <Method name="~lambda\$determineAliasAndParameterStringTransformer\$\d++" params="" returns="net.kautler.command.api.AliasAndParameterStringTransformer"/>
-        <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
-    </Match>
-
     <!-- work-around for https://github.com/spotbugs/spotbugs/issues/947 -->
     <Match>
         <Or>
@@ -58,8 +51,7 @@
                 <Or>
                     <Method name="setAvailableRestrictions" params="javax.enterprise.inject.Instance" returns="void"/>
                     <Method name="setCommands" params="javax.enterprise.inject.Instance" returns="void"/>
-                    <Method name="setCustomPrefixProvider" params="javax.enterprise.inject.Instance" returns="void"/>
-                    <Method name="setAliasAndParameterStringTransformer" params="javax.enterprise.inject.Instance" returns="void"/>
+                    <Method name="setCommandContextTransformers" params="javax.enterprise.inject.Instance" returns="void"/>
                 </Or>
             </And>
             <And>
@@ -72,7 +64,7 @@
 
     <Match>
         <Class name="net.kautler.command.parameter.parser.BaseParameterParser"/>
-        <Method name="parse" params="net.kautler.command.api.Command, java.lang.String, java.lang.String, java.lang.String, java.util.function.BiFunction" returns="net.kautler.command.api.parameter.Parameters"/>
+        <Method name="parse" params="net.kautler.command.api.CommandContext, java.util.function.BiFunction" returns="net.kautler.command.api.parameter.Parameters"/>
         <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
     </Match>
 
@@ -108,10 +100,21 @@
     </Match>
 
     <Match>
-        <Class name="net.kautler.command.util.lazy.LazyReference"/>
         <Or>
-            <Method name="equals" params="java.lang.Object" returns="boolean"/>
-            <Method name="isSet" params="" returns="boolean"/>
+            <And>
+                <Class name="net.kautler.command.util.lazy.LazyReference"/>
+                <Or>
+                    <Method name="equals" params="java.lang.Object" returns="boolean"/>
+                    <Method name="isSet" params="" returns="boolean"/>
+                </Or>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.CommandContext"/>
+                <Or>
+                    <Method name="getAdditionalData" params="java.lang.String" returns="java.util.Optional"/>
+                    <Method name="getAdditionalData" params="java.lang.String, java.lang.Object" returns="java.lang.Object"/>
+                </Or>
+            </And>
         </Or>
         <Bug pattern="OPM_OVERLY_PERMISSIVE_METHOD"/>
     </Match>
@@ -144,15 +147,32 @@
 
     <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/384 -->
     <Match>
-        <Class name="net.kautler.command.parameter.ParametersImpl"/>
-        <Method name="get" params="java.lang.String, java.util.function.Supplier" returns="java.lang.Object"/>
+        <Or>
+            <And>
+                <Class name="net.kautler.command.api.CommandContext"/>
+                <Method name="getAdditionalData" params="java.lang.String, java.util.function.Supplier" returns="java.lang.Object"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.parameter.ParametersImpl"/>
+                <Method name="get" params="java.lang.String, java.util.function.Supplier" returns="java.lang.Object"/>
+            </And>
+        </Or>
         <Bug pattern="OI_OPTIONAL_ISSUES_USES_ORELSEGET_WITH_NULL"/>
     </Match>
 
     <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/385 -->
     <Match>
         <Class name="net.kautler.command.parameter.converter.javacord.UserMentionConverterJavacord"/>
-        <Method name="convert" params="java.lang.String, java.lang.String, net.kautler.command.api.Command, org.javacord.api.entity.message.Message, java.lang.String, java.lang.String, java.lang.String" returns="org.javacord.api.entity.user.User"/>
+        <Method name="convert" params="java.lang.String, java.lang.String, net.kautler.command.api.CommandContext" returns="org.javacord.api.entity.user.User"/>
         <Bug pattern="AI_ANNOTATION_ISSUES_NEEDS_NULLABLE"/>
+    </Match>
+
+    <Match>
+        <Class name="net.kautler.test.spock.EagerExceptionRenderer"/>
+        <Method name="~lambda\$(?:visitSpec|null)\$\d++" params="org.spockframework.runtime.extension.IMethodInvocation" returns="void"/>
+        <Or>
+            <Bug pattern="NPMC_NON_PRODUCTIVE_METHOD_CALL"/>
+            <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+        </Or>
     </Match>
 </FindBugsFilter>

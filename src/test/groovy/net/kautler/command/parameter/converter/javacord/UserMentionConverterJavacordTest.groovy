@@ -17,6 +17,7 @@
 package net.kautler.command.parameter.converter.javacord
 
 import net.kautler.command.Internal
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
 import net.kautler.command.api.parameter.InvalidParameterValueException
 import net.kautler.command.util.ExceptionUtil
@@ -70,7 +71,7 @@ class UserMentionConverterJavacordTest extends Specification {
                         ]))
 
         when:
-            testee.convert("<@$userId>", null, null, null, null, null, null)
+            testee.convert("<@$userId>", null, null)
 
         then:
             InvalidParameterFormatException ipfe = thrown()
@@ -97,15 +98,17 @@ class UserMentionConverterJavacordTest extends Specification {
         given:
             User user = Stub()
 
-            Message message = Stub {
-                it.api >> Mock(DiscordApi) {
-                    getUserById(1) >> completedFuture(user)
-                    0 * getUserById(_)
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.api >> Mock(DiscordApi) {
+                        getUserById(1) >> completedFuture(user)
+                        0 * getUserById(_)
+                    }
                 }
             }
 
         when:
-            def result = testee.convert("<@$userId>", null, null, message, null, null, null)
+            def result = testee.convert("<@$userId>", null, commandContext)
 
         then:
             result == user
@@ -121,14 +124,16 @@ class UserMentionConverterJavacordTest extends Specification {
 
     def '<@#userId> should throw InvalidParameterValueException if user is not found'() {
         given:
-            Message message = Stub {
-                it.api >> Mock(DiscordApi) {
-                    getUserById(1) >> new CompletableFuture().with(true) {
-                        it.completeExceptionally(new NotFoundException(null, null, null, Mock(RestRequestResponseInformation) {
-                            it.code >> 404
-                        }))
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.api >> Mock(DiscordApi) {
+                        getUserById(1) >> new CompletableFuture().with(true) {
+                            it.completeExceptionally(new NotFoundException(null, null, null, Mock(RestRequestResponseInformation) {
+                                it.code >> 404
+                            }))
+                        }
+                        0 * getUserById(_)
                     }
-                    0 * getUserById(_)
                 }
             }
 
@@ -140,7 +145,7 @@ class UserMentionConverterJavacordTest extends Specification {
             0 * exceptionUtil.sneakyThrow(_)
 
         expect:
-            testee.convert("<@$userId>", null, null, message, null, null, null) == user
+            testee.convert("<@$userId>", null, commandContext) == user
 
         where:
             userId || _
@@ -152,12 +157,14 @@ class UserMentionConverterJavacordTest extends Specification {
         given:
             def error = new AssertionError()
 
-            Message message = Stub {
-                it.api >> Mock(DiscordApi) {
-                    getUserById(1) >> new CompletableFuture().with(true) {
-                        it.completeExceptionally(error)
+            CommandContext<Message> commandContext = Stub {
+                it.message >> Stub(Message) {
+                    it.api >> Mock(DiscordApi) {
+                        getUserById(1) >> new CompletableFuture().with(true) {
+                            it.completeExceptionally(error)
+                        }
+                        0 * getUserById(_)
                     }
-                    0 * getUserById(_)
                 }
             }
 
@@ -167,7 +174,7 @@ class UserMentionConverterJavacordTest extends Specification {
             0 * exceptionUtil.sneakyThrow(_)
 
         expect:
-            testee.convert("<@$userId>", null, null, message, null, null, null) == user
+            testee.convert("<@$userId>", null, commandContext) == user
 
         where:
             userId || _

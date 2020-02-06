@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.message.MessageAuthor
 import org.jboss.weld.junit4.WeldInitiator
@@ -36,16 +37,18 @@ class ServerManagerJavacordTest extends Specification {
     @Subject
     ServerManagerJavacord serverManagerJavacord
 
-    Message message = Stub {
-        it.author >> Stub(MessageAuthor)
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.author >> Stub(MessageAuthor)
+        }
     }
 
     def 'server manager "#serverManager" should #be allowed'() {
         given:
-            message.author.canManageServer() >> serverManager
+            commandContext.message.author.canManageServer() >> serverManager
 
         expect:
-            serverManagerJavacord.allowCommand(message) == allowed
+            serverManagerJavacord.allowCommand(commandContext) == allowed
 
         where:
             serverManager || allowed | be

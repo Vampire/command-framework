@@ -17,6 +17,7 @@
 package net.kautler.command.restriction
 
 import net.kautler.command.Internal
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.restriction.Restriction
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
@@ -150,6 +151,68 @@ class RestrictionLookupTest extends Specification {
             testee.getRestriction(Restriction)
     }
 
+    def 'equals should return #result for [restriction: #restriction, otherRestriction: #otherRestriction]'() {
+        given:
+            restriction = this."$restriction"
+            otherRestriction = this."$otherRestriction"
+
+        and:
+            testee.addAllRestrictions([restriction])
+            testee.getRestriction(Restriction)
+
+        and:
+            def other = new RestrictionLookup<>()
+            other.addAllRestrictions([otherRestriction])
+
+        expect:
+            (testee == other) == result
+
+        where:
+            restriction    | otherRestriction || result
+            'restriction1' | 'restriction1'   || true
+            'restriction1' | 'restriction2'   || false
+    }
+
+    def 'equals should return false for null'() {
+        expect:
+            !testee.equals(null)
+    }
+
+    def 'equals should return false for foreign class instance'() {
+        expect:
+            testee != _
+    }
+
+    def 'equals should return true for the same instance'() {
+        expect:
+            testee.equals(testee)
+    }
+
+    def 'hash code should #be the same for [restriction: #restriction, otherRestriction: #otherRestriction]'() {
+        given:
+            restriction = this."$restriction"
+            otherRestriction = this."$otherRestriction"
+
+        and:
+            testee.addAllRestrictions([restriction])
+            testee.getRestriction(Restriction)
+
+        and:
+            def other = new RestrictionLookup<>()
+            other.addAllRestrictions([otherRestriction])
+
+        expect:
+            (testee.hashCode() == other.hashCode()) == result
+
+        where:
+            restriction    | otherRestriction || result
+            'restriction1' | 'restriction1'   || true
+            'restriction1' | 'restriction2'   || false
+
+        and:
+            be = result ? 'be' : 'not be'
+    }
+
     def 'toString should start with class name'() {
         expect:
             testee.toString().startsWith("${testee.getClass().simpleName}[")
@@ -181,7 +244,7 @@ class RestrictionLookupTest extends Specification {
 
     static class BaseRestriction implements Restriction<Object> {
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             false
         }
     }

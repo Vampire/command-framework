@@ -16,6 +16,7 @@
 
 package net.kautler.command.integ.test.javacord.restriction
 
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.AllOf
@@ -116,7 +117,7 @@ class AllOfIntegTest extends Specification {
         static allow
 
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             allow
         }
     }
@@ -127,7 +128,7 @@ class AllOfIntegTest extends Specification {
         static allow
 
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             allow
         }
     }

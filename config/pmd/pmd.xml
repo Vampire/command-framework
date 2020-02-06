@@ -93,6 +93,18 @@
             <property name="constantPattern" value="[a-z][a-zA-Z0-9]*|[A-Z][A-Z_0-9]*"/>
         </properties>
     </rule>
+    <rule ref="category/java/codestyle.xml/LinguisticNaming">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        ((@MethodName = 'setAdditionalData')
+                            and ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.CommandContext')])
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
     <rule ref="category/java/codestyle.xml/LongVariable">
         <properties>
             <property name="minimum" value="45"/>
@@ -159,17 +171,6 @@
             <property name="maxmethods" value="15"/>
         </properties>
     </rule>
-    <rule ref="category/java/design.xml/UseObjectForClearerAPI">
-        <properties>
-            <property name="violationSuppressXPath">
-                <value>
-                    .[
-                        ancestor::ClassOrInterfaceDeclaration[typeIs('net.kautler.command.api.parameter.ParameterConverter')]
-                    ]
-                </value>
-            </property>
-        </properties>
-    </rule>
     <rule ref="category/java/documentation.xml"/>
     <rule ref="category/java/documentation.xml/CommentSize">
         <properties>
@@ -216,6 +217,18 @@
             </property>
         </properties>
     </rule>
+    <rule ref="category/java/errorprone.xml/AvoidLosingExceptionInformation">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.test.spock.EagerExceptionRenderer')]
+                            and @Image = 'spockAssertionError.toString'
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
     <rule ref="category/java/errorprone.xml/DataflowAnomalyAnalysis">
         <properties>
             <!-- false positives -->
@@ -233,8 +246,6 @@
                     \QFound 'DU'-anomaly for variable 'usageTree' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'seen' (lines '\E.* |
                     \QFound 'DD'-anomaly for variable 'distance' (lines '\E.* |
-                    \QFound 'DD'-anomaly for variable 'aliasAndParameterString' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'parameterString' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'channelId' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'roleId' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'userId' (lines '\E.*

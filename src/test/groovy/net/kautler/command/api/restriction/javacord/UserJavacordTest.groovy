@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.user.User
@@ -28,8 +29,10 @@ import java.util.regex.Pattern
 
 @Subject(UserJavacord)
 class UserJavacordTest extends Specification {
-    Message message = Stub {
-        it.userAuthor >> Optional.of(Stub(User))
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.userAuthor >> Optional.of(Stub(User))
+        }
     }
 
     def 'user with ID "#expectedUserId" should #be allowed for user with ID "#actualUserId"'() {
@@ -37,10 +40,10 @@ class UserJavacordTest extends Specification {
             UserJavacord userJavacord = Spy(constructorArgs: [expectedUserId])
 
         and:
-            message.userAuthor.get().id >> actualUserId
+            commandContext.message.userAuthor.get().id >> actualUserId
 
         expect:
-            userJavacord.allowCommand(message) == allowed
+            userJavacord.allowCommand(commandContext) == allowed
 
         where:
             [expectedUserId, actualUserId] <<
@@ -54,10 +57,10 @@ class UserJavacordTest extends Specification {
             UserJavacord userJavacord = Spy(constructorArgs: [expectedUserName])
 
         and:
-            message.userAuthor.get().name >> actualUserName
+            commandContext.message.userAuthor.get().name >> actualUserName
 
         expect:
-            userJavacord.allowCommand(message) == allowed
+            userJavacord.allowCommand(commandContext) == allowed
 
         where:
             [expectedUserName, actualUserName] <<
@@ -71,10 +74,10 @@ class UserJavacordTest extends Specification {
             UserJavacord userJavacord = Spy(constructorArgs: [expectedUserName, false])
 
         and:
-            message.userAuthor.get().name >> actualUserName
+            commandContext.message.userAuthor.get().name >> actualUserName
 
         expect:
-            userJavacord.allowCommand(message) == allowed
+            userJavacord.allowCommand(commandContext) == allowed
 
         where:
             [expectedUserName, actualUserName] <<
@@ -88,10 +91,10 @@ class UserJavacordTest extends Specification {
             UserJavacord userJavacord = Spy(constructorArgs: [expectedUserPattern])
 
         and:
-            message.userAuthor.get().name >> actualUserName
+            commandContext.message.userAuthor.get().name >> actualUserName
 
         expect:
-            userJavacord.allowCommand(message) == allowed
+            userJavacord.allowCommand(commandContext) == allowed
 
         where:
             [expectedUserPattern, actualUserName] << [

@@ -18,6 +18,7 @@ package net.kautler.command.parameter.parser;
 
 import net.kautler.command.Internal;
 import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.CommandHandler;
 import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.parameter.ParameterParseException;
@@ -96,8 +97,8 @@ public class TypedParameterParser extends BaseParameterParser {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <V> Parameters<V> parse(Command<?> command, Object message, String prefix, String usedAlias, String parameterString) {
-        return parse(command, prefix, usedAlias, parameterString, (parameterMatcher, groupNamesByTokenName) -> {
+    public <V> Parameters<V> parse(CommandContext<?> commandContext) {
+        return parse(commandContext, (parameterMatcher, groupNamesByTokenName) -> {
             Collection<String> firstTokenValues = new ArrayList<>();
             Map<String, Object> parameters = new HashMap<>();
             groupNamesByTokenName.forEach((tokenName, groupNames) -> groupNames
@@ -109,6 +110,7 @@ public class TypedParameterParser extends BaseParameterParser {
                         if (colon == -1) {
                             addParameterValue(parameters, tokenName, tokenValue, firstTokenValues);
                         } else {
+                            Object message = commandContext.getMessage();
                             Optional<TypeLiteral<ParameterConverter<?, ?>>> parameterConverterTypeLiteral =
                                     parameterConverterTypeLiteralsByMessageType
                                             .get()
@@ -134,7 +136,10 @@ public class TypedParameterParser extends BaseParameterParser {
                             if (parameterConverterInstance.isUnsatisfied()) {
                                 throw new IllegalArgumentException(format(
                                         "Parameter type '%s' in usage string '%s' was not found",
-                                        type, command.getUsage().orElseThrow(AssertionError::new)));
+                                        type, commandContext
+                                                .getCommand()
+                                                .flatMap(Command::getUsage)
+                                                .orElseThrow(AssertionError::new)));
                             } else {
                                 String untypedTokenName = tokenName.substring(0, colon);
 
@@ -164,9 +169,7 @@ public class TypedParameterParser extends BaseParameterParser {
                                 Object convertedTokenValue;
                                 try {
                                     convertedTokenValue = ((ParameterConverter<? super Object, ?>) parameterConverter)
-                                            .convert(
-                                                    tokenValue, type, command, message,
-                                                    prefix, usedAlias, parameterString);
+                                            .convert(tokenValue, type, commandContext);
                                 } catch (ParameterParseException ppe) {
                                     ppe.setParameterName(untypedTokenName);
                                     ppe.setParameterValue(tokenValue);

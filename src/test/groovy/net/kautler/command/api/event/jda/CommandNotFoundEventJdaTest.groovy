@@ -16,7 +16,7 @@
 
 package net.kautler.command.api.event.jda
 
-import net.dv8tion.jda.api.entities.Message
+import net.kautler.command.api.CommandContext
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -25,17 +25,14 @@ import static org.powermock.reflect.Whitebox.getField
 import static org.powermock.reflect.Whitebox.newInstance
 
 class CommandNotFoundEventJdaTest extends Specification {
-    Message message = Stub()
+    CommandContext<Object> commandContext = Stub()
 
     @Subject
-    CommandNotFoundEventJda testee =
-            new CommandNotFoundEventJda(message, 'thePrefix', 'theUsedAlias')
+    CommandNotFoundEventJda testee = new CommandNotFoundEventJda(commandContext)
 
-    def 'fields are properly set from constructor'() {
+    def 'field is properly set from constructor'() {
         expect:
-            testee.message?.is(message)
-            testee.prefix == 'thePrefix'
-            testee.usedAlias == 'theUsedAlias'
+            testee.commandContext?.is(commandContext)
     }
 
     def '#className toString should start with class name'() {
@@ -43,9 +40,9 @@ class CommandNotFoundEventJdaTest extends Specification {
             testee.toString().startsWith("$className[")
 
         where:
-            testee                                            | _
-            new CommandNotFoundEventJda(null, null, null)     | _
-            new CommandNotFoundEventJda(null, null, null) { } | _
+            testee                                | _
+            new CommandNotFoundEventJda(null)     | _
+            new CommandNotFoundEventJda(null) { } | _
 
         and:
             clazz = testee.getClass()

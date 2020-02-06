@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction
 
+import net.kautler.command.api.CommandContext
 import net.kautler.command.restriction.RestrictionLookup
 import spock.lang.Specification
 import spock.lang.Subject
@@ -50,7 +51,7 @@ class RestrictionChainElementTest extends Specification {
             restriction2.allowCommand(_) >> restriction2Allowed
 
         expect:
-            restrictionChainElement.isCommandAllowed(_, restrictionLookup) == allowed
+            restrictionChainElement.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -61,7 +62,7 @@ class RestrictionChainElementTest extends Specification {
 
     def 'IllegalArgumentException is thrown if restriction cannot be found by class'() {
         when:
-            restrictionChainElement.isCommandAllowed(_, new RestrictionLookup<Object>())
+            restrictionChainElement.isCommandAllowed(Stub(CommandContext), new RestrictionLookup<Object>())
 
         then:
             IllegalArgumentException iae = thrown()
@@ -78,7 +79,7 @@ class RestrictionChainElementTest extends Specification {
                     new RestrictionChainElement(restriction2.getClass())
 
         expect:
-            andCombination.isCommandAllowed(_, restrictionLookup) == allowed
+            andCombination.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -96,7 +97,7 @@ class RestrictionChainElementTest extends Specification {
             def andCombination = restrictionChainElement & restriction2.getClass()
 
         expect:
-            andCombination.isCommandAllowed(_, restrictionLookup) == allowed
+            andCombination.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -115,7 +116,7 @@ class RestrictionChainElementTest extends Specification {
                     new RestrictionChainElement(restriction2.getClass())
 
         expect:
-            orCombination.isCommandAllowed(_, restrictionLookup) == allowed
+            orCombination.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -133,7 +134,7 @@ class RestrictionChainElementTest extends Specification {
             def orCombination = restrictionChainElement | restriction2.getClass()
 
         expect:
-            orCombination.isCommandAllowed(_, restrictionLookup) == allowed
+            orCombination.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -151,13 +152,178 @@ class RestrictionChainElementTest extends Specification {
             def negated = restrictionChainElement.negate()
 
         expect:
-            negated.isCommandAllowed(_, restrictionLookup) == allowed
+            negated.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
                     ([[true, false]] * 2).combinations()
             allowed = !restriction1Allowed
             be = allowed ? 'be' : 'not be'
+    }
+
+    def '#testeeClassName equals should return #result for [testeeArgument: #testeeArgument.simpleName, otherArgument: #otherArgument.simpleName]'() {
+        given:
+            def testee = testeeCreator.call(testeeArgument)
+            def other = testeeCreator.call(otherArgument)
+
+        expect:
+            (testee == other) == result
+
+        where:
+            [testeeClassName, testeeCreator, testeeArgument, otherArgument] << [
+                    { new RestrictionChainElement(it) },
+                    { new RestrictionChainElement(it).negate() }
+            ].collectMany { testeeCreator ->
+                ([[AnyOf, AllOf]] * 2)
+                        .combinations()
+                        .collect { testeeArgument, otherArgument ->
+                            [
+                                    testeeCreator.call(AnyOf).getClass().simpleName,
+                                    testeeCreator,
+                                    testeeArgument,
+                                    otherArgument
+                            ]
+                        }
+            }
+
+        and:
+            result = testeeArgument == otherArgument
+    }
+
+    def '#testeeClassName equals should return #result for [testeeLeftArgument: #testeeLeftArgument.simpleName, testeeRightArgument: #testeeRightArgument.simpleName, otherLeftArgument: #otherLeftArgument.simpleName, otherRightArgument: #otherRightArgument.simpleName]'() {
+        given:
+            def testee = testeeCreator.call(testeeLeftArgument, testeeRightArgument)
+            def other = testeeCreator.call(otherLeftArgument, otherRightArgument)
+
+        expect:
+            (testee == other) == result
+
+        where:
+            [testeeClassName, testeeCreator,
+             testeeLeftArgument, otherLeftArgument, testeeRightArgument, otherRightArgument] << [
+                    { left, right -> new RestrictionChainElement(left) & new RestrictionChainElement(right) },
+                    { left, right -> new RestrictionChainElement(left) | new RestrictionChainElement(right) },
+            ].collectMany { testeeCreator ->
+                ([([[AnyOf, AllOf]] * 2).combinations()] * 2)
+                        .combinations()
+                        *.flatten()
+                        .collect { testeeLeftArgument, otherLeftArgument, testeeRightArgument, otherRightArgument ->
+                            [
+                                    testeeCreator.call(AnyOf, AnyOf).getClass().simpleName,
+                                    testeeCreator,
+                                    testeeLeftArgument,
+                                    otherLeftArgument,
+                                    testeeRightArgument,
+                                    otherRightArgument
+                            ]
+                        }
+            }
+
+        and:
+            result = (testeeLeftArgument == otherLeftArgument) && (testeeRightArgument == otherRightArgument)
+    }
+
+    def '#testee.getClass().simpleName equals should return false for null'() {
+        expect:
+            !testee.equals(null)
+
+        where:
+            testee << [
+                    new RestrictionChainElement(AnyOf),
+                    new RestrictionChainElement(AnyOf) & new RestrictionChainElement(AllOf),
+                    new RestrictionChainElement(AnyOf) | new RestrictionChainElement(AllOf),
+                    new RestrictionChainElement(AnyOf).negate()
+            ]
+    }
+
+    def '#testee.getClass().simpleName equals should return false for foreign class instance'() {
+        expect:
+            testee != _
+
+        where:
+            testee << [
+                    new RestrictionChainElement(AnyOf),
+                    new RestrictionChainElement(AnyOf) & new RestrictionChainElement(AllOf),
+                    new RestrictionChainElement(AnyOf) | new RestrictionChainElement(AllOf),
+                    new RestrictionChainElement(AnyOf).negate()
+            ]
+    }
+
+    def '#testee.getClass().simpleName equals should return true for the same instance'() {
+        expect:
+            testee.equals(testee)
+
+        where:
+            testee << [
+                    new RestrictionChainElement(AnyOf),
+                    new RestrictionChainElement(AnyOf) & new RestrictionChainElement(AllOf),
+                    new RestrictionChainElement(AnyOf) | new RestrictionChainElement(AllOf),
+                    new RestrictionChainElement(AnyOf).negate()
+            ]
+    }
+
+    def '#testeeClassName hash code should #be the same for [testeeArgument: #testeeArgument.simpleName, otherArgument: #otherArgument.simpleName]'() {
+        given:
+            def testee = testeeCreator.call(testeeArgument)
+            def other = testeeCreator.call(otherArgument)
+
+        expect:
+            (testee.hashCode() == other.hashCode()) == result
+
+        where:
+            [testeeClassName, testeeCreator, testeeArgument, otherArgument] << [
+                    { new RestrictionChainElement(it) },
+                    { new RestrictionChainElement(it).negate() }
+            ].collectMany { testeeCreator ->
+                ([[AnyOf, AllOf]] * 2)
+                        .combinations()
+                        .collect { testeeArgument, otherArgument ->
+                            [
+                                    testeeCreator.call(AnyOf).getClass().simpleName,
+                                    testeeCreator,
+                                    testeeArgument,
+                                    otherArgument
+                            ]
+                        }
+            }
+
+        and:
+            result = testeeArgument == otherArgument
+            be = result ? 'be' : 'not be'
+    }
+
+    def '#testeeClassName hash code should #be the same for [testeeLeftArgument: #testeeLeftArgument.simpleName, testeeRightArgument: #testeeRightArgument.simpleName, otherLeftArgument: #otherLeftArgument.simpleName, otherRightArgument: #otherRightArgument.simpleName]'() {
+        given:
+            def testee = testeeCreator.call(testeeLeftArgument, testeeRightArgument)
+            def other = testeeCreator.call(otherLeftArgument, otherRightArgument)
+
+        expect:
+            (testee.hashCode() == other.hashCode()) == result
+
+        where:
+            [testeeClassName, testeeCreator,
+             testeeLeftArgument, otherLeftArgument, testeeRightArgument, otherRightArgument] << [
+                    { left, right -> new RestrictionChainElement(left) & new RestrictionChainElement(right) },
+                    { left, right -> new RestrictionChainElement(left) | new RestrictionChainElement(right) },
+            ].collectMany { testeeCreator ->
+                ([([[AnyOf, AllOf]] * 2).combinations()] * 2)
+                        .combinations()
+                        *.flatten()
+                        .collect { testeeLeftArgument, otherLeftArgument, testeeRightArgument, otherRightArgument ->
+                            [
+                                    testeeCreator.call(AnyOf, AnyOf).getClass().simpleName,
+                                    testeeCreator,
+                                    testeeLeftArgument,
+                                    otherLeftArgument,
+                                    testeeRightArgument,
+                                    otherRightArgument
+                            ]
+                        }
+            }
+
+        and:
+            result = (testeeLeftArgument == otherLeftArgument) && (testeeRightArgument == otherRightArgument)
+            be = result ? 'be' : 'not be'
     }
 
     def '#className toString should start with class name'() {

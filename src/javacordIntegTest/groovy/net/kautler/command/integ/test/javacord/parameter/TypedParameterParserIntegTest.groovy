@@ -18,6 +18,7 @@ package net.kautler.command.integ.test.javacord.parameter
 
 import net.kautler.command.Internal.Literal
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.annotation.Usage
 import net.kautler.command.api.parameter.ParameterConverter
 import net.kautler.command.api.parameter.ParameterParser
@@ -215,15 +216,16 @@ class TypedParameterParserIntegTest extends Specification {
         ParameterParser parameterParser
 
         @Override
-        void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
+        void execute(CommandContext<? extends Message> commandContext) {
             def parameters = parameterParser
-                    .parse(this, incomingMessage, prefix, usedAlias, parameterString)
+                    .parse(commandContext)
                     .with { it.entries }
                     .collect { "$it.key: $it.value [${it.value.getClass().name}]" }
                     .sort()
                     .join('\n')
 
-            incomingMessage
+            commandContext
+                    .message
                     .channel
                     .sendMessage("pong:\n$parameters")
                     .exceptionally(ExceptionLogger.get())
@@ -238,7 +240,7 @@ class TypedParameterParserIntegTest extends Specification {
         Instance<ParameterConverter<?, ?>> parameterConverters
 
         @Override
-        void execute(Message incomingMessage, String prefix, String usedAlias, String parameterString) {
+        void execute(CommandContext<? extends Message> commandContext) {
             def internalParameterConverters = parameterConverters
                     .select(Literal.INSTANCE)
                     .toList()
@@ -249,7 +251,8 @@ class TypedParameterParserIntegTest extends Specification {
                     .sort()
                     .join('\n')
 
-            incomingMessage
+            commandContext
+                    .message
                     .channel
                     .sendMessage("custom parameter converters:\n$customParameterConverters")
                     .exceptionally(ExceptionLogger.get())
@@ -261,8 +264,7 @@ class TypedParameterParserIntegTest extends Specification {
     @ApplicationScoped
     static class CustomStringConverter implements ParameterConverter<Object, String> {
         @Override
-        String convert(String parameter, String type, Command<?> command, Object message,
-                       String prefix, String usedAlias, String parameterString) {
+        String convert(String parameter, String type, CommandContext<?> commandContext) {
             "custom: $parameter"
         }
     }
@@ -272,8 +274,7 @@ class TypedParameterParserIntegTest extends Specification {
     @ApplicationScoped
     static class CustomStringsConverter implements ParameterConverter<Object, List<String>> {
         @Override
-        List<String> convert(String parameter, String type, Command<?> command, Object message,
-                             String prefix, String usedAlias, String parameterString) {
+        List<String> convert(String parameter, String type, CommandContext<?> commandContext) {
             parameter.split(',')
         }
     }

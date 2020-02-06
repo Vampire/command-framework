@@ -341,9 +341,9 @@ class CommandTest extends Specification {
             'foo   bar\t \tbaz' | 3             || ['foo', 'bar', 'baz']
     }
 
-    static class BaseCommand implements Command {
+    static class BaseCommand implements Command<Object> {
         @Override
-        void execute(Object incomingMessage, String prefix, String usedAlias, String parameterString) {
+        void execute(CommandContext<?> commandContext) {
         }
     }
 
@@ -398,7 +398,7 @@ class CommandTest extends Specification {
 
     static class BaseRestriction implements Restriction<Object> {
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             false
         }
     }

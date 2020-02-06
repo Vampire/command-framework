@@ -18,6 +18,7 @@ package net.kautler.command.api.restriction.jda
 
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
+import net.kautler.command.api.CommandContext
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
@@ -38,21 +39,25 @@ class ServerManagerJdaTest extends Specification {
     @Subject
     ServerManagerJda serverManagerJda
 
-    Message message = Stub {
-        it.member >> null
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.member >> null
+        }
     }
 
-    Message guildMessage = Stub {
-        it.member >> Stub(Member)
+    CommandContext<Message> guildCommandContext = Stub {
+        it.message >> Stub(Message) {
+            it.member >> Stub(Member)
+        }
     }
 
     def 'server manager "#serverManager" should #be allowed'() {
         given:
-            guildMessage.member.hasPermission(MANAGE_SERVER) >> serverManager
+            guildCommandContext.message.member.hasPermission(MANAGE_SERVER) >> serverManager
 
         expect:
-            !serverManagerJda.allowCommand(message)
-            serverManagerJda.allowCommand(guildMessage) == allowed
+            !serverManagerJda.allowCommand(commandContext)
+            serverManagerJda.allowCommand(guildCommandContext) == allowed
 
         where:
             serverManager || allowed | be

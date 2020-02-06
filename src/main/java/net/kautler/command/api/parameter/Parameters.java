@@ -48,12 +48,12 @@ public interface Parameters<V> {
      * <p>If the value of the parameter is of a subtype of {@link V}, the returned {@code Optional} can implicitly
      * be downcasted by using {@link R} to define the subtype using an explicit type parameter like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * parameters.<User>get("user");
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * Optional<User> user = parameters.get("user");
      * }</pre>
      *
@@ -74,17 +74,17 @@ public interface Parameters<V> {
      * <p>If the value of the parameter is of a subtype of {@link V}, the returned value can implicitly
      * be downcasted by using {@link R} to define the subtype using an explicit type parameter like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * parameters.<User>get("user", new UserSubClass());
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * User user = parameters.get("user", (User) null);
      * }</pre>
      * or
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * User defaultUser = ...;
      * parameters.get("user", defaultUser);
      * }</pre>
@@ -107,17 +107,17 @@ public interface Parameters<V> {
      * <p>If the value of the parameter is of a subtype of {@link V}, the returned value can implicitly
      * be downcasted by using {@link R} to define the subtype using an explicit type parameter like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * parameters.<User>get("user", () -> null);
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * User user = parameters.get("user", () -> null);
      * }</pre>
      * or
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * User defaultUser = ...;
      * parameters.get("user", () -> defaultUser);
      * }</pre>
@@ -188,12 +188,12 @@ public interface Parameters<V> {
      * certain subtype of {@code V} present in this parameters instance, the returned collection can implicitly
      * downcast the values by using {@link R} to define the subtype using an explicit type parameter like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * String value = parameters.<String>getValues().iterator().next();
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * Collection<String> values = parameters.getValues();
      * String value = values.iterator().next();
      * }</pre>
@@ -219,12 +219,12 @@ public interface Parameters<V> {
      * only a certain subtype of {@code V} present in this parameters instance, the returned set can implicitly
      * downcast the values by using {@link R} to define the subtype using an explicit type parameter like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * Entry<String, String> entry = parameters.<String>getEntries().iterator().next();
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * Set<Entry<String, String>> entries = parameters.getEntries();
      * Entry<String, String> entry = entries.iterator().next();
      * }</pre>
@@ -250,12 +250,12 @@ public interface Parameters<V> {
      * can implicitly downcast the values by using {@link R} to define the subtype using an explicit type parameter
      * like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * parameters.<String>forEach((name, value) -> value.intern());
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * parameters.forEach((String name, String value) -> value.intern());
      * }</pre>
      *
@@ -299,12 +299,12 @@ public interface Parameters<V> {
      * certain subtype of {@code V} present, the returned reference can implicitly downcast the values by using
      * {@link R} to define the subtype using an explicit type parameter like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * Optional<String> value = parameters.<String>getParameters().get("placeholder");
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * Parameters<String> stringParameters = parameters.getParameters();
      * }</pre>
      *
@@ -329,12 +329,12 @@ public interface Parameters<V> {
      * {@code V} present in this parameters instance, the returned map can implicitly downcast the values by using
      * {@link R} to define the subtype using an explicit type parameter like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * String value = parameters.<String>getAsMap().values().iterator().next();
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<Object> parameters = parameterParser.parse(...);
+     * Parameters<Object> parameters = parameterParser.parse(commandContext);
      * Map<String, String> parameterMap = parameters.getAsMap();
      * }</pre>
      *

@@ -18,6 +18,7 @@ package net.kautler.command.api.restriction.jda
 
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
+import net.kautler.command.api.CommandContext
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
@@ -31,14 +32,18 @@ import static net.dv8tion.jda.api.entities.ChannelType.TEXT
 
 @Subject(GuildJda)
 class GuildJdaTest extends Specification {
-    Message message = Stub {
-        it.channelType >> PRIVATE
-        it.guild >> { throw new IllegalStateException() }
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.channelType >> PRIVATE
+            it.guild >> { throw new IllegalStateException() }
+        }
     }
 
-    Message guildMessage = Stub {
-        it.channelType >> TEXT
-        it.guild >> Stub(Guild)
+    CommandContext<Message> guildCommandContext = Stub {
+        it.message >> Stub(Message) {
+            it.channelType >> TEXT
+            it.guild >> Stub(Guild)
+        }
     }
 
     def 'guild with ID "#expectedGuildId" should #be allowed in guild with ID "#actualGuildId"'() {
@@ -46,11 +51,11 @@ class GuildJdaTest extends Specification {
             GuildJda guildJda = Spy(constructorArgs: [expectedGuildId])
 
         and:
-            guildMessage.guild.idLong >> actualGuildId
+            guildCommandContext.message.guild.idLong >> actualGuildId
 
         expect:
-            !guildJda.allowCommand(message)
-            guildJda.allowCommand(guildMessage) == allowed
+            !guildJda.allowCommand(commandContext)
+            guildJda.allowCommand(guildCommandContext) == allowed
 
         where:
             [expectedGuildId, actualGuildId] <<
@@ -64,11 +69,11 @@ class GuildJdaTest extends Specification {
             GuildJda guildJda = Spy(constructorArgs: [expectedGuildName])
 
         and:
-            guildMessage.guild.name >> actualGuildName
+            guildCommandContext.message.guild.name >> actualGuildName
 
         expect:
-            !guildJda.allowCommand(message)
-            guildJda.allowCommand(guildMessage) == allowed
+            !guildJda.allowCommand(commandContext)
+            guildJda.allowCommand(guildCommandContext) == allowed
 
         where:
             [expectedGuildName, actualGuildName] <<
@@ -82,11 +87,11 @@ class GuildJdaTest extends Specification {
             GuildJda guildJda = Spy(constructorArgs: [expectedGuildName, false])
 
         and:
-            guildMessage.guild.name >> actualGuildName
+            guildCommandContext.message.guild.name >> actualGuildName
 
         expect:
-            !guildJda.allowCommand(message)
-            guildJda.allowCommand(guildMessage) == allowed
+            !guildJda.allowCommand(commandContext)
+            guildJda.allowCommand(guildCommandContext) == allowed
 
         where:
             [expectedGuildName, actualGuildName] <<
@@ -100,11 +105,11 @@ class GuildJdaTest extends Specification {
             GuildJda guildJda = Spy(constructorArgs: [expectedGuildPattern])
 
         and:
-            guildMessage.guild.name >> actualGuildName
+            guildCommandContext.message.guild.name >> actualGuildName
 
         expect:
-            !guildJda.allowCommand(message)
-            guildJda.allowCommand(guildMessage) == allowed
+            !guildJda.allowCommand(commandContext)
+            guildJda.allowCommand(guildCommandContext) == allowed
 
         where:
             [expectedGuildPattern, actualGuildName] << [

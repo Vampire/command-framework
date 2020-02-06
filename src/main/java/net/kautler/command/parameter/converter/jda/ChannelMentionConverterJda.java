@@ -19,7 +19,7 @@ package net.kautler.command.parameter.converter.jda;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.kautler.command.Internal;
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
 import net.kautler.command.api.parameter.InvalidParameterValueException;
 import net.kautler.command.api.parameter.ParameterConverter;
@@ -49,8 +49,7 @@ class ChannelMentionConverterJda implements ParameterConverter<Message, TextChan
     }
 
     @Override
-    public TextChannel convert(String parameter, String type, Command<?> command, Message message,
-                               String prefix, String usedAlias, String parameterString) {
+    public TextChannel convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher channelMatcher = CHANNEL.getPattern().matcher(parameter);
         if (!channelMatcher.matches()) {
             throw new InvalidParameterFormatException(format("'%s' is not a valid channel mention", parameter));
@@ -64,7 +63,8 @@ class ChannelMentionConverterJda implements ParameterConverter<Message, TextChan
             throw new InvalidParameterFormatException(format("'%s' is not a valid channel mention", parameter), nfe);
         }
 
-        return Optional.ofNullable(message
+        return Optional.ofNullable(commandContext
+                .getMessage()
                 .getJDA()
                 .getTextChannelById(channelId))
                 .orElseThrow(() -> new InvalidParameterValueException(format("channel for id '%s' was not found", channelIdString)));

@@ -32,7 +32,7 @@ class UsageParserRuleContextTest extends Specification {
 
     def '#method #should return single child'() {
         given:
-            def child = Stub(ParseTree)
+            ParseTree child = Stub()
             testee."$method"() >> context
             testee.getChild(0) >> child
 

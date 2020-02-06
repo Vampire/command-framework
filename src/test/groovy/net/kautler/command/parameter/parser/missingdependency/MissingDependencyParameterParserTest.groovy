@@ -48,7 +48,7 @@ class MissingDependencyParameterParserTest extends Specification {
             MissingDependencyParameterParser testee = Spy(useObjenesis: true)
 
         when:
-            testee.parse(null, null, null, null, null)
+            testee.parse(null)
 
         then:
             thrown(AssertionError)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,19 @@
 
 package net.kautler.command.api.restriction;
 
+import net.kautler.command.api.CommandContext;
+
 /**
- * A restriction that checks allowance for usage of a command that was caused by a given message.
+ * A restriction that checks allowance for usage of a command that was caused by a given command context.
  *
  * @param <M> the class of the messages for which this restriction can check allowance
  */
 public interface Restriction<M> {
     /**
-     * Returns whether a command caused by the given message should be allowed by this restriction or not.
+     * Returns whether a command caused by the given command context should be allowed by this restriction or not.
      *
-     * @param message the message that caused the command to check allowance for
-     * @return whether a command caused by the given message should be allowed by this restriction or not
+     * @param commandContext the command context, usually fully populated
+     * @return whether a command caused by the given command context should be allowed by this restriction or not
      */
-    boolean allowCommand(M message);
+    boolean allowCommand(CommandContext<? extends M> commandContext);
 }

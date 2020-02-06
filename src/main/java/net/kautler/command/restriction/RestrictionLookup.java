@@ -20,6 +20,7 @@ import net.kautler.command.api.restriction.Restriction;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,6 +71,13 @@ public class RestrictionLookup<M> {
                                 .orElse(null));
     }
 
+    /**
+     * Calculates the distance between the class of the given restriction and one of its ancestors or itself.
+     *
+     * @param restriction      the restriction to check
+     * @param restrictionClass the ancestor or self to calculate distance from
+     * @return the distance between the class of the given restriction and the given class
+     */
     private static int getInheritanceDistance(Restriction<?> restriction, Class<?> restrictionClass) {
         int distance = 0;
         for (Class<?> clazz = restriction.getClass();
@@ -78,6 +86,23 @@ public class RestrictionLookup<M> {
             distance++;
         }
         return distance;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if ((obj == null) || (getClass() != obj.getClass())) {
+            return false;
+        }
+        RestrictionLookup<?> that = (RestrictionLookup<?>) obj;
+        return restrictions.equals(that.restrictions);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(restrictions);
     }
 
     @Override

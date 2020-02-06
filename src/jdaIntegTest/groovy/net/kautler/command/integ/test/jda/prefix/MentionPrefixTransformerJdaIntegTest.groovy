@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ package net.kautler.command.integ.test.jda.prefix
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.CommandHandler
-import net.kautler.command.api.prefix.jda.MentionPrefixProviderJda
+import net.kautler.command.api.prefix.jda.MentionPrefixTransformerJda
 import net.kautler.command.integ.test.jda.PingIntegTest.PingCommand
 import net.kautler.command.integ.test.spock.AddBean
 import spock.lang.Specification
@@ -31,10 +32,11 @@ import javax.enterprise.context.ApplicationScoped
 import javax.enterprise.inject.Vetoed
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
-@Subject([MentionPrefixProviderJda, CommandHandler])
-class MentionPrefixProviderJdaIntegTest extends Specification {
-    @AddBean(MyPrefix)
+@Subject([MentionPrefixTransformerJda, CommandHandler])
+class MentionPrefixTransformerJdaIntegTest extends Specification {
+    @AddBean(MyPrefixTransformer)
     @AddBean(PingCommand)
     def 'ping command should respond if bot mention prefix is used'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
@@ -67,8 +69,42 @@ class MentionPrefixProviderJdaIntegTest extends Specification {
             }
     }
 
+    @AddBean(MyPrefixTransformer)
+    @AddBean(PingCommand)
+    def 'ping command should respond if bot nickname mention prefix is used'(
+            TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
+        given:
+            def random = randomUUID()
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            EventListener eventListener = {
+                if ((it instanceof GuildMessageReceivedEvent) &&
+                        (it.channel == textChannelAsBot) &&
+                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
+                        (it.message.contentRaw == "pong: $random")) {
+                    responseReceived.set(true)
+                }
+            }
+            textChannelAsBot.JDA.addEventListener(eventListener)
+
+        when:
+            textChannelAsUser
+                    .sendMessage("${textChannelAsBot.JDA.selfUser.asMention.replaceFirst('^<@', '<@!')} ping $random")
+                    .complete()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            if (eventListener) {
+                textChannelAsBot.JDA.removeEventListener(eventListener)
+            }
+    }
+
     @Vetoed
     @ApplicationScoped
-    static class MyPrefix extends MentionPrefixProviderJda {
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class MyPrefixTransformer extends MentionPrefixTransformerJda {
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package net.kautler.command.api.restriction.jda;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.entities.Message;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -182,7 +183,8 @@ public abstract class GuildJda implements Restriction<Message> {
     }
 
     @Override
-    public boolean allowCommand(Message message) {
+    public boolean allowCommand(CommandContext<? extends Message> commandContext) {
+        Message message = commandContext.getMessage();
         return ((guildName == null) && (guildPattern == null))
                 ? allowCommandByGuildId(message)
                 : allowCommandByGuildName(message);

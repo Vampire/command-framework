@@ -16,7 +16,7 @@
 
 package net.kautler.command.parameter.parser.missingdependency;
 
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.ParameterParser;
 import net.kautler.command.api.parameter.ParameterParser.Typed;
 import net.kautler.command.api.parameter.Parameters;
@@ -40,7 +40,7 @@ public class MissingDependencyParameterParser implements ParameterParser {
     }
 
     @Override
-    public <V> Parameters<V> parse(Command<?> command, Object message, String prefix, String usedAlias, String parameterString) {
+    public <V> Parameters<V> parse(CommandContext<?> commandContext) {
         throw new AssertionError();
     }
 }

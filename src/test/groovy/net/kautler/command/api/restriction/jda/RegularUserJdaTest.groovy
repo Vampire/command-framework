@@ -18,6 +18,7 @@ package net.kautler.command.api.restriction.jda
 
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.kautler.command.api.CommandContext
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
@@ -36,19 +37,21 @@ class RegularUserJdaTest extends Specification {
     @Subject
     RegularUserJda regularUserJda
 
-    Message message = Stub {
-        it.author >> Stub(User)
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.author >> Stub(User)
+        }
     }
 
     def 'fake author #fake and regular user author #regularUser should #be allowed'() {
         given:
-            message.author.with {
+            commandContext.message.author.with {
                 it.fake >> fake
                 it.bot >> !regularUser
             }
 
         expect:
-            regularUserJda.allowCommand(message) == allowed
+            regularUserJda.allowCommand(commandContext) == allowed
 
         where:
             [fake, regularUser] << ([[true, false]] * 2).combinations()

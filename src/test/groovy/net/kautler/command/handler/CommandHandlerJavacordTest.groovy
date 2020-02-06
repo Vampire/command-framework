@@ -18,11 +18,11 @@ package net.kautler.command.handler
 
 import net.kautler.command.Internal
 import net.kautler.command.LoggerProducer
-import net.kautler.command.api.AliasAndParameterStringTransformer
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord
-import net.kautler.command.api.prefix.PrefixProvider
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
 import net.kautler.test.ContextualInstanceCategory
@@ -85,10 +85,6 @@ class CommandHandlerJavacordTest extends Specification {
         it.restrictionChain >> new RestrictionChainElement(Restriction)
     }
 
-    PrefixProvider<Object> defaultPrefixProvider = Stub {
-        getCommandPrefix(_) >> '!'
-    }
-
     TestEventReceiver testEventReceiverDelegate = Mock()
 
     @Rule
@@ -123,13 +119,6 @@ class CommandHandlerJavacordTest extends Specification {
                             .scope(ApplicationScoped)
                             // work-around for https://github.com/weld/weld-junit/issues/97
                             .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
-                            .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
-                            .creating(defaultPrefixProvider)
-                            .build(),
-                    MockBean.builder()
-                            .scope(ApplicationScoped)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                             .types(TestEventReceiver)
                             .creating(testEventReceiverDelegate)
                             .build()
@@ -151,6 +140,32 @@ class CommandHandlerJavacordTest extends Specification {
 
     MessageCreateEvent messageCreateEvent = Stub {
         it.message >> message
+    }
+
+    def 'an injector method for any command context transformers should exist and forward to the common base class'() {
+        given:
+            CommandHandlerJavacord commandHandlerJavacord = Spy(useObjenesis: true)
+            Instance<CommandContextTransformer<? super Message>> commandContextTransformers = Stub()
+
+        when:
+            def commandContextTransformerInjectors = CommandHandlerJavacord
+                    .declaredMethods
+                    .findAll {
+                        it.getAnnotation(Inject) &&
+                                it.genericParameterTypes ==
+                                [new TypeLiteral<Instance<CommandContextTransformer<? super Message>>>() { }.type] as Type[] &&
+                                it.parameterAnnotations.first().any { it instanceof Any }
+                    }
+                    .each { it.accessible = true }
+
+        then:
+            commandContextTransformerInjectors.size() == 1
+
+        when:
+            commandContextTransformerInjectors.first().invoke(commandHandlerJavacord, commandContextTransformers)
+
+        then:
+            1 * commandHandlerJavacord.doSetCommandContextTransformers(commandContextTransformers) >> { }
     }
 
     def 'an injector method for available restrictions should exist and forward to the common base class'() {
@@ -203,56 +218,6 @@ class CommandHandlerJavacordTest extends Specification {
             1 * commandHandlerJavacord.doSetCommands(commands) >> { }
     }
 
-    def 'an injector method for custom prefix provider should exist and forward to the common base class'() {
-        given:
-            CommandHandlerJavacord commandHandlerJavacord = Spy(useObjenesis: true)
-            Instance<PrefixProvider<? super Message>> customPrefixProvider = Stub()
-
-        when:
-            def prefixProvidersInjectors = CommandHandlerJavacord
-                    .declaredMethods
-                    .findAll {
-                        it.getAnnotation(Inject) &&
-                                it.genericParameterTypes ==
-                                [new TypeLiteral<Instance<PrefixProvider<? super Message>>>() { }.type] as Type[]
-                    }
-                    .each { it.accessible = true }
-
-        then:
-            prefixProvidersInjectors.size() == 1
-
-        when:
-            prefixProvidersInjectors.first().invoke(commandHandlerJavacord, customPrefixProvider)
-
-        then:
-            1 * commandHandlerJavacord.doSetCustomPrefixProvider(customPrefixProvider) >> { }
-    }
-
-    def 'an injector method for alias and parameter string transformer should exist and forward to the common base class'() {
-        given:
-            CommandHandlerJavacord commandHandlerJavacord = Spy(useObjenesis: true)
-            Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer = Stub()
-
-        when:
-            def aliasAndParameterStringTransformerInjectors = CommandHandlerJavacord
-                    .declaredMethods
-                    .findAll {
-                        it.getAnnotation(Inject) &&
-                                it.genericParameterTypes ==
-                                [new TypeLiteral<Instance<AliasAndParameterStringTransformer<? super Message>>>() { }.type] as Type[]
-                    }
-                    .each { it.accessible = true }
-
-        then:
-            aliasAndParameterStringTransformerInjectors.size() == 1
-
-        when:
-            aliasAndParameterStringTransformerInjectors.first().invoke(commandHandlerJavacord, aliasAndParameterStringTransformer)
-
-        then:
-            1 * commandHandlerJavacord.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer) >> { }
-    }
-
     @Use(ContextualInstanceCategory)
     def 'post construct method should register message create listener and forward to the common base class'() {
         given:
@@ -278,7 +243,7 @@ class CommandHandlerJavacordTest extends Specification {
                     listenerManager
                 }
             }
-            3 * commandHandlerJavacord.doHandleMessage(message, message.content) >> { }
+            3 * commandHandlerJavacord.doHandleMessage(new CommandContext.Builder(message, message.content).build()) >> { }
             0 * commandHandlerJavacord.doHandleMessage(*_)
     }
 
@@ -335,9 +300,14 @@ class CommandHandlerJavacordTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotAllowedEvent {
-                    it.message == this.message
-                    it.prefix == '!'
-                    it.usedAlias == this.command.aliases.first()
+                    with(it.commandContext) {
+                        it.message == this.message
+                        it.messageContent == this.message.content
+                        it.prefix.orElse(null) == '!'
+                        it.alias.orElse(null) == this.command.aliases.first()
+                        it.parameterString.orElse(null) == ''
+                        it.command.orElse(null)?.metadata?.contextualInstance == this.command
+                    }
                 } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
@@ -356,9 +326,14 @@ class CommandHandlerJavacordTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotFoundEvent {
-                    it.message == this.message
-                    it.prefix == '!'
-                    it.usedAlias == 'nocommand'
+                    with(it.commandContext) {
+                        it.message == this.message
+                        it.messageContent == this.message.content
+                        it.prefix.orElse(null) == '!'
+                        it.alias.orElse(null) == null
+                        it.parameterString.orElse(null) == null
+                        it.command.orElse(null)?.metadata?.contextualInstance == null
+                    }
                 } >> { commandNotFoundEventReceived.set(true) }
                 0 * _
             }
@@ -372,7 +347,7 @@ class CommandHandlerJavacordTest extends Specification {
             }
 
         when:
-            commandHandlerJavacord.executeAsync(message) { }
+            commandHandlerJavacord.executeAsync(new CommandContext.Builder(message, message.content).build()) { }
 
         then:
             1 * threadPool.executorService >> Stub(ExecutorService)
@@ -385,7 +360,7 @@ class CommandHandlerJavacordTest extends Specification {
             def executingThread = new BlockingVariable<Thread>(5)
 
         when:
-            commandHandlerJavacord.executeAsync(message) {
+            commandHandlerJavacord.executeAsync(new CommandContext.Builder(message, message.content).build()) {
                 executingThread.set(currentThread())
             }
 
@@ -402,7 +377,7 @@ class CommandHandlerJavacordTest extends Specification {
             message.api >> discordApi
 
         when:
-            commandHandlerJavacord.executeAsync(message) { }
+            commandHandlerJavacord.executeAsync(new CommandContext.Builder(message, message.content).build()) { }
 
         and:
             discordApi.disconnect()
@@ -425,7 +400,9 @@ class CommandHandlerJavacordTest extends Specification {
             def exception = new Exception()
 
         when:
-            commandHandlerJavacord.executeAsync(message) { throw exception }
+            commandHandlerJavacord.executeAsync(new CommandContext.Builder(message, message.content).build()) {
+                throw exception
+            }
 
         and:
             discordApi.disconnect()
@@ -458,15 +435,6 @@ class CommandHandlerJavacordTest extends Specification {
                     .from(
                             CommandHandlerJavacord,
                             LoggerProducer
-                    )
-                    .addBeans(
-                            MockBean.builder()
-                                    .scope(ApplicationScoped)
-                                    // work-around for https://github.com/weld/weld-junit/issues/97
-                                    .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
-                                    .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
-                                    .creating(defaultPrefixProvider)
-                                    .build()
                     )
                     .build()
                     .apply({ }, null)
@@ -515,16 +483,10 @@ class CommandHandlerJavacordTest extends Specification {
                                 'discordApiCollections',
                                 'commandNotAllowedEvent',
                                 'commandNotFoundEvent',
-                                'defaultPrefixProvider',
+                                'commandContextTransformers',
                                 'commandByAlias',
                                 'commandPattern',
-                                'customPrefixProvider',
-                                'prefixProvider',
-                                'injectedAliasAndParameterStringTransformer',
-                                'aliasAndParameterStringTransformer',
                                 'availableRestrictions',
-                                'readLock',
-                                'writeLock',
                                 'executorService'
                         ])
                     }

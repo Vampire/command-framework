@@ -16,7 +16,7 @@
 
 package net.kautler.command.parameter.parser;
 
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.Parameters;
 import net.kautler.command.parameter.ParametersImpl;
 
@@ -40,8 +40,8 @@ public class UntypedParameterParser extends BaseParameterParser {
     }
 
     @Override
-    public <V> Parameters<V> parse(Command<?> command, Object message, String prefix, String usedAlias, String parameterString) {
-        return parse(command, prefix, usedAlias, parameterString, (parameterMatcher, groupNamesByTokenName) -> {
+    public <V> Parameters<V> parse(CommandContext<?> commandContext) {
+        return parse(commandContext, (parameterMatcher, groupNamesByTokenName) -> {
             Collection<String> firstTokenValues = new ArrayList<>();
             Map<String, Object> parameters = new HashMap<>();
             groupNamesByTokenName.forEach((tokenName, groupNames) -> groupNames

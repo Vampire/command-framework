@@ -17,13 +17,13 @@
 package net.kautler.command.handler;
 
 import net.kautler.command.Internal;
-import net.kautler.command.api.AliasAndParameterStringTransformer;
 import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
+import net.kautler.command.api.CommandContextTransformer;
 import net.kautler.command.api.CommandHandler;
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord;
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord;
 import net.kautler.command.api.parameter.ParameterConverter;
-import net.kautler.command.api.prefix.PrefixProvider;
 import net.kautler.command.api.restriction.Restriction;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
@@ -35,6 +35,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.util.TypeLiteral;
@@ -100,6 +101,17 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     }
 
     /**
+     * Sets the command context transformers for this command handler.
+     *
+     * @param commandContextTransformers the command context transformers for this command handler
+     */
+    @Inject
+    private void setCommandContextTransformers(
+            @Any Instance<CommandContextTransformer<? super Message>> commandContextTransformers) {
+        doSetCommandContextTransformers(commandContextTransformers);
+    }
+
+    /**
      * Sets the available restrictions for this command handler.
      *
      * @param availableRestrictions the available restrictions for this command handler
@@ -117,27 +129,6 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     @Inject
     private void setCommands(Instance<Command<? super Message>> commands) {
         doSetCommands(commands);
-    }
-
-    /**
-     * Sets the custom prefix provider for this command handler.
-     *
-     * @param customPrefixProvider the custom prefix provider for this command handler
-     */
-    @Inject
-    private void setCustomPrefixProvider(Instance<PrefixProvider<? super Message>> customPrefixProvider) {
-        doSetCustomPrefixProvider(customPrefixProvider);
-    }
-
-    /**
-     * Sets the alias and parameter string transformer for this command handler.
-     *
-     * @param aliasAndParameterStringTransformer the alias and parameter string transformer for this command handler
-     */
-    @Inject
-    private void setAliasAndParameterStringTransformer(
-            Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer) {
-        doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer);
     }
 
     /**
@@ -180,22 +171,22 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      */
     private void handleMessage(MessageCreateEvent messageCreateEvent) {
         Message message = messageCreateEvent.getMessage();
-        doHandleMessage(message, message.getContent());
+        doHandleMessage(new CommandContext.Builder<>(message, message.getContent()).build());
     }
 
     @Override
-    protected void fireCommandNotAllowedEvent(Message message, String prefix, String usedAlias) {
-        commandNotAllowedEvent.fireAsync(new CommandNotAllowedEventJavacord(message, prefix, usedAlias));
+    protected void fireCommandNotAllowedEvent(CommandContext<Message> commandContext) {
+        commandNotAllowedEvent.fireAsync(new CommandNotAllowedEventJavacord(commandContext));
     }
 
     @Override
-    protected void fireCommandNotFoundEvent(Message message, String prefix, String usedAlias) {
-        commandNotFoundEvent.fireAsync(new CommandNotFoundEventJavacord(message, prefix, usedAlias));
+    protected void fireCommandNotFoundEvent(CommandContext<Message> commandContext) {
+        commandNotFoundEvent.fireAsync(new CommandNotFoundEventJavacord(commandContext));
     }
 
     @Override
-    protected void executeAsync(Message message, Runnable commandExecutor) {
-        runAsync(commandExecutor, message.getApi().getThreadPool().getExecutorService())
+    protected void executeAsync(CommandContext<Message> commandContext, Runnable commandExecutor) {
+        runAsync(commandExecutor, commandContext.getMessage().getApi().getThreadPool().getExecutorService())
                 .whenComplete((nothing, throwable) -> {
                     if (throwable != null) {
                         logger.error("Exception while executing command asynchronously", throwable);

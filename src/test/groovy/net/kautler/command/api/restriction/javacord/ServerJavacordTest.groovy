@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.server.Server
@@ -28,10 +29,14 @@ import java.util.regex.Pattern
 
 @Subject(ServerJavacord)
 class ServerJavacordTest extends Specification {
-    Message message = Stub()
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message)
+    }
 
-    Message serverMessage = Stub {
-        it.server >> Optional.of(Stub(Server))
+    CommandContext<Message> serverCommandContext = Stub {
+        it.message >> Stub(Message) {
+            it.server >> Optional.of(Stub(Server))
+        }
     }
 
     def 'server with ID "#expectedServerId" should #be allowed in server with ID "#actualServerId"'() {
@@ -39,11 +44,11 @@ class ServerJavacordTest extends Specification {
             ServerJavacord serverJavacord = Spy(constructorArgs: [expectedServerId])
 
         and:
-            serverMessage.server.get().id >> actualServerId
+            serverCommandContext.message.server.get().id >> actualServerId
 
         expect:
-            !serverJavacord.allowCommand(message)
-            serverJavacord.allowCommand(serverMessage) == allowed
+            !serverJavacord.allowCommand(commandContext)
+            serverJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedServerId, actualServerId] <<
@@ -57,11 +62,11 @@ class ServerJavacordTest extends Specification {
             ServerJavacord serverJavacord = Spy(constructorArgs: [expectedServerName])
 
         and:
-            serverMessage.server.get().name >> actualServerName
+            serverCommandContext.message.server.get().name >> actualServerName
 
         expect:
-            !serverJavacord.allowCommand(message)
-            serverJavacord.allowCommand(serverMessage) == allowed
+            !serverJavacord.allowCommand(commandContext)
+            serverJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedServerName, actualServerName] <<
@@ -75,11 +80,11 @@ class ServerJavacordTest extends Specification {
             ServerJavacord serverJavacord = Spy(constructorArgs: [expectedServerName, false])
 
         and:
-            serverMessage.server.get().name >> actualServerName
+            serverCommandContext.message.server.get().name >> actualServerName
 
         expect:
-            !serverJavacord.allowCommand(message)
-            serverJavacord.allowCommand(serverMessage) == allowed
+            !serverJavacord.allowCommand(commandContext)
+            serverJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedServerName, actualServerName] <<
@@ -93,11 +98,11 @@ class ServerJavacordTest extends Specification {
             ServerJavacord serverJavacord = Spy(constructorArgs: [expectedServerPattern])
 
         and:
-            serverMessage.server.get().name >> actualServerName
+            serverCommandContext.message.server.get().name >> actualServerName
 
         expect:
-            !serverJavacord.allowCommand(message)
-            serverJavacord.allowCommand(serverMessage) == allowed
+            !serverJavacord.allowCommand(commandContext)
+            serverJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedServerPattern, actualServerName] << [

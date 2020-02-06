@@ -17,7 +17,7 @@
 package net.kautler.command.parameter.converter;
 
 import net.kautler.command.Internal;
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
 import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.parameter.ParameterType;
@@ -42,8 +42,7 @@ class DecimalConverter implements ParameterConverter<Object, BigDecimal> {
     }
 
     @Override
-    public BigDecimal convert(String parameter, String type, Command<?> command, Object message,
-                              String prefix, String usedAlias, String parameterString) {
+    public BigDecimal convert(String parameter, String type, CommandContext<?> commandContext) {
         try {
             return new BigDecimal(parameter);
         } catch (NumberFormatException nfe) {

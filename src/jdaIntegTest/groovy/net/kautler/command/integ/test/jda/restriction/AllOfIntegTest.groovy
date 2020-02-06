@@ -19,6 +19,7 @@ package net.kautler.command.integ.test.jda.restriction
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.kautler.command.api.CommandContext
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
 import net.kautler.command.api.restriction.AllOf
@@ -124,7 +125,7 @@ class AllOfIntegTest extends Specification {
         static allow
 
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             allow
         }
     }
@@ -135,7 +136,7 @@ class AllOfIntegTest extends Specification {
         static allow
 
         @Override
-        boolean allowCommand(Object message) {
+        boolean allowCommand(CommandContext<?> commandContext) {
             allow
         }
     }

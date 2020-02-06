@@ -16,7 +16,7 @@
 
 package net.kautler.command.api.parameter;
 
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.Documented;
@@ -80,8 +80,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 public interface ParameterParser {
     /**
-     * Returns the parsed parameters for the usage of the given command that was triggered using the given prefix, alias
-     * and parameter string with an optional implicit downcast for the values. The resulting parameters instance will
+     * Returns the parsed parameters for the usage of the command that was triggered by the given command context
+     * with an optional implicit downcast for the values. The resulting parameters instance will
      * have the placeholder names and literal parameters as keys and the actual supplied arguments as values.
      * In case of the typed parser the values are the converted ones. If multiple placeholders with the same name have
      * a value like with the pattern {@code <foo> <foo>}, the values are returned as {@code List<?>} for that parameter.
@@ -96,7 +96,7 @@ public interface ParameterParser {
      * }</pre>
      * or using implicit type inference like with
      * <pre>{@code
-     * Parameters<String> parameters = parameterParser.parse(...);
+     * Parameters<String> parameters = parameterParser.parse(commandContext);
      * }</pre>
      *
      * <p>If multiple unrelated classes are needed, this method should not be called multiple times to produce
@@ -119,12 +119,8 @@ public interface ParameterParser {
      * for the placeholder, you can use {@link Parameters#fixup(String, String)} to correct the parameters instance
      * for the two given parameters.
      *
-     * @param command         the command of which the usage should be used to parse the parameters
-     * @param message         the message from which the command was determined
-     * @param prefix          the command prefix that was used to invoke the command
-     * @param usedAlias       the alias that was used to invoke the command
-     * @param parameterString the parameter string to parse
-     * @param <V>             the class to which the values are implicitly downcasted
+     * @param commandContext the command context, usually fully populated but not necessarily
+     * @param <V>            the class to which the values are implicitly downcasted
      * @return the parsed and converted parameters
      * @throws ParameterParseException         if the parameter string does not adhere to the usage pattern of the given
      *                                         command, which includes that there are arguments given when none were
@@ -137,7 +133,7 @@ public interface ParameterParser {
      *                                         the message should be suitable to be directly forwarded to end users
      * @see Parameters#fixup(String, String)
      */
-    <V> Parameters<V> parse(Command<?> command, Object message, String prefix, String usedAlias, String parameterString);
+    <V> Parameters<V> parse(CommandContext<?> commandContext);
 
     /**
      * A CDI qualifier that is used for selecting the typed parameter parser instead of the non-typed one

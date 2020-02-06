@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction
 
+import net.kautler.command.api.CommandContext
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
@@ -36,6 +37,6 @@ class EveryoneTest extends Specification {
 
     def 'everyone should be allowed'() {
         expect:
-            everyone.allowCommand(_)
+            everyone.allowCommand(Stub(CommandContext))
     }
 }

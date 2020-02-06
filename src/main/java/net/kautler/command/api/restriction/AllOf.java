@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2020 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package net.kautler.command.api.restriction;
+
+import net.kautler.command.api.CommandContext;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.util.Collection;
@@ -58,7 +60,7 @@ public abstract class AllOf<M> implements Restriction<M> {
     }
 
     @Override
-    public boolean allowCommand(M message) {
-        return restrictions.stream().allMatch(restriction -> restriction.allowCommand(message));
+    public boolean allowCommand(CommandContext<? extends M> commandContext) {
+        return restrictions.stream().allMatch(restriction -> restriction.allowCommand(commandContext));
     }
 }

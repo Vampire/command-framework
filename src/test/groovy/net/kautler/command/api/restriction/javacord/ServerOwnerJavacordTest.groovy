@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.server.Server
 import org.javacord.api.entity.user.User
@@ -37,20 +38,26 @@ class ServerOwnerJavacordTest extends Specification {
     @Subject
     ServerOwnerJavacord serverOwnerJavacord
 
-    Message message = Stub()
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message)
+    }
 
-    Message serverMessage = Stub(Message) {
-        it.userAuthor >> Optional.of(Stub(User))
-        it.server >> Optional.of(Stub(Server))
+    CommandContext<Message> serverCommandContext = Stub {
+        it.message >> Stub(Message) {
+            it.userAuthor >> Optional.of(Stub(User))
+            it.server >> Optional.of(Stub(Server))
+        }
     }
 
     def 'server owner "#serverOwner" should #be allowed'() {
         given:
-            serverMessage.server.get().isOwner(serverMessage.userAuthor.get()) >> serverOwner
+            serverCommandContext.message.with {
+                it.server.get().isOwner(it.userAuthor.get()) >> serverOwner
+            }
 
         expect:
-            !serverOwnerJavacord.allowCommand(message)
-            serverOwnerJavacord.allowCommand(serverMessage) == allowed
+            !serverOwnerJavacord.allowCommand(commandContext)
+            serverOwnerJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             serverOwner || allowed | be

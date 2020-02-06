@@ -18,6 +18,7 @@ package net.kautler.command.api.restriction.jda
 
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
+import net.kautler.command.api.CommandContext
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
@@ -28,8 +29,10 @@ import java.util.regex.Pattern
 
 @Subject(ChannelJda)
 class ChannelJdaTest extends Specification {
-    Message message = Stub {
-        it.channel >> Stub(MessageChannel)
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.channel >> Stub(MessageChannel)
+        }
     }
 
     def 'channel with ID "#expectedChannelId" should #be allowed in channel with ID "#actualChannelId"'() {
@@ -37,10 +40,10 @@ class ChannelJdaTest extends Specification {
             ChannelJda channelJda = Spy(constructorArgs: [expectedChannelId])
 
         and:
-            message.channel.idLong >> actualChannelId
+            commandContext.message.channel.idLong >> actualChannelId
 
         expect:
-            channelJda.allowCommand(message) == allowed
+            channelJda.allowCommand(commandContext) == allowed
 
         where:
             [expectedChannelId, actualChannelId] <<
@@ -54,10 +57,10 @@ class ChannelJdaTest extends Specification {
             ChannelJda channelJda = Spy(constructorArgs: [expectedChannelName])
 
         and:
-            message.channel.name >> actualChannelName
+            commandContext.message.channel.name >> actualChannelName
 
         expect:
-            channelJda.allowCommand(message) == allowed
+            channelJda.allowCommand(commandContext) == allowed
 
         where:
             [expectedChannelName, actualChannelName] <<
@@ -71,10 +74,10 @@ class ChannelJdaTest extends Specification {
             ChannelJda channelJda = Spy(constructorArgs: [expectedChannelName, false])
 
         and:
-            message.channel.name >> actualChannelName
+            commandContext.message.channel.name >> actualChannelName
 
         expect:
-            channelJda.allowCommand(message) == allowed
+            channelJda.allowCommand(commandContext) == allowed
 
         where:
             [expectedChannelName, actualChannelName] <<
@@ -88,10 +91,10 @@ class ChannelJdaTest extends Specification {
             ChannelJda channelJda = Spy(constructorArgs: [expectedChannelPattern])
 
         and:
-            message.channel.name >> actualChannelName
+            commandContext.message.channel.name >> actualChannelName
 
         expect:
-            channelJda.allowCommand(message) == allowed
+            channelJda.allowCommand(commandContext) == allowed
 
         where:
             [expectedChannelPattern, actualChannelName] << [

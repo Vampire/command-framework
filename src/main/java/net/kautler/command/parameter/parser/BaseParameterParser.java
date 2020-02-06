@@ -17,6 +17,7 @@
 package net.kautler.command.parameter.parser;
 
 import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.ParameterParseException;
 import net.kautler.command.api.parameter.ParameterParser;
 import net.kautler.command.api.parameter.Parameters;
@@ -40,6 +41,7 @@ import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 
@@ -64,28 +66,25 @@ public abstract class BaseParameterParser implements ParameterParser {
     private final Map<String, UsageContext> usageTreeCache = new ConcurrentHashMap<>();
 
     /**
-     * Returns the parsed parameters for the usage of the given command that was triggered using the given prefix, alias
-     * and parameter string with an optional implicit downcast for the values. This method does the common logic, that
-     * is it parses the usage string into an AST, transforms the usage AST into a regular expression pattern and and
-     * checks whether the parameter string matches the pattern. It then uses the given parse logic to which it supplies
+     * Returns the parsed parameters for the usage of the command that was triggered by the given command context
+     * with an optional implicit downcast for the values. This method does the common logic, that is it parses
+     * the usage string into an AST, transforms the usage AST into a regular expression pattern and checks
+     * whether the parameter string matches the pattern. It then uses the given parse logic to which it supplies
      * the regular expression matcher and the mapping of token names to group names in the regular expression. The
      * parse logic then is responsible for transforming these arguments to a {@code Parameters<V>} instance that will
      * then be returned.
      *
-     * @param command         the command of which the usage should be used to parse the parameters
-     * @param prefix          the command prefix that was used to invoke the command
-     * @param usedAlias       the alias that was used to invoke the command
-     * @param parameterString the parameter string to parse
-     * @param parseLogic      the parser specific logic that actually extracts and maybe converts the values
-     * @param <V>             the class to which the values are implicitly downcasted
+     * @param commandContext the command context, usually fully populated but not necessarily
+     * @param parseLogic     the parser specific logic that actually extracts and maybe converts the values
+     * @param <V>            the class to which the values are implicitly downcasted
      * @return the parsed and maybe converted parameters
      * @throws ParameterParseException if the parameter string does not adhere to the usage pattern of the given
      *                                 command, which includes that there are arguments given when none were
      *                                 expected; the message is suitable to be directly forwarded to end users
      */
-    protected <V> Parameters<V> parse(Command<?> command, String prefix, String usedAlias, String parameterString,
+    protected <V> Parameters<V> parse(CommandContext<?> commandContext,
                                       BiFunction<Matcher, Map<String, List<String>>, Parameters<V>> parseLogic) {
-        Optional<String> optionalUsage = command.getUsage();
+        Optional<String> optionalUsage = commandContext.getCommand().flatMap(Command::getUsage);
         if (optionalUsage.isPresent()) {
             String usage = optionalUsage.get();
 
@@ -96,18 +95,30 @@ public abstract class BaseParameterParser implements ParameterParser {
             });
             Pattern usagePattern = usagePatternBuilder.getPattern(usageTree);
 
-            Matcher parameterMatcher = usagePattern.matcher(parameterString.trim());
+            Matcher parameterMatcher = usagePattern.matcher(commandContext
+                    .getParameterString()
+                    .map(String::trim)
+                    .orElse(""));
             if (parameterMatcher.matches()) {
                 return parseLogic.apply(parameterMatcher, usagePatternBuilder.getGroupNamesByTokenName(usageTree));
             } else {
                 throw new ParameterParseException(format(
                         "Wrong arguments for command `%s%s`\nUsage: `%1$s%2$s %s`",
-                        prefix, usedAlias, usage));
+                        commandContext.getPrefix().orElse(""),
+                        commandContext.getAlias().orElse(""),
+                        usage));
             }
-        } else if (parameterString.chars().allMatch(Character::isWhitespace)) {
+        } else if (commandContext
+                .getParameterString()
+                .map(String::chars)
+                .map(parameterStringChars -> parameterStringChars.allMatch(Character::isWhitespace))
+                .orElse(TRUE)) {
             return new ParametersImpl<>(emptyMap());
         } else {
-            throw new ParameterParseException(format("Command `%s%s` does not expect arguments", prefix, usedAlias));
+            throw new ParameterParseException(format(
+                    "Command `%s%s` does not expect arguments",
+                    commandContext.getPrefix().orElse(""),
+                    commandContext.getAlias().orElse("")));
         }
     }
 

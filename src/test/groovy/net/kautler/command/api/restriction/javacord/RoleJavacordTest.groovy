@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.permission.Role
@@ -40,8 +41,10 @@ class RoleJavacordTest extends Specification {
 
     User author = Stub()
 
-    Message message = Stub {
-        it.userAuthor >> Optional.of(author)
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.userAuthor >> Optional.of(author)
+        }
     }
 
     Role higherRole = Stub {
@@ -64,9 +67,11 @@ class RoleJavacordTest extends Specification {
         getRolesByNameIgnoreCase { it.equalsIgnoreCase(lowerRoleName) } >> [lowerRole]
     }
 
-    Message serverMessage = Stub(Message) {
-        it.userAuthor >> Optional.of(author)
-        it.server >> Optional.of(server)
+    CommandContext<Message> serverCommandContext = Stub {
+        it.message >> Stub(Message) {
+            it.userAuthor >> Optional.of(author)
+            it.server >> Optional.of(server)
+        }
     }
 
     def setup() {
@@ -83,8 +88,8 @@ class RoleJavacordTest extends Specification {
             server.getRoles(author) >> actualRoles
 
         expect:
-            !roleJavacord.allowCommand(message)
-            roleJavacord.allowCommand(serverMessage) == allowed
+            !roleJavacord.allowCommand(commandContext)
+            roleJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedRoleId, actualRoles] << [
@@ -105,8 +110,8 @@ class RoleJavacordTest extends Specification {
             server.getHighestRole(author) >> Optional.ofNullable([higherRole, lowerRole].find { it in actualRoles })
 
         expect:
-            !roleJavacord.allowCommand(message)
-            roleJavacord.allowCommand(serverMessage) == allowed
+            !roleJavacord.allowCommand(commandContext)
+            roleJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedRoleId, actualRoles] << [
@@ -127,8 +132,8 @@ class RoleJavacordTest extends Specification {
             server.getRoles(author) >> actualRoles
 
         expect:
-            !roleJavacord.allowCommand(message)
-            roleJavacord.allowCommand(serverMessage) == allowed
+            !roleJavacord.allowCommand(commandContext)
+            roleJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedRoleName, actualRoles] << [
@@ -150,8 +155,8 @@ class RoleJavacordTest extends Specification {
             server.getHighestRole(author) >> Optional.ofNullable([higherRole, lowerRole].find { it in actualRoles })
 
         expect:
-            !roleJavacord.allowCommand(message)
-            roleJavacord.allowCommand(serverMessage) == allowed
+            !roleJavacord.allowCommand(commandContext)
+            roleJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedRoleName, actualRoles] << [
@@ -173,8 +178,8 @@ class RoleJavacordTest extends Specification {
             server.getRoles(author) >> actualRoles
 
         expect:
-            !roleJavacord.allowCommand(message)
-            roleJavacord.allowCommand(serverMessage) == allowed
+            !roleJavacord.allowCommand(commandContext)
+            roleJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedRoleName, actualRoles] << [
@@ -196,8 +201,8 @@ class RoleJavacordTest extends Specification {
             server.getHighestRole(author) >> Optional.ofNullable([higherRole, lowerRole].find { it in actualRoles })
 
         expect:
-            !roleJavacord.allowCommand(message)
-            roleJavacord.allowCommand(serverMessage) == allowed
+            !roleJavacord.allowCommand(commandContext)
+            roleJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedRoleName, actualRoles] << [
@@ -219,8 +224,8 @@ class RoleJavacordTest extends Specification {
             server.getRoles(author) >> actualRoles
 
         expect:
-            !roleJavacord.allowCommand(message)
-            roleJavacord.allowCommand(serverMessage) == allowed
+            !roleJavacord.allowCommand(commandContext)
+            roleJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedRolePattern, actualRoles] << [
@@ -243,8 +248,8 @@ class RoleJavacordTest extends Specification {
             server.getHighestRole(author) >> Optional.ofNullable([higherRole, lowerRole].find { it in actualRoles })
 
         expect:
-            !roleJavacord.allowCommand(message)
-            roleJavacord.allowCommand(serverMessage) == allowed
+            !roleJavacord.allowCommand(commandContext)
+            roleJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
             [expectedRolePattern, actualRoles] << [

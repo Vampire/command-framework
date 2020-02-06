@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.message.Message
 import org.jboss.weld.junit4.WeldInitiator
@@ -36,20 +37,22 @@ class NsfwChannelJavacordTest extends Specification {
     @Subject
     NsfwChannelJavacord nsfwChannelJavacord
 
-    Message message = Stub {
-        it.channel >> Stub(ServerTextChannel) {
-            asServerChannel() >> Optional.of(it)
-            asTextChannel() >> Optional.of(it)
-            asServerTextChannel() >> Optional.of(it)
+    CommandContext<Message> commandContext = Stub {
+        it.message >> Stub(Message) {
+            it.channel >> Stub(ServerTextChannel) {
+                asServerChannel() >> Optional.of(it)
+                asTextChannel() >> Optional.of(it)
+                asServerTextChannel() >> Optional.of(it)
+            }
         }
     }
 
     def 'nsfw channel "#nsfw" should #be allowed'() {
         given:
-            message.channel.asServerTextChannel().get().nsfw >> nsfw
+            commandContext.message.channel.asServerTextChannel().get().nsfw >> nsfw
 
         expect:
-            nsfwChannelJavacord.allowCommand(message) == allowed
+            nsfwChannelJavacord.allowCommand(commandContext) == allowed
 
         where:
             nsfw  || allowed | be
@@ -59,12 +62,12 @@ class NsfwChannelJavacordTest extends Specification {
 
     def 'non-server channel should not be allowed'() {
         given:
-            message.channel.with {
+            commandContext.message.channel.with {
                 it.asServerChannel() >> Optional.empty()
                 it.asServerTextChannel() >> Optional.empty()
             }
 
         expect:
-            !nsfwChannelJavacord.allowCommand(message)
+            !nsfwChannelJavacord.allowCommand(commandContext)
     }
 }

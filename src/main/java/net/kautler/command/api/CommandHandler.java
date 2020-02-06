@@ -17,10 +17,11 @@
 package net.kautler.command.api;
 
 import net.kautler.command.Internal;
+import net.kautler.command.api.CommandContextTransformer.InPhase;
+import net.kautler.command.api.CommandContextTransformer.Phase;
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord;
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord;
 import net.kautler.command.api.parameter.ParameterConverter;
-import net.kautler.command.api.prefix.PrefixProvider;
 import net.kautler.command.api.restriction.Restriction;
 import net.kautler.command.restriction.RestrictionLookup;
 import net.kautler.command.util.lazy.LazyReferenceBySupplier;
@@ -41,6 +42,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,7 +55,12 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static net.kautler.command.api.Command.PARAMETER_SEPARATOR_CHARACTER;
-import static net.kautler.command.api.Command.getParameters;
+import static net.kautler.command.api.CommandContextTransformer.Phase.AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION;
+import static net.kautler.command.api.CommandContextTransformer.Phase.AFTER_COMMAND_COMPUTATION;
+import static net.kautler.command.api.CommandContextTransformer.Phase.AFTER_PREFIX_COMPUTATION;
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION;
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION;
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION;
 
 /**
  * A base class for command handlers that does the common logic.
@@ -79,11 +86,9 @@ public abstract class CommandHandler<M> {
     private Logger logger;
 
     /**
-     * The default prefix provider that is used if no custom prefix provider was provided.
+     * The command context transformers that were provided.
      */
-    @Inject
-    @Internal
-    private Instance<PrefixProvider<? super M>> defaultPrefixProvider;
+    private Instance<CommandContextTransformer<? super M>> commandContextTransformers;
 
     /**
      * The actual command by possible aliases for lookup.
@@ -101,38 +106,12 @@ public abstract class CommandHandler<M> {
             new LazyReferenceBySupplier<>(() -> Pattern.compile("[^\\w\\W]"));
 
     /**
-     * The custom prefix provider that was provided.
-     */
-    private Instance<PrefixProvider<? super M>> customPrefixProvider;
-
-    /**
-     * The actual prefix provider that is used.
-     */
-    private final LazyReferenceBySupplier<PrefixProvider<? super M>> prefixProvider =
-            new LazyReferenceBySupplier<>(() ->
-                    ((customPrefixProvider == null) || customPrefixProvider.isUnsatisfied()
-                            ? defaultPrefixProvider
-                            : customPrefixProvider)
-                            .get()
-            );
-
-    /**
-     * The alias and parameter string transformer that was provided.
-     */
-    private Instance<AliasAndParameterStringTransformer<? super M>> injectedAliasAndParameterStringTransformer;
-
-    /**
-     * The alias and parameter string transformer that is used.
-     */
-    private LazyReferenceBySupplier<AliasAndParameterStringTransformer<? super M>> aliasAndParameterStringTransformer;
-
-    /**
      * The available restrictions for this command handler.
      */
     private LazyReferenceBySupplier<RestrictionLookup<M>> availableRestrictions =
             new LazyReferenceBySupplier<>(() -> {
                 logger.info("Got no restrictions injected");
-                return new RestrictionLookup<M>();
+                return new RestrictionLookup<>();
             });
 
     /**
@@ -148,6 +127,27 @@ public abstract class CommandHandler<M> {
      */
     private void ensureInitializationAtStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
         // just ensure initialization at startup
+    }
+
+    /**
+     * Sets the command context transformers for this command handler.
+     *
+     * <p>A subclass will typically have a method where it gets this injected, specific to the handled message type,
+     * and forwards its parameter as argument to this method like
+     *
+     * <pre>{@code
+     * }&#64;{@code Inject
+     * private void setCommandContextTransformers(
+     *         }&#64;{@code Any Instance<CommandContextTransformer<? super Message>> commandContextTransformers) {
+     *     doSetCommandContextTransformers(commandContextTransformers);
+     * }
+     * }</pre>
+     *
+     * @param commandContextTransformers the command context transformers for this command handler
+     */
+    protected void doSetCommandContextTransformers(
+            Instance<CommandContextTransformer<? super M>> commandContextTransformers) {
+        this.commandContextTransformers = commandContextTransformers;
     }
 
     /**
@@ -234,62 +234,6 @@ public abstract class CommandHandler<M> {
     }
 
     /**
-     * Sets the custom prefix provider for this command handler.
-     *
-     * <p>A subclass will typically have a method where it gets this injected, specific to the handled message type,
-     * and forwards its parameter as argument to this method like
-     *
-     * <pre>{@code
-     * }&#64;{@code Inject
-     * private void setCustomPrefixProvider(Instance<PrefixProvider<? super Message>> customPrefixProvider) {
-     *     doSetCustomPrefixProvider(customPrefixProvider);
-     * }
-     * }</pre>
-     *
-     * @param customPrefixProvider the custom prefix provider for this command handler
-     */
-    protected void doSetCustomPrefixProvider(Instance<PrefixProvider<? super M>> customPrefixProvider) {
-        this.customPrefixProvider = customPrefixProvider;
-    }
-
-    /**
-     * Sets the custom alias and parameter string transformer for this command handler.
-     *
-     * <p>A subclass will typically have a method where it gets this injected, specific to the handled message type,
-     * and forwards its parameter as argument to this method like
-     *
-     * <pre>{@code
-     * }&#64;{@code Inject
-     * private void setAliasAndParameterStringTransformer(
-     *         Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer) {
-     *     doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer);
-     * }
-     * }</pre>
-     *
-     * <p><b>Important:</b> This method should be called directly in the injectable method as shown above, not in some
-     * {@link PostConstruct @PostConstruct} annotated method, as the {@code @PostConstruct} stage is used to decide
-     * whether an alias and parameter string transformer should be used, so it has to already be set at that point.
-     *
-     * @param aliasAndParameterStringTransformer the alias and parameter string transformer for this command handler
-     */
-    protected void doSetAliasAndParameterStringTransformer(
-            Instance<AliasAndParameterStringTransformer<? super M>> aliasAndParameterStringTransformer) {
-        this.injectedAliasAndParameterStringTransformer = aliasAndParameterStringTransformer;
-    }
-
-    /**
-     * Determines whether an alias and parameter string transformer is provided.
-     */
-    @PostConstruct
-    private void determineAliasAndParameterStringTransformer() {
-        if ((injectedAliasAndParameterStringTransformer != null)
-                && (!injectedAliasAndParameterStringTransformer.isUnsatisfied())) {
-            aliasAndParameterStringTransformer =
-                    new LazyReferenceBySupplier<>(() -> injectedAliasAndParameterStringTransformer.get());
-        }
-    }
-
-    /**
      * Shuts down the executor service used for asynchronous command execution if one was used actually.
      */
     @PreDestroy
@@ -300,128 +244,415 @@ public abstract class CommandHandler<M> {
     }
 
     /**
-     * Handles the given message with the given textual content. The textual content needs to be given separately as
-     * this generic method does not know now to get the content from the message.
+     * Handles the given command context.
+     * <ul>
+     *     <li>if the command is already set, fast forwards to command execution phase
+     *     <li>if not but the alias is already set, fast forwards to command computation phase
+     *     <li>if not but the prefix is already set, fast forwards to alias and parameter string computation phase
+     *     <li>if no fast forward was done, continues with prefix computation phase
+     * </ul>
      *
-     * <p>This method checks the message content for a command invocation, checks the configured restrictions for the
-     * command and if all passed, invokes the command synchronously or asynchronously as configured. If the command was
-     * denied by any restriction, a command not allowed CDI event is fired asynchronously. (See for example
-     * {@link CommandNotAllowedEventJavacord}) If the message started with the command prefix, but no matching command
-     * was found, a command not found CDI event is fired asynchronously. (See for example
-     * {@link CommandNotFoundEventJavacord})
+     * <p>These phases check the message content for a command invocation, check the configured restrictions for the
+     * command and if all passed, invoke the command synchronously or asynchronously as configured.
      *
-     * @param message        the message that potentially contains a command invocation
-     * @param messageContent the textual content of the given message
+     * <p>If the command was denied by any restriction, a command not allowed CDI event is fired asynchronously.
+     * (See for example {@link CommandNotAllowedEventJavacord})
+     *
+     * <p>If the message started with the command prefix, but no matching command was found,
+     * a command not found CDI event is fired asynchronously. (See for example {@link CommandNotFoundEventJavacord})
+     *
+     * <p>There are also multiple phases where {@link CommandContextTransformer}s are called that can influence the
+     * further command processing as well as skip phases or abort command processing with a command not found event
+     * being fired. The phases and their effect are described at {@link Phase}.
+     *
+     * @param commandContext the command context, usually populated with only message and message content,
+     *                       but not necessarily
+     * @see Phase
      */
-    protected void doHandleMessage(M message, String messageContent) {
-        String prefix = prefixProvider.get().getCommandPrefix(message);
-        int prefixLength = prefix.length();
-        boolean emptyPrefix = prefixLength == 0;
-        if (emptyPrefix) {
-            logger.warn("The command prefix is empty, this means that every message will be checked against a " +
-                    "regular expression and that for every non-matching message an event will be sent. It is better " +
-                    "for the performance if you set a command prefix instead of including it in the aliases directly. " +
-                    "If you do not care, just configure your logging framework to ignore this warning, as it also " +
-                    "costs additional performance and might hide other important log messages. ;-)");
-        }
-        if (messageContent.startsWith(prefix)) {
-            String messageContentWithoutPrefix = messageContent.substring(prefix.length()).trim();
-            AliasAndParameterString aliasAndParameterString =
-                    determineAliasAndParameterString(message, messageContentWithoutPrefix);
-
-            // no alias determined => command not found
-            if (aliasAndParameterString == null) {
-                logger.debug("No matching command found");
-                String[] parameters = getParameters(messageContentWithoutPrefix, 2);
-                fireCommandNotFoundEvent(message, prefix, parameters.length == 0 ? "" : parameters[0]);
-                return;
-            }
-
-            String usedAlias = aliasAndParameterString.getAlias();
-            Command<? super M> command = commandByAlias.get().get(usedAlias);
-            // alias did not match any command => command not found
-            if (command == null) {
-                logger.debug("No matching command found");
-                fireCommandNotFoundEvent(message, prefix, usedAlias);
-                return;
-            }
-
-            if (isCommandAllowed(message, command)) {
-                String parameterString = aliasAndParameterString.getParameterString();
-                Runnable commandExecutor = () -> command.execute(message, prefix, usedAlias, parameterString);
-                if (command.isAsynchronous()) {
-                    executeAsync(message, commandExecutor);
-                } else {
-                    commandExecutor.run();
-                }
-            } else {
-                logger.debug("Command {} was not allowed by restrictions", command);
-                fireCommandNotAllowedEvent(message, prefix, usedAlias);
-            }
+    protected void doHandleMessage(CommandContext<M> commandContext) {
+        logger.trace("Handle message for {}", commandContext);
+        if (!fastForward(commandContext, BEFORE_PREFIX_COMPUTATION)) {
+            computePrefix(commandContext);
         }
     }
 
     /**
-     * Determines the alias and parameter string from the given message and content without prefix.
+     * This method handles the prefix computation phase. It
+     * <ul>
+     *     <li>
+     *         invokes the {@code BEFORE_PREFIX_COMPUTATION} command context transformer if one is provided
+     *         <ul>
+     *             <li>if it set the command, fast forwards to command execution phase
+     *             <li>if not but it set the alias, fast forwards to command computation phase
+     *             <li>if not but it set the prefix, fast forwards to alias and parameter string computation phase
+     *         </ul>
+     *     <li>
+     *         if no fast forward was done, sets the prefix to the default {@code !}
+     *     <li>
+     *         invokes the {@code AFTER_PREFIX_COMPUTATION} command context transformer if one is provided
+     *         <ul>
+     *             <li>if it set the command, fast forwards to command execution phase
+     *             <li>if not but it set the alias, fast forwards to command computation phase
+     *         </ul>
+     *     <li>
+     *         if no fast forward was done, continues with alias and parameter string computation phase
+     * </ul>
      *
-     * @param message                     the message from which to determine the details
-     * @param messageContentWithoutPrefix the message content without prefix
-     * @return the alias and parameter string from the given message and content
+     * @param commandContext the command context, usually populated with only message and message content,
+     *                       but not necessarily
      */
-    private AliasAndParameterString determineAliasAndParameterString(M message, String messageContentWithoutPrefix) {
+    private void computePrefix(CommandContext<M> commandContext) {
+        CommandContext<M> localCommandContext = commandContext;
+
+        logger.trace("Entering prefix computation phase for {}", localCommandContext);
+
+        Optional<CommandContextTransformer<? super M>> commandContextTransformer =
+                getCommandContextTransformer(BEFORE_PREFIX_COMPUTATION);
+        if (commandContextTransformer.isPresent()) {
+            logger.trace("Calling before prefix computation transformer for {}", localCommandContext);
+
+            localCommandContext = commandContextTransformer.get()
+                    .transform(localCommandContext, BEFORE_PREFIX_COMPUTATION);
+
+            logger.trace("Before prefix computation transformer result is {}", localCommandContext);
+
+            if (fastForward(localCommandContext, BEFORE_PREFIX_COMPUTATION)) {
+                return;
+            }
+        }
+
+        localCommandContext = localCommandContext.withPrefix("!").build();
+        commandContextTransformer = getCommandContextTransformer(AFTER_PREFIX_COMPUTATION);
+        if (commandContextTransformer.isPresent()) {
+            logger.trace("Calling after prefix computation transformer for {}", localCommandContext);
+
+            localCommandContext = commandContextTransformer.get()
+                    .transform(localCommandContext, AFTER_PREFIX_COMPUTATION);
+
+            logger.trace("After prefix computation transformer result is {}", localCommandContext);
+        }
+
+        if (!fastForward(localCommandContext, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION)) {
+            computeAliasAndParameterString(localCommandContext);
+        }
+    }
+
+    /**
+     * This method handles the alias and parameter string computation phase. It
+     * <ul>
+     *     <li>
+     *         checks whether the prefix is set, and fires a command not found event if not
+     *     <li>
+     *         if the prefix is set, invokes the {@code BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION} command context
+     *         transformer if one is provided
+     *         <ul>
+     *             <li>if it set the command, fast forwards to command execution phase
+     *             <li>if not but it set the alias, fast forwards to command computation phase
+     *             <li>if not but it unset the prefix, fires a command not found event
+     *         </ul>
+     *     <li>
+     *         if no fast forward was done and no command not found event was fired,
+     *         test the message content for beginning with the prefix
+     *     <li>
+     *         if prefix matching did not succeed, message is ignored and processing is quit
+     *     <li>
+     *         if prefix matched at message start, command aliases are searched and if a registered command alias
+     *         was found, alias and parameter string are set in the command context
+     *     <li>
+     *         invokes the {@code AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION} command context transformer if one
+     *         is provided
+     *         <ul>
+     *             <li>if it set the command, fast forwards to command execution phase
+     *         </ul>
+     *     <li>
+     *         if no fast forward was done, continues with command computation phase
+     * </ul>
+     *
+     * @param commandContext the command context, usually populated with only message, message content and prefix,
+     *                       but not necessarily
+     */
+    private void computeAliasAndParameterString(CommandContext<M> commandContext) {
+        CommandContext<M> localCommandContext = commandContext;
+
+        if (!localCommandContext.getPrefix().isPresent()) {
+            logger.trace("No matching command found (prefix missing)");
+            fireCommandNotFoundEvent(localCommandContext);
+            return;
+        }
+
+        logger.trace("Entering alias and parameter string computation phase for {}", localCommandContext);
+
+        Optional<CommandContextTransformer<? super M>> commandContextTransformer =
+                getCommandContextTransformer(BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION);
+        if (commandContextTransformer.isPresent()) {
+            logger.trace("Calling before alias and parameter string computation transformer for {}", localCommandContext);
+
+            localCommandContext = commandContextTransformer.get()
+                    .transform(localCommandContext, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION);
+
+            logger.trace("Before alias and parameter string computation transformer result is {}", localCommandContext);
+
+            if (fastForward(localCommandContext, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION)) {
+                return;
+            }
+
+            if (!localCommandContext.getPrefix().isPresent()) {
+                logger.trace("No matching command found (prefix missing)");
+                fireCommandNotFoundEvent(localCommandContext);
+                return;
+            }
+        }
+
+        String prefix = localCommandContext.getPrefix().orElseThrow(AssertionError::new);
+        warnAboutEmptyPrefix(prefix);
+
+        String messageContent = localCommandContext.getMessageContent();
+        if (!messageContent.startsWith(prefix)) {
+            logger.trace("Message content does not start with prefix, ignoring message");
+            return;
+        }
+        logger.trace("Message content starts with prefix");
+
+        String messageContentWithoutPrefix = messageContent.substring(prefix.length()).trim();
         Matcher commandMatcher = commandPattern.get().matcher(messageContentWithoutPrefix);
 
-        AliasAndParameterString aliasAndParameterString = null;
-
-        // get the alias and parameter string from the defined aliases
+        logger.trace("Searching for alias and parameter string with command matcher");
         if (commandMatcher.find()) {
-            String usedAlias = commandMatcher.group("alias");
-            String parameterString = commandMatcher.group("parameterString");
-            aliasAndParameterString = new AliasAndParameterString(usedAlias, parameterString);
+            logger.trace("Command matcher found alias and parameter string");
+            localCommandContext = localCommandContext
+                    .withAlias(commandMatcher.group("alias"))
+                    .withParameterString(commandMatcher.group("parameterString"))
+                    .build();
         }
 
-        // use the alias and parameter string transformer if provided
-        if (aliasAndParameterStringTransformer == null) {
-            return aliasAndParameterString;
+        commandContextTransformer = getCommandContextTransformer(AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION);
+        if (commandContextTransformer.isPresent()) {
+            logger.debug("Calling after alias and parameter string computation transformer for {}", localCommandContext);
+            localCommandContext = commandContextTransformer.get()
+                    .transform(localCommandContext, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION);
+            logger.debug("After alias and parameter string computation transformer result is {}", localCommandContext);
         }
-        return aliasAndParameterStringTransformer
-                .get()
-                .transformAliasAndParameterString(message, aliasAndParameterString);
+
+        if (!fastForward(localCommandContext, BEFORE_COMMAND_COMPUTATION)) {
+            computeCommand(localCommandContext);
+        }
     }
 
     /**
-     * Returns whether the given command that is caused by the given message should be allowed according to the
+     * Logs a warning about implications of an empty prefix if the given prefix is empty.
+     *
+     * @param prefix the prefix to check and eventually warn about
+     */
+    private void warnAboutEmptyPrefix(String prefix) {
+        if (prefix.length() == 0) {
+            logger.warn("The command prefix is empty, this means that every message will be checked against a " +
+                    "regular expression and that for every non-matching message an event will be sent. It is better " +
+                    "for the performance if you set a command prefix instead of including it in the aliases " +
+                    "directly. If you do not care, just configure your logging framework to ignore this warning, " +
+                    "as it also costs additional performance and might hide other important log messages. ;-)");
+        }
+    }
+
+    /**
+     * This method handles the command computation phase. It
+     * <ul>
+     *     <li>
+     *         checks whether the alias is set, and fires a command not found event if not
+     *     <li>
+     *         if the alias is set, invokes the {@code BEFORE_COMMAND_COMPUTATION} command context transformer if one
+     *         is provided
+     *         <ul>
+     *             <li>if it set the command, fast forwards to command execution phase
+     *             <li>if not but it unset the alias, fires a command not found event
+     *         </ul>
+     *     <li>
+     *         if no fast forward was done and no command not found event was fired,
+     *         looks up the command for the alias and sets it in the command context
+     *     <li>
+     *         invokes the {@code AFTER_COMMAND_COMPUTATION} command context transformer if one is provided
+     *     <li>
+     *         continues with command execution phase
+     * </ul>
+     *
+     * @param commandContext the command context, usually populated with only message, message content, prefix,
+     *                       alias, and parameter string, but not necessarily
+     */
+    private void computeCommand(CommandContext<M> commandContext) {
+        CommandContext<M> localCommandContext = commandContext;
+
+        if (!localCommandContext.getAlias().isPresent()) {
+            logger.debug("No matching command found (alias missing)");
+            fireCommandNotFoundEvent(localCommandContext);
+            return;
+        }
+
+        logger.debug("Entering command computation phase for {}", localCommandContext);
+
+        Optional<CommandContextTransformer<? super M>> commandContextTransformer =
+                getCommandContextTransformer(BEFORE_COMMAND_COMPUTATION);
+        if (commandContextTransformer.isPresent()) {
+            logger.debug("Calling before command computation transformer for {}", localCommandContext);
+
+            localCommandContext = commandContextTransformer.get()
+                    .transform(localCommandContext, BEFORE_COMMAND_COMPUTATION);
+
+            logger.debug("Before command computation transformer result is {}", localCommandContext);
+
+            if (fastForward(localCommandContext, BEFORE_COMMAND_COMPUTATION)) {
+                return;
+            }
+
+            if (!localCommandContext.getAlias().isPresent()) {
+                logger.debug("No matching command found (alias missing)");
+                fireCommandNotFoundEvent(localCommandContext);
+                return;
+            }
+        }
+
+        localCommandContext = localCommandContext
+                .withCommand(commandByAlias.get().get(localCommandContext.getAlias().orElseThrow(AssertionError::new)))
+                .build();
+        commandContextTransformer = getCommandContextTransformer(AFTER_COMMAND_COMPUTATION);
+        if (commandContextTransformer.isPresent()) {
+            logger.debug("Calling after command computation transformer for {}", localCommandContext);
+            localCommandContext = commandContextTransformer.get()
+                    .transform(localCommandContext, AFTER_COMMAND_COMPUTATION);
+            logger.debug("After command computation transformer result is {}", localCommandContext);
+        }
+
+        executeCommand(localCommandContext);
+    }
+
+    /**
+     * Returns the command context transformer for the given phase if one is provided.
+     *
+     * @param phase the phase the transformer should be registered for
+     */
+    private Optional<CommandContextTransformer<? super M>> getCommandContextTransformer(Phase phase) {
+        if (commandContextTransformers == null) {
+            return Optional.empty();
+        }
+
+        Instance<CommandContextTransformer<? super M>> transformersForPhase =
+                commandContextTransformers.select(new InPhase.Literal(phase));
+
+        if (transformersForPhase.isUnsatisfied()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(transformersForPhase.get());
+    }
+
+    /**
+     * Fast forwards to a future phase that is not the next one.
+     * <ul>
+     *     <li>
+     *         if the command is set, fast forwards to command execution phase
+     *     <li>
+     *         if not but the alias is set and next phase is prefix computation
+     *         or alias and parameter string computation, fast forwards to command computation phase
+     *     <li>
+     *         if not but the prefix is set and next phase is prefix computation,
+     *         fast forwards to alias and parameter string computation phase
+     * </ul>
+     *
+     * @param commandContext the command context, usually populated according to current phase
+     * @param phase          the current phase
+     * @return whether a fast forward was done or not
+     */
+    private boolean fastForward(CommandContext<M> commandContext, Phase phase) {
+        if (commandContext.getCommand().isPresent()) {
+            logger.debug("Fast forwarding {} to command execution", commandContext);
+            executeCommand(commandContext);
+            return true;
+        }
+
+        if (((phase == BEFORE_PREFIX_COMPUTATION) || (phase == BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION))
+                && commandContext.getAlias().isPresent()) {
+            logger.debug("Fast forwarding {} to command computation", commandContext);
+            computeCommand(commandContext);
+            return true;
+        }
+
+        if ((phase == BEFORE_PREFIX_COMPUTATION)
+                && commandContext.getPrefix().isPresent()) {
+            logger.debug("Fast forwarding {} to alias and parameter string computation", commandContext);
+            computeAliasAndParameterString(commandContext);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * This method handles the command execution phase. It
+     * <ul>
+     *     <li>
+     *         checks whether the command is set, and fires a command not found event if not
+     *     <li>
+     *         if the command is set, checks whether all restrictions allow the command and if not,
+     *         fires a command not allowed event
+     *     <li>
+     *         if the command was allowed, executes the command synchronously or asynchronously as configured
+     * </ul>
+     *
+     * @param commandContext the command context, usually fully populated but not necessarily
+     */
+    private void executeCommand(CommandContext<M> commandContext) {
+        Optional<Command<? super M>> optionalCommand = commandContext.getCommand();
+        if (!optionalCommand.isPresent()) {
+            logger.debug("No matching command found (command missing)");
+            fireCommandNotFoundEvent(commandContext);
+            return;
+        }
+
+        logger.debug("Entering command execution phase for {}", commandContext);
+
+        Command<? super M> command = optionalCommand.orElseThrow(AssertionError::new);
+        if (!isCommandAllowed(command, commandContext)) {
+            logger.debug("Command {} was not allowed by restrictions", command);
+            fireCommandNotAllowedEvent(commandContext);
+            return;
+        }
+
+        if (command.isAsynchronous()) {
+            executeAsync(commandContext, () -> command.execute(commandContext));
+        } else {
+            command.execute(commandContext);
+        }
+    }
+
+    /**
+     * Returns whether the given command that is caused by the given command context should be allowed according to the
      * configured restrictions.
      *
-     * @param message the message that caused the given command
-     * @param command the command that is caused by the given message
-     * @return whether the given command that is caused by the given message should be allowed
+     * @param command        the command that is caused by the given command context
+     * @param commandContext the command context, usually fully populated but not necessarily
+     * @return whether the given command that is caused by the given command context should be allowed
      */
-    private boolean isCommandAllowed(M message, Command<? super M> command) {
-        return command.getRestrictionChain().isCommandAllowed(message, availableRestrictions.get());
+    private boolean isCommandAllowed(Command<? super M> command, CommandContext<M> commandContext) {
+        return command
+                .getRestrictionChain()
+                .isCommandAllowed(commandContext, availableRestrictions.get());
     }
 
     /**
      * Fires a command not allowed CDI event asynchronously using {@link Event#fireAsync(Object)} that can be handled
      * using {@link ObservesAsync @ObservesAsync}.
      *
-     * @param message   the message that contains the command but was not allowed
-     * @param prefix    the command prefix that was used to trigger the command
-     * @param usedAlias the alias that was used to trigger the command
+     * @param commandContext the command context, usually fully populated but not necessarily
      * @see ObservesAsync @ObservesAsync
      */
-    protected abstract void fireCommandNotAllowedEvent(M message, String prefix, String usedAlias);
+    protected abstract void fireCommandNotAllowedEvent(CommandContext<M> commandContext);
 
     /**
      * Fires a command not found CDI event asynchronously using {@link Event#fireAsync(Object)} that can be handled
      * using {@link ObservesAsync @ObservesAsync}.
      *
-     * @param message   the message that contains the command that was not found
-     * @param prefix    the command prefix that was used to trigger the command
-     * @param usedAlias the alias that was used to trigger the command
+     * @param commandContext the command context, usually populated according to current phase where the event was fired
      * @see ObservesAsync @ObservesAsync
      */
-    protected abstract void fireCommandNotFoundEvent(M message, String prefix, String usedAlias);
+    protected abstract void fireCommandNotFoundEvent(CommandContext<M> commandContext);
 
     /**
      * Executes the given command executor that is caused by the given message asynchronously.
@@ -430,10 +661,10 @@ public abstract class CommandHandler<M> {
      * A subclass that has some means to execute tasks asynchronously anyways like the thread pool provided by Javacord,
      * can overwrite this message and replace the asynchronous execution implementation.
      *
-     * @param message         the message that caused the given command executor
+     * @param commandContext  the command context, usually fully populated but not necessarily
      * @param commandExecutor the executor that runs the actual command implementation
      */
-    protected void executeAsync(M message, Runnable commandExecutor) {
+    protected void executeAsync(CommandContext<M> commandContext, Runnable commandExecutor) {
         runAsync(commandExecutor, executorService.get())
                 .whenComplete((nothing, throwable) -> {
                     if (throwable != null) {

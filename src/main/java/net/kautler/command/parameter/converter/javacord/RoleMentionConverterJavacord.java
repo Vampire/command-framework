@@ -17,7 +17,7 @@
 package net.kautler.command.parameter.converter.javacord;
 
 import net.kautler.command.Internal;
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
 import net.kautler.command.api.parameter.InvalidParameterValueException;
 import net.kautler.command.api.parameter.ParameterConverter;
@@ -48,8 +48,7 @@ class RoleMentionConverterJavacord implements ParameterConverter<Message, Role> 
     }
 
     @Override
-    public Role convert(String parameter, String type, Command<?> command, Message message,
-                        String prefix, String usedAlias, String parameterString) {
+    public Role convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher roleMatcher = ROLE_MENTION.matcher(parameter);
         if (!roleMatcher.matches()) {
             throw new InvalidParameterFormatException(format("'%s' is not a valid role mention", parameter));
@@ -63,7 +62,8 @@ class RoleMentionConverterJavacord implements ParameterConverter<Message, Role> 
             throw new InvalidParameterFormatException(format("'%s' is not a valid role mention", parameter), nfe);
         }
 
-        return message
+        return commandContext
+                .getMessage()
                 .getApi()
                 .getRoleById(roleId)
                 .orElseThrow(() -> new InvalidParameterValueException(format("role for id '%s' was not found", roleIdString)));

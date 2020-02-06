@@ -26,7 +26,7 @@ class DecimalConverterTest extends Specification {
 
     def '"#parameter" should be converted to #result'() {
         expect:
-            testee.convert(parameter, null, null, null, null, null, null) == result
+            testee.convert(parameter, null, null) == result
 
         where:
             parameter                                        || result
@@ -41,7 +41,7 @@ class DecimalConverterTest extends Specification {
 
     def 'non-numerical should throw InvalidParameterFormatException'() {
         when:
-            testee.convert('a', null, null, null, null, null, null)
+            testee.convert('a', null, null)
 
         then:
             InvalidParameterFormatException ipfe = thrown()

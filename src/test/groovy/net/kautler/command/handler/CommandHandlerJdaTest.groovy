@@ -23,11 +23,11 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.kautler.command.Internal
 import net.kautler.command.LoggerProducer
-import net.kautler.command.api.AliasAndParameterStringTransformer
 import net.kautler.command.api.Command
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
 import net.kautler.command.api.event.jda.CommandNotFoundEventJda
-import net.kautler.command.api.prefix.PrefixProvider
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
 import net.kautler.test.ContextualInstanceCategory
@@ -74,10 +74,6 @@ class CommandHandlerJdaTest extends Specification {
         it.restrictionChain >> new RestrictionChainElement(Restriction)
     }
 
-    PrefixProvider<Object> defaultPrefixProvider = Stub {
-        getCommandPrefix(_) >> '!'
-    }
-
     TestEventReceiver testEventReceiverDelegate = Mock()
 
     @Rule
@@ -122,13 +118,6 @@ class CommandHandlerJdaTest extends Specification {
                             .scope(ApplicationScoped)
                             // work-around for https://github.com/weld/weld-junit/issues/97
                             .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
-                            .types(new TypeLiteral<PrefixProvider<Object>>() { }.type)
-                            .creating(defaultPrefixProvider)
-                            .build(),
-                    MockBean.builder()
-                            .scope(ApplicationScoped)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
                             .types(TestEventReceiver)
                             .creating(testEventReceiverDelegate)
                             .build()
@@ -158,6 +147,32 @@ class CommandHandlerJdaTest extends Specification {
 
     MessageReceivedEvent messageReceivedEvent = Stub {
         it.message >> message
+    }
+
+    def 'an injector method for any command context transformers should exist and forward to the common base class'() {
+        given:
+            CommandHandlerJda commandHandlerJda = Spy(useObjenesis: true)
+            Instance<CommandContextTransformer<? super Message>> commandContextTransformers = Stub()
+
+        when:
+            def commandContextTransformerInjectors = CommandHandlerJda
+                    .declaredMethods
+                    .findAll {
+                        it.getAnnotation(Inject) &&
+                                it.genericParameterTypes ==
+                                [new TypeLiteral<Instance<CommandContextTransformer<? super Message>>>() { }.type] as Type[] &&
+                                it.parameterAnnotations.first().any { it instanceof Any }
+                    }
+                    .each { it.accessible = true }
+
+        then:
+            commandContextTransformerInjectors.size() == 1
+
+        when:
+            commandContextTransformerInjectors.first().invoke(commandHandlerJda, commandContextTransformers)
+
+        then:
+            1 * commandHandlerJda.doSetCommandContextTransformers(commandContextTransformers) >> { }
     }
 
     def 'an injector method for available restrictions should exist and forward to the common base class'() {
@@ -210,56 +225,6 @@ class CommandHandlerJdaTest extends Specification {
             1 * commandHandlerJda.doSetCommands(commands) >> { }
     }
 
-    def 'an injector method for custom prefix provider should exist and forward to the common base class'() {
-        given:
-            CommandHandlerJda commandHandlerJda = Spy(useObjenesis: true)
-            Instance<PrefixProvider<? super Message>> customPrefixProvider = Stub()
-
-        when:
-            def prefixProvidersInjectors = CommandHandlerJda
-                    .declaredMethods
-                    .findAll {
-                        it.getAnnotation(Inject) &&
-                                it.genericParameterTypes ==
-                                [new TypeLiteral<Instance<PrefixProvider<? super Message>>>() { }.type] as Type[]
-                    }
-                    .each { it.accessible = true }
-
-        then:
-            prefixProvidersInjectors.size() == 1
-
-        when:
-            prefixProvidersInjectors.first().invoke(commandHandlerJda, customPrefixProvider)
-
-        then:
-            1 * commandHandlerJda.doSetCustomPrefixProvider(customPrefixProvider) >> { }
-    }
-
-    def 'an injector method for alias and parameter string transformer should exist and forward to the common base class'() {
-        given:
-            CommandHandlerJda commandHandlerJda = Spy(useObjenesis: true)
-            Instance<AliasAndParameterStringTransformer<? super Message>> aliasAndParameterStringTransformer = Stub()
-
-        when:
-            def aliasAndParameterStringTransformerInjectors = CommandHandlerJda
-                    .declaredMethods
-                    .findAll {
-                        it.getAnnotation(Inject) &&
-                                it.genericParameterTypes ==
-                                [new TypeLiteral<Instance<AliasAndParameterStringTransformer<? super Message>>>() { }.type] as Type[]
-                    }
-                    .each { it.accessible = true }
-
-        then:
-            aliasAndParameterStringTransformerInjectors.size() == 1
-
-        when:
-            aliasAndParameterStringTransformerInjectors.first().invoke(commandHandlerJda, aliasAndParameterStringTransformer)
-
-        then:
-            1 * commandHandlerJda.doSetAliasAndParameterStringTransformer(aliasAndParameterStringTransformer) >> { }
-    }
-
     @Use(ContextualInstanceCategory)
     def 'post construct method should register message received listener and forward to the common base class'() {
         given:
@@ -290,7 +255,7 @@ class CommandHandlerJdaTest extends Specification {
                     }
                 }
             }
-            6 * commandHandlerJda.doHandleMessage(message, message.contentRaw) >> { }
+            6 * commandHandlerJda.doHandleMessage(new CommandContext.Builder(message, message.contentRaw).build()) >> { }
             0 * commandHandlerJda.doHandleMessage(*_)
     }
 
@@ -365,9 +330,14 @@ class CommandHandlerJdaTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotAllowedEvent {
-                    it.message == this.message
-                    it.prefix == '!'
-                    it.usedAlias == this.command.aliases.first()
+                    with(it.commandContext) {
+                        it.message == this.message
+                        it.messageContent == this.message.contentRaw
+                        it.prefix.orElse(null) == '!'
+                        it.alias.orElse(null) == this.command.aliases.first()
+                        it.parameterString.orElse(null) == ''
+                        it.command.orElse(null)?.metadata?.contextualInstance == this.command
+                    }
                 } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
@@ -386,9 +356,14 @@ class CommandHandlerJdaTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotFoundEvent {
-                    it.message == this.message
-                    it.prefix == '!'
-                    it.usedAlias == 'nocommand'
+                    with(it.commandContext) {
+                        it.message == this.message
+                        it.messageContent == this.message.contentRaw
+                        it.prefix.orElse(null) == '!'
+                        it.alias.orElse(null) == null
+                        it.parameterString.orElse(null) == null
+                        it.command.orElse(null)?.metadata?.contextualInstance == null
+                    }
                 } >> { commandNotFoundEventReceived.set(true) }
                 0 * _
             }

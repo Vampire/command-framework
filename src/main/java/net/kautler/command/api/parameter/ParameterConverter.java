@@ -16,7 +16,7 @@
 
 package net.kautler.command.api.parameter;
 
-import net.kautler.command.api.Command;
+import net.kautler.command.api.CommandContext;
 
 /**
  * A converter that converts a {@code String} parameter determined from the given message type to the given result type.
@@ -56,18 +56,13 @@ public interface ParameterConverter<M, R> {
      * and {@code parameterValue} should not be set manually, they will automatically be set
      * by the code calling the converter and will override any previously set values.
      *
-     * @param parameter       the parameter to convert
-     * @param type            the type of the parameter to convert
-     * @param command         the command for which the parameter gets converted
-     * @param message         the alias that was used to trigger the command
-     * @param prefix          the command prefix that was used to trigger the command
-     * @param usedAlias       the alias that was used to trigger the command
-     * @param parameterString the parameter string
+     * @param parameter      the parameter to convert
+     * @param type           the type of the parameter to convert
+     * @param commandContext the command context, usually fully populated but not necessarily
      * @return the converted parameter
      * @throws InvalidParameterFormatException if the format of the parameter is invalid and could not be parsed
      * @throws InvalidParameterValueException  if the value of the parameter is invalid, e. g. the id of an unknown user
      * @throws Exception                       if there goes anything wrong during parsing
      */
-    R convert(String parameter, String type, Command<?> command, M message,
-              String prefix, String usedAlias, String parameterString) throws Exception;
+    R convert(String parameter, String type, CommandContext<? extends M> commandContext) throws Exception;
 }
