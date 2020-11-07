@@ -66,7 +66,7 @@ class ServerOwnerJavacordIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.server.owner
+            def owner = serverTextChannelAsBot.server.owner.get()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addMessageCreateListener {
                 if ((it.channel == serverTextChannelAsBot) && (it.message.content == "!ping $random")) {

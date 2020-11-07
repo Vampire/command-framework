@@ -76,6 +76,8 @@ class RoleJavacordIntegTest extends Specification {
                 roleReceived.set(true)
             }
 
+            roleReceived.get()
+
             return role
         } finally {
             listenerManager?.remove()
@@ -95,6 +97,8 @@ class RoleJavacordIntegTest extends Specification {
             }
 
             role.addUser(user).join()
+
+            rolesUpdateReceived.get()
         } finally {
             listenerManager?.remove()
         }
@@ -119,6 +123,8 @@ class RoleJavacordIntegTest extends Specification {
             serverAsBot
                     .reorderRoles([lowerRole, middleRole, higherRole])
                     .join()
+
+            rolesUpdateReceived.get()
         } finally {
             listenerManager?.remove()
         }

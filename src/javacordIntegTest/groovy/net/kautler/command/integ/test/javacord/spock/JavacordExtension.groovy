@@ -31,6 +31,7 @@ import javax.enterprise.inject.Produces
 import static java.lang.Boolean.FALSE
 import static java.lang.System.arraycopy
 import static java.util.UUID.randomUUID
+import static org.javacord.api.entity.intent.Intent.GUILDS
 import static org.javacord.api.entity.permission.PermissionType.ADMINISTRATOR
 
 @ApplicationScoped
@@ -49,6 +50,7 @@ class JavacordExtension implements IGlobalExtension {
     void start() {
         botDiscordApi = new DiscordApiBuilder()
                 .setToken(System.properties.testDiscordToken1)
+                .setAllIntents()
                 .login()
                 .join()
 
@@ -60,6 +62,7 @@ class JavacordExtension implements IGlobalExtension {
 
         userDiscordApi = new DiscordApiBuilder()
                 .setToken(System.properties.testDiscordToken2)
+                .setIntents(GUILDS)
                 .login()
                 .join()
 

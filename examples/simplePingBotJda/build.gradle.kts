@@ -30,7 +30,7 @@ dependencies {
     runtimeOnly("org.jboss.weld.se:weld-se-core:3.1.2.Final") { because("CDI implementation") }
     runtimeOnly("org.jboss:jandex:2.1.1.Final") { because("faster CDI bean scanning") }
 
-    implementation("net.dv8tion:JDA:4.0.0_52") {
+    implementation("net.dv8tion:JDA:4.2.0_214") {
         exclude("club.minnced", "opus-java")
         exclude("com.google.code.findbugs", "jsr305")
     }

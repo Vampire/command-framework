@@ -78,6 +78,8 @@ class RoleJdaIntegTest extends Specification {
                 roleReceived.set(true)
             }
 
+            roleReceived.get()
+
             return role
         } finally {
             if (eventListener) {
@@ -103,8 +105,10 @@ class RoleJdaIntegTest extends Specification {
 
             role
                     .guild
-                    .addRoleToMember(role.guild.getMember(user), role)
+                    .addRoleToMember(role.guild.retrieveMember(user).complete(), role)
                     .complete()
+
+            rolesUpdateReceived.get()
         } finally {
             if (eventListener) {
                 role.JDA.removeEventListener(eventListener)
@@ -182,6 +186,8 @@ class RoleJdaIntegTest extends Specification {
                         }
                     }
                     .complete()
+
+            rolesUpdateReceived.get()
         } finally {
             if (eventListener) {
                 guildAsBot.JDA.removeEventListener(eventListener)

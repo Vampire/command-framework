@@ -40,7 +40,8 @@ public class JdaProducer {
     @ApplicationScoped
     private JDA produceJda() {
         try {
-            return new JDABuilder(discordToken)
+            return JDABuilder
+                    .createLight(discordToken)
                     .build()
                     .awaitReady();
         } catch (InterruptedException | LoginException e) {

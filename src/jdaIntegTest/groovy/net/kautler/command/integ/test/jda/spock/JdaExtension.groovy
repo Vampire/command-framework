@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.channel.text.TextChannelCreateEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.requests.GatewayIntent
 import org.spockframework.runtime.extension.IGlobalExtension
 import org.spockframework.runtime.model.SpecInfo
 import spock.util.concurrent.BlockingVariable
@@ -49,7 +50,8 @@ class JdaExtension implements IGlobalExtension {
 
     @Override
     void start() {
-        botJda = new JDABuilder(System.properties.testDiscordToken1)
+        botJda = JDABuilder
+                .create(System.properties.testDiscordToken1, GatewayIntent.values() as Collection)
                 .build()
                 .awaitReady()
 
@@ -60,7 +62,8 @@ class JdaExtension implements IGlobalExtension {
             new IllegalArgumentException('Bot with testDiscordToken1 is not a member of guild testDiscordServerId')
         }
 
-        userJda = new JDABuilder(System.properties.testDiscordToken2)
+        userJda = JDABuilder
+                .createLight(System.properties.testDiscordToken2, [])
                 .build()
                 .awaitReady()
 
@@ -75,7 +78,7 @@ class JdaExtension implements IGlobalExtension {
             throw new IllegalArgumentException('Bot with testDiscordToken1 must have ADMINISTRATOR permission')
         }
 
-        def userRoles = guildAsBot.getMember(userJda.selfUser).roles
+        def userRoles = guildAsBot.retrieveMember(userJda.selfUser).complete().roles
         if (!userRoles.empty && (guildAsBot.selfMember.roles.first() <= userRoles.first())) {
             throw new IllegalArgumentException('Bot with testDiscordToken1 must have higher role than highest role of bot with testDiscordToken2')
         }
@@ -110,18 +113,18 @@ class JdaExtension implements IGlobalExtension {
             def rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMemberRoleRemoveEvent) &&
-                        guildAsBot.getMember(userJda.selfUser).roles.empty) {
+                        guildAsBot.retrieveMember(userJda.selfUser).complete().roles.empty) {
                     rolesUpdateReceived.set(true)
                 }
             }
             botJda.addEventListener(eventListener)
             try {
-                if (guildAsBot.getMember(userJda.selfUser).roles.empty) {
+                if (guildAsBot.retrieveMember(userJda.selfUser).complete().roles.empty) {
                     rolesUpdateReceived.set(true)
                 }
 
                 guildAsBot
-                        .modifyMemberRoles(guildAsBot.getMember(userJda.selfUser))
+                        .modifyMemberRoles(guildAsBot.retrieveMember(userJda.selfUser).complete())
                         .complete()
 
                 rolesUpdateReceived.get()
