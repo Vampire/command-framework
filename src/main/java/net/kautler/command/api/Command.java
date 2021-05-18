@@ -90,7 +90,7 @@ public interface Command<M> {
         if (className.isEmpty()) {
             className = clazz.getTypeName().substring(clazz.getPackage().getName().length() + 1);
         }
-        String defaultAlias = className.replaceAll("(?i)^(?:Command|Cmd)|(?:Command|Cmd)$", "");
+        String defaultAlias = className.replaceAll("(?i)^(?:Command|Cmd)|(?:Command|Cmd)|(?:_Subclass)$", "");
         defaultAlias = defaultAlias.replaceFirst("^.", Character.toString(toLowerCase(defaultAlias.charAt(0))));
         return singletonList(defaultAlias);
     }
