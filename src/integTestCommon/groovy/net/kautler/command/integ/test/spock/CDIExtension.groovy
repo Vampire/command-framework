@@ -40,12 +40,14 @@ class CDIExtension extends AbstractGlobalExtension {
                         .initialize()
                 try {
                     invocation.proceed()
+
+                    // check this before closing the container to not consider logs
+                    // about already closed or unavailable context
+                    if (getListAppender('Test Appender').events) {
+                        fail('There were log events on warning level or higher')
+                    }
                 } finally {
                     seContainer?.close()
-                }
-
-                if (getListAppender('Test Appender').events) {
-                    fail('There were log events on warning level or higher')
                 }
             }
         }
