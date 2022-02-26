@@ -18,7 +18,9 @@ package net.kautler.command.integ.test.javacord.parameter
 
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
+import net.kautler.command.api.annotation.Alias
 import net.kautler.command.api.annotation.Usage
+import net.kautler.command.api.parameter.ParameterParseException
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
 import net.kautler.command.integ.test.spock.VetoBean
@@ -41,7 +43,7 @@ import static java.util.UUID.randomUUID
 @VetoBean(MissingDependencyParameterParser)
 class UntypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
-    def 'untyped parameter parser should work properly'(
+    def 'untyped parameter parser should work properly with correct arguments'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random1 = randomUUID()
@@ -52,8 +54,7 @@ class UntypedParameterParserIntegTest extends Specification {
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
                 if (it.message.author.yourself && (it.message.content == """
                     pong:
-                    bar: $random2
-                    foo: $random1
+                    foo: [$random1, $random2]
                 """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
@@ -71,7 +72,104 @@ class UntypedParameterParserIntegTest extends Specification {
             listenerManager?.remove()
     }
 
-    @Usage('<foo> <bar>')
+    @AddBean(PingCommand)
+    def 'untyped parameter parser should throw exception with wrong number of arguments [arguments: #arguments]'(
+            arguments, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
+                if (it.message.author.yourself && (it.message.content == '''
+                    pong:
+                    Wrong arguments for command `!ping`
+                    Usage: `!ping <foo> <foo>`
+                '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+
+        when:
+            serverTextChannelAsUser
+                    .sendMessage("!ping $arguments")
+                    .join()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            listenerManager?.remove()
+
+        where:
+            arguments << ['', 'foo', 'foo bar baz']
+
+        and:
+            serverTextChannelAsBot = null
+            serverTextChannelAsUser = null
+    }
+
+    @AddBean(UsagelessPingCommand)
+    def 'untyped parameter parser should work properly without arguments'(
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
+                if (it.message.author.yourself && (it.message.content == '''
+                    pong:
+                '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+
+        when:
+            serverTextChannelAsUser
+                    .sendMessage('!ping')
+                    .join()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            listenerManager?.remove()
+    }
+
+    @AddBean(UsagelessPingCommand)
+    def 'untyped parameter parser should throw exception with unexpected arguments'(
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
+                if (it.message.author.yourself && (it.message.content == '''
+                    pong:
+                    Command `!ping` does not expect arguments
+                '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+
+        when:
+            serverTextChannelAsUser
+                    .sendMessage('!ping foo')
+                    .join()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            listenerManager?.remove()
+    }
+
+    @Alias('ping')
+    @Vetoed
+    @ApplicationScoped
+    static class UsagelessPingCommand extends PingCommand {
+    }
+
+    @Usage('<foo> <foo>')
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
@@ -80,12 +178,17 @@ class UntypedParameterParserIntegTest extends Specification {
 
         @Override
         void execute(CommandContext<? extends Message> commandContext) {
-            def parameters = parameterParser
-                    .parse(commandContext)
-                    .with { it.entries }
-                    .collect { "$it.key: $it.value" }
-                    .sort()
-                    .join('\n')
+            def parameters
+            try {
+                parameters = parameterParser
+                        .parse(commandContext)
+                        .with { it.entries }
+                        .collect { "$it.key: $it.value" }
+                        .sort()
+                        .join('\n')
+            } catch (ParameterParseException ppe) {
+                parameters = ppe.message
+            }
 
             commandContext
                     .message
