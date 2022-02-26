@@ -23,8 +23,10 @@ import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.Internal.Literal
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
+import net.kautler.command.api.annotation.Alias
 import net.kautler.command.api.annotation.Usage
 import net.kautler.command.api.parameter.ParameterConverter
+import net.kautler.command.api.parameter.ParameterParseException
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.api.parameter.ParameterParser.Typed
 import net.kautler.command.api.parameter.ParameterType
@@ -49,12 +51,16 @@ import static java.util.UUID.randomUUID
 class TypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
     @AddBean(CustomStringsConverter)
-    def 'typed parameter parser should work properly'(TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
+    def 'typed parameter parser should work properly with correct arguments'(
+            TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
             def random1 = randomUUID()
             def random2 = randomUUID()
             def random3 = randomUUID()
             def random4 = randomUUID()
+            def random5 = randomUUID()
+            def random6 = randomUUID()
+            def random7 = randomUUID()
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -72,6 +78,7 @@ class TypedParameterParserIntegTest extends Specification {
                             hoo: [$random3, $random4] [java.util.ArrayList]
                             loo: ${textChannelAsBot.guild.selfMember.roles.first()} [${textChannelAsBot.guild.selfMember.roles.first().getClass().name}]
                             moo: $textChannelAsBot [${textChannelAsBot.getClass().name}]
+                            noo: [$random5, $random6, $random7] [java.util.ArrayList]
                         """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
@@ -89,8 +96,120 @@ class TypedParameterParserIntegTest extends Specification {
                             random2,
                             "$random3,$random4",
                             textChannelAsBot.guild.selfMember.roles.first().asMention,
-                            textChannelAsBot.asMention
+                            textChannelAsBot.asMention,
+                            random5,
+                            random6,
+                            random7
                     ].join(' '))
+                    .complete()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            if (eventListener) {
+                textChannelAsBot.JDA.removeEventListener(eventListener)
+            }
+    }
+
+    @AddBean(PingCommand)
+    def 'typed parameter parser should throw exception with wrong number of arguments [arguments: #arguments]'(
+            arguments, TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            EventListener eventListener = {
+                if ((it instanceof GuildMessageReceivedEvent) &&
+                        (it.channel == textChannelAsBot) &&
+                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
+                        (it.message.contentRaw == '''
+                            pong:
+                            Wrong arguments for command `!ping`
+                            Usage: `!ping <foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention> <noo:string> <noo:string> <noo:string>`
+                        '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+            textChannelAsBot.JDA.addEventListener(eventListener)
+
+        when:
+            textChannelAsUser
+                    .sendMessage("!ping $arguments")
+                    .complete()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            if (eventListener) {
+                textChannelAsBot.JDA.removeEventListener(eventListener)
+            }
+
+        where:
+            arguments << ['', 'foo', 'foo bar baz bam boo hoo loo moo noo noo noo doo']
+
+        and:
+            textChannelAsBot = null
+            textChannelAsUser = null
+    }
+
+    @AddBean(UsagelessPingCommand)
+    def 'typed parameter parser should work properly without arguments'(
+            TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            EventListener eventListener = {
+                if ((it instanceof GuildMessageReceivedEvent) &&
+                        (it.channel == textChannelAsBot) &&
+                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
+                        (it.message.contentRaw == '''
+                            pong:
+                        '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+            textChannelAsBot.JDA.addEventListener(eventListener)
+
+        when:
+            textChannelAsUser
+                    .sendMessage('!ping')
+                    .complete()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            if (eventListener) {
+                textChannelAsBot.JDA.removeEventListener(eventListener)
+            }
+    }
+
+    @AddBean(UsagelessPingCommand)
+    def 'typed parameter parser should throw exception with unexpected arguments'(
+            TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            EventListener eventListener = {
+                if ((it instanceof GuildMessageReceivedEvent) &&
+                        (it.channel == textChannelAsBot) &&
+                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
+                        (it.message.contentRaw == '''
+                            pong:
+                            Command `!ping` does not expect arguments
+                        '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+            textChannelAsBot.JDA.addEventListener(eventListener)
+
+        when:
+            textChannelAsUser
+                    .sendMessage('!ping foo')
                     .complete()
 
         then:
@@ -112,6 +231,9 @@ class TypedParameterParserIntegTest extends Specification {
             def random2 = randomUUID()
             def random3 = randomUUID()
             def random4 = randomUUID()
+            def random5 = randomUUID()
+            def random6 = randomUUID()
+            def random7 = randomUUID()
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -129,6 +251,7 @@ class TypedParameterParserIntegTest extends Specification {
                             hoo: [$random3, $random4] [java.util.ArrayList]
                             loo: ${textChannelAsBot.guild.selfMember.roles.first()} [${textChannelAsBot.guild.selfMember.roles.first().getClass().name}]
                             moo: $textChannelAsBot [${textChannelAsBot.getClass().name}]
+                            noo: [custom: $random5, custom: $random6, custom: $random7] [java.util.ArrayList]
                         """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
@@ -146,7 +269,10 @@ class TypedParameterParserIntegTest extends Specification {
                             random2,
                             "$random3,$random4",
                             textChannelAsBot.guild.selfMember.roles.first().asMention,
-                            textChannelAsBot.asMention
+                            textChannelAsBot.asMention,
+                            random5,
+                            random6,
+                            random7
                     ].join(' '))
                     .complete()
 
@@ -191,7 +317,13 @@ class TypedParameterParserIntegTest extends Specification {
             }
     }
 
-    @Usage('<foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention>')
+    @Alias('ping')
+    @Vetoed
+    @ApplicationScoped
+    static class UsagelessPingCommand extends PingCommand {
+    }
+
+    @Usage('<foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention> <noo:string> <noo:string> <noo:string>')
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
@@ -201,12 +333,17 @@ class TypedParameterParserIntegTest extends Specification {
 
         @Override
         void execute(CommandContext<? extends Message> commandContext) {
-            def parameters = parameterParser
-                    .parse(commandContext)
-                    .with { it.entries }
-                    .collect { "$it.key: $it.value [${it.value.getClass().name}]" }
-                    .sort()
-                    .join('\n')
+            def parameters
+            try {
+                parameters = parameterParser
+                        .parse(commandContext)
+                        .with { it.entries }
+                        .collect { "$it.key: $it.value [${it.value.getClass().name}]" }
+                        .sort()
+                        .join('\n')
+            } catch (ParameterParseException ppe) {
+                parameters = ppe.message
+            }
 
             commandContext
                     .message

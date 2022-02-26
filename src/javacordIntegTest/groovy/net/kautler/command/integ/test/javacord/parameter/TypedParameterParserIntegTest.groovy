@@ -19,8 +19,10 @@ package net.kautler.command.integ.test.javacord.parameter
 import net.kautler.command.Internal.Literal
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
+import net.kautler.command.api.annotation.Alias
 import net.kautler.command.api.annotation.Usage
 import net.kautler.command.api.parameter.ParameterConverter
+import net.kautler.command.api.parameter.ParameterParseException
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.api.parameter.ParameterParser.Typed
 import net.kautler.command.api.parameter.ParameterType
@@ -48,13 +50,16 @@ import static java.util.UUID.randomUUID
 class TypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
     @AddBean(CustomStringsConverter)
-    def 'typed parameter parser should work properly'(
+    def 'typed parameter parser should work properly with correct arguments'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random1 = randomUUID()
             def random2 = randomUUID()
             def random3 = randomUUID()
             def random4 = randomUUID()
+            def random5 = randomUUID()
+            def random6 = randomUUID()
+            def random7 = randomUUID()
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -79,6 +84,7 @@ class TypedParameterParserIntegTest extends Specification {
                         .name
                     }]
                     moo: $serverTextChannelAsBot [${serverTextChannelAsBot.getClass().name}]
+                    noo: [$random5, $random6, $random7] [java.util.ArrayList]
                 """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
@@ -102,8 +108,102 @@ class TypedParameterParserIntegTest extends Specification {
                                     .getHighestRole(serverTextChannelAsBot.api.yourself)
                                     .orElseThrow { new AssertionError() }
                                     .mentionTag,
-                            serverTextChannelAsBot.mentionTag
+                            serverTextChannelAsBot.mentionTag,
+                            random5,
+                            random6,
+                            random7
                     ].join(' '))
+                    .join()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            listenerManager?.remove()
+    }
+
+    @AddBean(PingCommand)
+    def 'typed parameter parser should throw exception with wrong number of arguments [arguments: #arguments]'(
+            arguments, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
+                if (it.message.author.yourself && (it.message.content == '''
+                    pong:
+                    Wrong arguments for command `!ping`
+                    Usage: `!ping <foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention> <noo:string> <noo:string> <noo:string>`
+                '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+
+        when:
+            serverTextChannelAsUser
+                    .sendMessage("!ping $arguments")
+                    .join()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            listenerManager?.remove()
+
+        where:
+            arguments << ['', 'foo', 'foo bar baz bam boo hoo loo moo noo noo noo doo']
+
+        and:
+            serverTextChannelAsBot = null
+            serverTextChannelAsUser = null
+    }
+
+    @AddBean(UsagelessPingCommand)
+    def 'typed parameter parser should work properly without arguments'(
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
+                if (it.message.author.yourself && (it.message.content == '''
+                    pong:
+                '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+
+        when:
+            serverTextChannelAsUser
+                    .sendMessage('!ping')
+                    .join()
+
+        then:
+            responseReceived.get()
+
+        cleanup:
+            listenerManager?.remove()
+    }
+
+    @AddBean(UsagelessPingCommand)
+    def 'typed parameter parser should throw exception with unexpected arguments'(
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+        given:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+
+        and:
+            def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
+                if (it.message.author.yourself && (it.message.content == '''
+                    pong:
+                    Command `!ping` does not expect arguments
+                '''.stripIndent().trim())) {
+                    responseReceived.set(true)
+                }
+            }
+
+        when:
+            serverTextChannelAsUser
+                    .sendMessage('!ping foo')
                     .join()
 
         then:
@@ -123,6 +223,9 @@ class TypedParameterParserIntegTest extends Specification {
             def random2 = randomUUID()
             def random3 = randomUUID()
             def random4 = randomUUID()
+            def random5 = randomUUID()
+            def random6 = randomUUID()
+            def random7 = randomUUID()
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -147,6 +250,7 @@ class TypedParameterParserIntegTest extends Specification {
                         .name
                     }]
                     moo: $serverTextChannelAsBot [${serverTextChannelAsBot.getClass().name}]
+                    noo: [custom: $random5, custom: $random6, custom: $random7] [java.util.ArrayList]
                 """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
@@ -170,7 +274,10 @@ class TypedParameterParserIntegTest extends Specification {
                                     .getHighestRole(serverTextChannelAsBot.api.yourself)
                                     .orElseThrow { new AssertionError() }
                                     .mentionTag,
-                            serverTextChannelAsBot.mentionTag
+                            serverTextChannelAsBot.mentionTag,
+                            random5,
+                            random6,
+                            random7
                     ].join(' '))
                     .join()
 
@@ -207,7 +314,13 @@ class TypedParameterParserIntegTest extends Specification {
             listenerManager?.remove()
     }
 
-    @Usage('<foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention>')
+    @Alias('ping')
+    @Vetoed
+    @ApplicationScoped
+    static class UsagelessPingCommand extends PingCommand {
+    }
+
+    @Usage('<foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention> <noo:string> <noo:string> <noo:string>')
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
@@ -217,12 +330,17 @@ class TypedParameterParserIntegTest extends Specification {
 
         @Override
         void execute(CommandContext<? extends Message> commandContext) {
-            def parameters = parameterParser
-                    .parse(commandContext)
-                    .with { it.entries }
-                    .collect { "$it.key: $it.value [${it.value.getClass().name}]" }
-                    .sort()
-                    .join('\n')
+            def parameters
+            try {
+                parameters = parameterParser
+                        .parse(commandContext)
+                        .with { it.entries }
+                        .collect { "$it.key: $it.value [${it.value.getClass().name}]" }
+                        .sort()
+                        .join('\n')
+            } catch (ParameterParseException ppe) {
+                parameters = ppe.message
+            }
 
             commandContext
                     .message
