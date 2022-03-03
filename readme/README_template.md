@@ -83,7 +83,8 @@ The following message frameworks are currently supported out of the box:
 * [Javacord](#javacord)
 * [JDA](#jda)
 
-If you want to have support for an additional, do not hesitate to open a pull request or feature request issue.
+If you want to have support for an additional framework, do not hesitate to open a pull request or feature request
+issue.
 
 
 
@@ -222,53 +223,51 @@ public class PingCommand implements Command<Message> {
 With everything else using the default, this is already enough to have a working ping bot.
 A fully self-contained example can be found at `examples/simplePingBotJavacord`.
 
-To further customize the behavior of a command you can either annotate the command class or overwrite the according
-methods in your command implementation to replace the default implementations which evaluate the annotations.
-Having annotations applied and at the same time overwriting the according methods makes only sense if you want the
-annotations only for documentary purpose or evaluate them yourself, as the default implementations of those methods
-are the only places where the annotations are evaluated by default. Every other place like for example command handler
-call the methods on the command implementation.
+To further customize the behavior of a command, you can either annotate the command class or overwrite the
+corresponding methods. Annotations are ignored when the corresponding methods are overwritten, but they can still be
+separately evaluated or used as documentation. For all functionality this framework uses the command method
+implementations. The annotations are only read in the default implementations of those methods.
 
 #### Command Aliases
 
-By overwriting the `Command#getAliases()` method or applying one or multiple [`@Alias`][@Alias JavaDoc] annotations the
-aliases to which the command reacts can be configured. If at least one alias is configured, only the explicitly
-configured ones are available. If no alias is configured, the class name, stripped by `Command` or `Cmd`
-suffix and / or prefix and the first letter lowercased is used as default.
+By overwriting the `Command#getAliases()` method or applying one or multiple [`@Alias`][@Alias JavaDoc] annotations, the
+aliases to which the command reacts can be configured. If no aliases are configured, the class name, with the `Command`
+or `Cmd` suffix / prefix stripped and the first letter lowercased is used as a default. If at least one alias is
+configured, only the explicitly configured ones are used.
 
 #### Asynchronous Command Execution
 
-By overwriting the `Command#isAsynchronous()` method or applying the [`@Asynchronous`][@Asynchronous JavaDoc] annotation
-the command handler can be told to execute the command asynchronously.
+By overwriting the `Command#isAsynchronous()` method or applying the [`@Asynchronous`][@Asynchronous JavaDoc]
+annotation, the command handler can be told to execute the command asynchronously.
 
 How exactly this is implemented is up to the command handler that evaluates this command. Usually the command will be
-execute in some thread pool. But it would also be valid for a command handler to execute each asynchronous command
-execution in a new thread, so using this can add significant overhead if overused. As long as a command is not doing
-long-running or blocking operations it might be a good idea to not execute the command asynchronously. But if
-long-running or blocking operations are done in the command code directly, depending on the underlying message framework
-it might be a good idea to execute the command asynchronously to not block message dispatching which could introduce
+executed in some thread pool. But, it would also be valid for a command handler to execute each asynchronous command
+execution in a new thread, so using this can add significant overhead if overused. If a command is not doing
+long-running or blocking operations, it may be preferable to not execute the command asynchronously. Although, if
+long-running or blocking operations are done in the command code directly, it may be preferable to execute the command
+asynchronously, as (depending on the underlying message framework) message dispatching could be blocked, introducing
 serious lag to the command execution.
 
-As the command executions are potentially done on different threads, special care must be taken if the command holds
+As the command executions are potentially done on different threads, special care must be taken, if the command holds
 state, to make sure this state is accessed in a thread-safe manner. This can of course also happen without the command
 being configured asynchronously if the underlying message framework dispatches message events on different threads.
 
 #### Command Description
 
-By overwriting the `Command#getDescription()` method or applying the [`@Description`][@Description JavaDoc] annotation
-the description of the command can be configured. Currently this description is used nowhere, but can for example be
-displayed in an own help command.
+By overwriting the `Command#getDescription()` method or applying the [`@Description`][@Description JavaDoc] annotation,
+the description of the command can be configured. This description is not currently used by this framework, but it can
+be used, for example, in a custom help command.
 
 #### Command Restrictions
 
 By overwriting the `Command#getRestrictionChain()` method or applying one or multiple
-[`@RestrictedTo`][@RestrictedTo JavaDoc] annotations and optionally the
-[`@RestrictionPolicy`][@RestrictionPolicy JavaDoc] annotation the restriction rules for a command can be configured. If
+[`@RestrictedTo`][@RestrictedTo JavaDoc] annotations, and optionally the
+[`@RestrictionPolicy`][@RestrictionPolicy JavaDoc] annotation, the restriction rules for a command can be configured. If
 multiple `@RestrictedTo` annotations are present and the default implementation of the method is used, a
 `@RestrictionPolicy` annotation that defines how the single restrictions are to be combined is mandatory. With this
-annotation the single restrictions can be combined in an all-of, any-of, or none-of logic.
+annotation the single restrictions can be combined using all-of, any-of, or none-of logic.
 
-For more complex boolean logic either overwrite the `getRestrictionChain` method or provide own CDI beans that
+For more complex boolean logic either overwrite the `getRestrictionChain` method or provide custom CDI beans that
 implement the [`Restriction`][Restriction JavaDoc] interface and contain the intended logic. For the latter also helpers
 like [`ChannelJavacord`][ChannelJavacord JavaDoc], [`RoleJavacord`][RoleJavacord JavaDoc],
 [`ServerJavacord`][ServerJavacord JavaDoc], [`UserJavacord`][UserJavacord JavaDoc], [`AllOf`][AllOf JavaDoc],
@@ -296,8 +295,8 @@ public class MyFancyServer extends ServerJavacord {
 
 #### Command Usage
 
-By overwriting the `Command#getUsage()` method or applying the [`@Usage`][@Usage JavaDoc] annotation the usage of the
-command can be configured. This usage can for example be displayed in an own help command.
+By overwriting the `Command#getUsage()` method or applying the [`@Usage`][@Usage JavaDoc] annotation, the usage of the
+command can be configured. This usage can be used, for example, in a custom help command.
 
 When using the [`ParameterParser`][ParameterParser JavaDoc], the usage string has to follow a pre-defined format that
 is described at [Parsing Parameters](#parsing-parameters).
@@ -313,7 +312,7 @@ The first is the method `Command.getParameters(...)` which you give the paramete
 parameters to split into. The provided string will then be split at any arbitrary amount of consecutive whitespace
 characters. The last element of the returned array will have all remaining text in the parameter string. If you expect
 exactly three parameters without whitespaces, you should set the max parameters to four, so you can easily test the
-length of the returned array whether too many parameters were given to the command.
+length of the returned array to determine if too many parameters were given to the command.
 
 ##### Semantic Parsing and Validation
 
@@ -437,13 +436,13 @@ public class DoCommand implements Command<Message> {
 #### Customizing Parameter Converters
 
 A custom parameter converter can be configured by providing a CDI bean that implements the
-[`ParameterConverter`][ParameterConverter JavaDoc] interface. In the implementation of the `convert` method the string
-parameter, parameter type, and command context are given and from this the converted parameter value can be calculated.
+[`ParameterConverter`][ParameterConverter JavaDoc] interface. The implementation of the `convert` method
+calculates the converted parameter value using the string parameter, parameter type, and command context.
 The class also needs to be annotated with one or multiple [`ParameterType`][ParameterType JavaDoc] qualifiers
 that define the parameter type aliases for which the annotated parameter converter works. Without such
 qualifier the converter will simply never be used. It is an error to have multiple parameter converters with the
-same parameter type that can be applied to the same framework message type and this will produce an error latest
-when a parameter with that type is being converted. The only exception are the built-in parameter types.
+same parameter type that can be applied to the same framework message type, and this will produce an error latest
+when a parameter with that type is being converted. The only exceptions are the built-in parameter types.
 A user-supplied converter with the same parameter type as a built-in converter will be preferred,
 but it would still be an error to have multiple such overrides for the same type.
 
@@ -461,7 +460,7 @@ public class StringsConverter implements ParameterConverter<Object, List<String>
 
 #### Customizing the Command Recognition and Resolution Process
 
-The command recognition and resolution process consists of five phases. Actually these phases can vary, as a command
+The command recognition and resolution process consists of five phases. Actually, these phases can vary, as a command
 handler or a command context transformer can fast-forward the process to a later phase to skip unnecessary work, or
 some phase can fail the process with a command not found event.
 
@@ -475,23 +474,23 @@ The five phases that are handled are in order:
 For all but the first and last, there is a before and an after sub phase each during which the command context
 transformer is called.
 
-If at the end of the initialization phase, any before, or any after sub phase the command is set
+If at the end of the initialization phase, or any before / after sub phases, the command is set
 in the context, processing is fast forwarded immediately to the command execution phase and all other
 inbetween phases and sub phases are skipped.
 
-If at the end of the initialization phase, any before, or any after sub phase before the
+If at the end of the initialization phase, or any before / after sub phases before the
 `BEFORE_COMMAND_COMPUTATION` sub phase, the alias is set in the context, processing is
 fast forwarded immediately to the before command computation sub phase and all other inbetween
 phases and sub phases are skipped.
 
-If at the end of the initialization phase, any before, or any after sub phase before the
+If at the end of the initialization phase, or any before / after sub phases before the
 `BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION` sub phase, the prefix is set in the context,
 processing is fast forwarded immediately to the before alias and parameter string computation
 sub phase and all other inbetween phases and sub phases are skipped.
 
 ##### Before Prefix Computation Sub Phase
 
-At the start of this sub phase, usually only the message, and message content are set.
+At the start of this sub phase, usually only the message and message content are set.
 
 ##### After Prefix Computation Sub Phase
 
@@ -538,20 +537,19 @@ a command not found event is being fired and processing stops completely.
 
 ##### Hooking into a Sub Phase
 
-For each of the described sub phases exactly one context transformer that is compatible with the framework message
+For each of the described sub phases, exactly one context transformer that is compatible with the framework message
 can be registered. If you need multiple such transformers, then make one distributing transformer that calls the
 other transformers in the intended order. You can also register one context transformer for multiple phases.
 The `transform` method gets the current phase as argument and can then decide what to do based on that phase parameter.
 
 A command context transformer can be registered by providing a CDI bean that implements the
 [`CommandContextTransformer`][CommandContextTransformer JavaDoc] interface. In the implementation of the `transform`
-method you can determine from the current command context and the given phase how you like the command context to
-be and return the adapted command context or even a completely new command context.
+method, given the current phase, you can transform the current command context, or even return a completely new one.
 Additionally the bean has to be annotated with at least one [`@InPhase`][@InPhase JavaDoc] qualifier annotation, or it
 will simply not be used silently. The transformer will be called for each sub phase that is added with that annotation.
 
-There are also helper classes that can be used as super classes for own command context transformers like for example
-a provider that returns the mention string for the bot as command prefix if Javacord is used as the underlying
+There are also helper classes that can be used as super classes for own command context transformers, for example,
+a transformer that returns the mention string for the bot as command prefix if Javacord is used as the underlying
 message framework.
 
 _**Warning:**_ The command prefix can technically be configured to be empty, but this means that if the alias and
@@ -624,13 +622,13 @@ public class MyAliasAndParameterStringTransformer implements CommandContextTrans
 #### Storing Additional Data in the Command Context
 
 The `CommandContext` is also a store for arbitrary additional information that you can attach to a command invocation.
-You can for example attach some information during execution of a command context transformer and then later
+You can, for example, attach some information during execution of a command context transformer and then later
 evaluate this information in a custom restriction class or in the implementation of the actual command.
 
 The methods regarding additional data all have a generic type argument, as they all return a value, either the current
 one or the previous one, depending on the method. This value can be cast to the correct type for you, but be careful
-to select the proper type. As this is an unsafe operation the type has to be chosen wisely. If you for example select
-`String` as type and then try to get a `User` object from the returned optional, you will get a `ClassCastException`
+to select the proper type. As this is an unsafe operation, the type has to be chosen wisely. If you, for example, select
+`String` as the type and then try to get a `User` object from the returned optional, you will get a `ClassCastException`
 at runtime.
 
 The type can be specified explicitly like
