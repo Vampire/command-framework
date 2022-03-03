@@ -46,17 +46,18 @@ class CommandTest extends Specification {
             testee.aliases == expectedAliases
 
         where:
-            testee                || expectedAliases
-            new Test1Command()    || ['test1']
-            new Test2Cmd()        || ['test2']
-            new TestThree()       || ['testThree']
-            new Test4()           || ['test']
-            new Test5()           || ['test1', 'test2']
-            new Test6()           || ['Test1', 'Test2']
-            new CommandTest7()    || ['test7']
-            new CmdTest8()        || ['test8']
-            new CommandTest9Cmd() || ['test9']
-            new BaseCommand() { } || [testee.getClass().typeName[(testee.getClass().package.name.length() + 8)..-1].uncapitalize()]
+            testee                    || expectedAliases
+            new Test1Command()        || ['test1']
+            new Test2Cmd()            || ['test2']
+            new TestThree()           || ['testThree']
+            new Test4()               || ['test']
+            new Test5()               || ['test1', 'test2']
+            new Test6()               || ['Test1', 'Test2']
+            new CommandTest7()        || ['test7']
+            new CmdTest8()            || ['test8']
+            new CommandTest9Cmd()     || ['test9']
+            new CommandTestCmd10Cmd() || ['testCmd10']
+            new BaseCommand() { }     || [testee.getClass().typeName[(testee.getClass().package.name.length() + 8)..-1].uncapitalize()]
 
         and:
             aliases = expectedAliases.size() == 1 ? 'alias' : 'aliases'
@@ -395,6 +396,8 @@ class CommandTest extends Specification {
     @RestrictedTo(Restriction3)
     @RestrictionPolicy(NONE_OF)
     static class CommandTest9Cmd extends BaseCommand { }
+
+    static class CommandTestCmd10Cmd extends BaseCommand { }
 
     static class BaseRestriction implements Restriction<Object> {
         @Override
