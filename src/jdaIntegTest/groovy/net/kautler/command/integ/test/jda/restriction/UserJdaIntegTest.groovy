@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -286,7 +286,7 @@ class UserJdaIntegTest extends Specification {
     static class User extends UserJda {
         static criterion
 
-        private User() {
+        User() {
             super(criterion)
         }
     }
@@ -306,7 +306,7 @@ class UserJdaIntegTest extends Specification {
     static class UserCaseInsensitive extends UserJda {
         static userName
 
-        private UserCaseInsensitive() {
+        UserCaseInsensitive() {
             super(userName, false)
         }
     }

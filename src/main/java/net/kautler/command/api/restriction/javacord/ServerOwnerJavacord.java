@@ -30,12 +30,6 @@ import static java.lang.Boolean.FALSE;
  */
 @ApplicationScoped
 public class ServerOwnerJavacord implements Restriction<Message> {
-    /**
-     * Constructs a new server owner restriction.
-     */
-    private ServerOwnerJavacord() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         Message message = commandContext.getMessage();

@@ -27,12 +27,6 @@ import javax.enterprise.context.ApplicationScoped;
  */
 @ApplicationScoped
 public class PrivateMessageJavacord implements Restriction<Message> {
-    /**
-     * Constructs a new private message restriction.
-     */
-    private PrivateMessageJavacord() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return commandContext.getMessage().isPrivateMessage();

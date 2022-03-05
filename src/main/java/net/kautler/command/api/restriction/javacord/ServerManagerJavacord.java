@@ -28,12 +28,6 @@ import javax.enterprise.context.ApplicationScoped;
  */
 @ApplicationScoped
 public class ServerManagerJavacord implements Restriction<Message> {
-    /**
-     * Constructs a new server manager restriction.
-     */
-    private ServerManagerJavacord() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return commandContext.getMessage().getAuthor().canManageServer();

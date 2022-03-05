@@ -95,12 +95,6 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     private Collection<ListenerManager<?>> listenerManagers = emptyList();
 
     /**
-     * Constructs a new Javacord command handler.
-     */
-    private CommandHandlerJavacord() {
-    }
-
-    /**
      * Sets the command context transformers for this command handler.
      *
      * @param commandContextTransformers the command context transformers for this command handler

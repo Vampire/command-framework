@@ -107,12 +107,6 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     private Event<CommandNotFoundEventJda> commandNotFoundEvent;
 
     /**
-     * Constructs a new JDA command handler.
-     */
-    private CommandHandlerJda() {
-    }
-
-    /**
      * Sets the command context transformers for this command handler.
      *
      * @param commandContextTransformers the command context transformers for this command handler
@@ -210,7 +204,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     @SubscribeEvent
     private void onMessageReceived(MessageReceivedEvent messageReceivedEvent) {
         Message message = messageReceivedEvent.getMessage();
-        doHandleMessage(new CommandContext.Builder(message, message.getContentRaw()).build());
+        doHandleMessage(new CommandContext.Builder<>(message, message.getContentRaw()).build());
     }
 
     @Override

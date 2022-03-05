@@ -30,12 +30,6 @@ import static java.lang.Boolean.FALSE;
  */
 @ApplicationScoped
 public class RegularUserJavacord implements Restriction<Message> {
-    /**
-     * Constructs a new regular user restriction.
-     */
-    private RegularUserJavacord() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return commandContext

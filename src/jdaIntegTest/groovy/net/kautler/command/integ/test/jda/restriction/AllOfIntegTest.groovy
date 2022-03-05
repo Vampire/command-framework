@@ -144,8 +144,13 @@ class AllOfIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class Both extends AllOf<Object> {
+        // make bean proxyable according to CDI spec
+        Both() {
+            super()
+        }
+
         @Inject
-        private Both(Boolean1 boolean1, Boolean2 boolean2) {
+        Both(Boolean1 boolean1, Boolean2 boolean2) {
             super(boolean1, boolean2)
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,6 @@ import javax.enterprise.inject.spi.InjectionPoint;
 
 @ApplicationScoped
 class LoggerProducer {
-    private LoggerProducer() {
-    }
-
     @Produces
     private Logger getLogger(InjectionPoint injectionPoint) {
         return LogManager.getLogger(injectionPoint.getMember().getDeclaringClass());

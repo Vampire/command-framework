@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 @ApplicationScoped
-public class JavacordProducer {
+class JavacordProducer {
     @Inject
     private Logger logger;
 

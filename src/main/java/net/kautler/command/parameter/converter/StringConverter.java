@@ -33,12 +33,6 @@ import javax.enterprise.context.ApplicationScoped;
 @ParameterType("string")
 @ParameterType("text")
 class StringConverter implements ParameterConverter<Object, String> {
-    /**
-     * Constructs a new string converter.
-     */
-    private StringConverter() {
-    }
-
     @Override
     public String convert(String parameter, String type, CommandContext<?> commandContext) {
         return parameter;

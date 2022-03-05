@@ -32,12 +32,6 @@ import static java.lang.Boolean.FALSE;
  */
 @ApplicationScoped
 public class GuildOwnerJda implements Restriction<Message> {
-    /**
-     * Constructs a new guild owner restriction.
-     */
-    private GuildOwnerJda() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.ofNullable(commandContext.getMessage().getMember())

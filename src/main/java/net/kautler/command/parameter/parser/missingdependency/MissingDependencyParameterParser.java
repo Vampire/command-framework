@@ -31,11 +31,11 @@ import javax.enterprise.inject.Default;
 @ApplicationScoped
 @Default
 @Typed
-public class MissingDependencyParameterParser implements ParameterParser {
+class MissingDependencyParameterParser implements ParameterParser {
     /**
      * Throws an {@link UnsupportedOperationException} as the ANTLR dependency is missing.
      */
-    private MissingDependencyParameterParser() {
+    public MissingDependencyParameterParser() {
         throw new UnsupportedOperationException("ANTLR runtime is missing");
     }
 

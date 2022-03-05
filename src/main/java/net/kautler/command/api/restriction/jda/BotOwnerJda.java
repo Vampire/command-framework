@@ -35,12 +35,6 @@ public class BotOwnerJda implements Restriction<Message> {
      */
     private final Map<JDA, Long> ownerByJda = new ConcurrentHashMap<>();
 
-    /**
-     * Constructs a new bot owner restriction.
-     */
-    private BotOwnerJda() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         Message message = commandContext.getMessage();

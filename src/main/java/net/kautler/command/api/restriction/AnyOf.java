@@ -32,6 +32,11 @@ import static java.util.Arrays.asList;
  * <pre>{@code
  * }&#64;{@code ApplicationScoped
  * public class RoleAOrRoleB extends AnyOf<Message> }{{@code
+ *     // make bean proxyable according to CDI spec
+ *     public RoleAOrRoleB() {
+ *         super();
+ *     }
+ *
  *     }&#64;{@code Inject
  *     private RoleAOrRoleB(RoleA roleA, RoleB roleB) {
  *         super(roleA, roleB);

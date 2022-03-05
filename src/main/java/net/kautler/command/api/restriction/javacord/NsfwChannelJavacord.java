@@ -31,12 +31,6 @@ import static java.lang.Boolean.FALSE;
  */
 @ApplicationScoped
 public class NsfwChannelJavacord implements Restriction<Message> {
-    /**
-     * Constructs a new NSFW channel restriction.
-     */
-    private NsfwChannelJavacord() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return commandContext

@@ -33,12 +33,6 @@ import static net.dv8tion.jda.api.entities.ChannelType.TEXT;
  */
 @ApplicationScoped
 public class NsfwChannelJda implements Restriction<Message> {
-    /**
-     * Constructs a new NSFW channel restriction.
-     */
-    private NsfwChannelJda() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.of(commandContext.getMessage())

@@ -32,12 +32,6 @@ import static net.dv8tion.jda.api.Permission.MANAGE_SERVER;
  */
 @ApplicationScoped
 public class ServerManagerJda implements Restriction<Message> {
-    /**
-     * Constructs a new server manager restriction.
-     */
-    private ServerManagerJda() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.ofNullable(commandContext.getMessage().getMember())

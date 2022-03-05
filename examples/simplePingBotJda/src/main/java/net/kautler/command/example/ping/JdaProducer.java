@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import javax.inject.Named;
 import javax.security.auth.login.LoginException;
 
 @ApplicationScoped
-public class JdaProducer {
+class JdaProducer {
     @Inject
     private Logger logger;
 

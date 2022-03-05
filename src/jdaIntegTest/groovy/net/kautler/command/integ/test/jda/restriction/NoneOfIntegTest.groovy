@@ -144,8 +144,13 @@ class NoneOfIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class Neither extends NoneOf<Object> {
+        // make bean proxyable according to CDI spec
+        Neither() {
+            super()
+        }
+
         @Inject
-        private Neither(Boolean1 boolean1, Boolean2 boolean2) {
+        Neither(Boolean1 boolean1, Boolean2 boolean2) {
             super(boolean1, boolean2)
         }
     }

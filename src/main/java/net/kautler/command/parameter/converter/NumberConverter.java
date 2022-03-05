@@ -36,12 +36,6 @@ import static java.lang.String.format;
 @ParameterType("number")
 @ParameterType("integer")
 class NumberConverter implements ParameterConverter<Object, BigInteger> {
-    /**
-     * Constructs a new number converter.
-     */
-    private NumberConverter() {
-    }
-
     @Override
     public BigInteger convert(String parameter, String type, CommandContext<?> commandContext) {
         try {

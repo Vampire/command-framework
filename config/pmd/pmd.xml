@@ -253,19 +253,7 @@
             </property>
         </properties>
     </rule>
-    <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass">
-        <properties>
-            <property name="violationSuppressXPath">
-                <value>
-                    .[
-                        ancestor::TypeDeclaration/Annotation[
-                            typeIsExactly('javax.enterprise.context.ApplicationScoped')
-                                or typeIsExactly('javax.enterprise.context.Dependent')]
-                    ]
-                </value>
-            </property>
-        </properties>
-    </rule>
+    <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass"/>
     <rule ref="category/java/errorprone.xml/NullAssignment">
         <properties>
             <property name="violationSuppressXPath">

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -890,7 +890,7 @@ class RoleJavacordIntegTest extends Specification {
     static class RoleRestriction extends RoleJavacord {
         static criterion
 
-        private RoleRestriction() {
+        RoleRestriction() {
             super(criterion)
         }
     }
@@ -910,7 +910,7 @@ class RoleJavacordIntegTest extends Specification {
     static class RoleCaseInsensitive extends RoleJavacord {
         static roleName
 
-        private RoleCaseInsensitive() {
+        RoleCaseInsensitive() {
             super(roleName, false)
         }
     }
@@ -930,7 +930,7 @@ class RoleJavacordIntegTest extends Specification {
     static class RoleOrHigher extends RoleJavacord {
         static criterion
 
-        private RoleOrHigher() {
+        RoleOrHigher() {
             super(false, criterion)
         }
     }
@@ -950,7 +950,7 @@ class RoleJavacordIntegTest extends Specification {
     static class RoleOrHigherCaseInsensitive extends RoleJavacord {
         static roleName
 
-        private RoleOrHigherCaseInsensitive() {
+        RoleOrHigherCaseInsensitive() {
             super(false, roleName, false)
         }
     }

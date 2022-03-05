@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ class ServerJavacordIntegTest extends Specification {
     static class Server extends ServerJavacord {
         static criterion
 
-        private Server() {
+        Server() {
             super(criterion)
         }
     }
@@ -280,7 +280,7 @@ class ServerJavacordIntegTest extends Specification {
     static class ServerCaseInsensitive extends ServerJavacord {
         static serverName
 
-        private ServerCaseInsensitive() {
+        ServerCaseInsensitive() {
             super(serverName, false)
         }
     }

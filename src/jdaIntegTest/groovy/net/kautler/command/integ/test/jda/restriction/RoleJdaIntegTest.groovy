@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1027,7 +1027,7 @@ class RoleJdaIntegTest extends Specification {
     static class RoleRestriction extends RoleJda {
         static criterion
 
-        private RoleRestriction() {
+        RoleRestriction() {
             super(criterion)
         }
     }
@@ -1047,7 +1047,7 @@ class RoleJdaIntegTest extends Specification {
     static class RoleCaseInsensitive extends RoleJda {
         static roleName
 
-        private RoleCaseInsensitive() {
+        RoleCaseInsensitive() {
             super(roleName, false)
         }
     }
@@ -1067,7 +1067,7 @@ class RoleJdaIntegTest extends Specification {
     static class RoleOrHigher extends RoleJda {
         static criterion
 
-        private RoleOrHigher() {
+        RoleOrHigher() {
             super(false, criterion)
         }
     }
@@ -1087,7 +1087,7 @@ class RoleJdaIntegTest extends Specification {
     static class RoleOrHigherCaseInsensitive extends RoleJda {
         static roleName
 
-        private RoleOrHigherCaseInsensitive() {
+        RoleOrHigherCaseInsensitive() {
             super(false, roleName, false)
         }
     }

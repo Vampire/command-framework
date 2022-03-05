@@ -41,12 +41,6 @@ import static org.javacord.api.util.DiscordRegexPattern.ROLE_MENTION;
 @ParameterType("role_mention")
 @ParameterType("roleMention")
 class RoleMentionConverterJavacord implements ParameterConverter<Message, Role> {
-    /**
-     * Constructs a new role mention converter for Javacord.
-     */
-    private RoleMentionConverterJavacord() {
-    }
-
     @Override
     public Role convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher roleMatcher = ROLE_MENTION.matcher(parameter);

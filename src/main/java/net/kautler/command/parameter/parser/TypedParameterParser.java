@@ -53,7 +53,7 @@ import static java.util.stream.Collectors.toMap;
  */
 @ApplicationScoped
 @Typed
-public class TypedParameterParser extends BaseParameterParser {
+class TypedParameterParser extends BaseParameterParser {
     /**
      * The allowed amount of found parameter converters including the built-in one,
      * if there actually is a built-in one.
@@ -73,12 +73,6 @@ public class TypedParameterParser extends BaseParameterParser {
      * type written literally and cannot be created dynamically.
      */
     private LazyReferenceBySupplier<Map<Class<?>, TypeLiteral<ParameterConverter<?, ?>>>> parameterConverterTypeLiteralsByMessageType;
-
-    /**
-     * Constructs a new typed parameter parser.
-     */
-    private TypedParameterParser() {
-    }
 
     /**
      * Sets the available command handlers which are used to determine the message type to parameter converter type

@@ -31,12 +31,6 @@ import static java.lang.Boolean.FALSE;
  */
 @ApplicationScoped
 public class RegularUserJda implements Restriction<Message> {
-    /**
-     * Constructs a new regular user restriction.
-     */
-    private RegularUserJda() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.of(commandContext.getMessage().getAuthor())

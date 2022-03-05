@@ -52,12 +52,6 @@ class UserMentionConverterJavacord implements ParameterConverter<Message, User> 
     @Inject
     private ExceptionUtil exceptionUtil;
 
-    /**
-     * Constructs a new user mention converter for Javacord.
-     */
-    private UserMentionConverterJavacord() {
-    }
-
     @Override
     public User convert(String parameter, String type, CommandContext<? extends Message> commandContext)
             throws Exception {

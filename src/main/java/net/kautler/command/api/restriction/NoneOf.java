@@ -32,6 +32,11 @@ import static java.util.Arrays.asList;
  * <pre>{@code
  * }&#64;{@code ApplicationScoped
  * public class NeitherRoleANorRoleB extends NoneOf<Message> }{{@code
+ *     // make bean proxyable according to CDI spec
+ *     public NeitherRoleANorRoleB() {
+ *         super();
+ *     }
+ *
  *     }&#64;{@code Inject
  *     private NeitherRoleANorRoleB(RoleA roleA, RoleB roleB) {
  *         super(roleA, roleB);

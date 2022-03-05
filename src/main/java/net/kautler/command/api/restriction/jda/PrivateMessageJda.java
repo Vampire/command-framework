@@ -29,12 +29,6 @@ import static net.dv8tion.jda.api.entities.ChannelType.PRIVATE;
  */
 @ApplicationScoped
 public class PrivateMessageJda implements Restriction<Message> {
-    /**
-     * Constructs a new private message restriction.
-     */
-    private PrivateMessageJda() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return commandContext.getMessage().isFromType(PRIVATE);

@@ -129,7 +129,7 @@ instances.
 _**Example:**_
 ```java
 @ApplicationScoped
-public class JavacordProducer {
+class JavacordProducer {
     @Inject
     private Logger logger;
 
@@ -170,7 +170,7 @@ produced `JDA` and / or `ShardManager` instances.
 _**Example:**_
 ```java
 @ApplicationScoped
-public class JdaProducer {
+class JdaProducer {
     @Inject
     private Logger logger;
 
@@ -208,7 +208,7 @@ Create a CDI bean that implements the [`Command`][Command JavaDoc] interface.
 _**Example:**_
 ```java
 @ApplicationScoped
-public class PingCommand implements Command<Message> {
+class PingCommand implements Command<Message> {
     @Override
     public void execute(CommandContext<? extends Message> commandContext) {
         commandContext
@@ -276,8 +276,8 @@ like [`ChannelJavacord`][ChannelJavacord JavaDoc], [`RoleJavacord`][RoleJavacord
 _**Examples:**_
 ```java
 @ApplicationScoped
-public class Vampire extends UserJavacord {
-    private Vampire() {
+class Vampire extends UserJavacord {
+    public Vampire() {
         super(341505207341023233L);
     }
 }
@@ -285,7 +285,12 @@ public class Vampire extends UserJavacord {
 
 ```java
 @ApplicationScoped
-public class MyFancyServer extends ServerJavacord {
+class MyFancyServer extends ServerJavacord {
+    // make bean proxyable according to CDI spec
+    public MyFancyServer() {
+        super(-1);
+    }
+
     @Inject
     private MyFancyServer(@Named("myFancyServerId") long myFancyServerId) {
         super(myFancyServerId);
@@ -381,7 +386,7 @@ _**Examples:**_
 ```java
 @ApplicationScoped
 @Usage("<text...>")
-public class PingCommand implements Command<Message> {
+class PingCommand implements Command<Message> {
     @Inject
     private ParameterParser parameterParser;
 
@@ -408,7 +413,7 @@ public class PingCommand implements Command<Message> {
 ```java
 @ApplicationScoped
 @Usage("[<user:userMention>] ['exact']")
-public class DoCommand implements Command<Message> {
+class DoCommand implements Command<Message> {
     @Inject
     @Typed
     private ParameterParser parameterParser;
@@ -450,7 +455,7 @@ _**Examples:**_
 ```java
 @ApplicationScoped
 @ParameterType("strings")
-public class StringsConverter implements ParameterConverter<Object, List<String>> {
+class StringsConverter implements ParameterConverter<Object, List<String>> {
     @Override
     public List<String> convert(String parameter, String type, CommandContext<?> commandContext) {
         return asList(parameter.split(","));
@@ -584,7 +589,7 @@ _**Examples:**_
 ```java
 @ApplicationScoped
 @InPhase(BEFORE_PREFIX_COMPUTATION)
-public class MyPrefixTransformer implements CommandContextTransformer<Message> {
+class MyPrefixTransformer implements CommandContextTransformer<Message> {
     @Override
     public <T extends Message> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
         Optional<Server> server = commandContext.getMessage().getServer();
@@ -602,14 +607,14 @@ public class MyPrefixTransformer implements CommandContextTransformer<Message> {
 ```java
 @ApplicationScoped
 @InPhase(BEFORE_PREFIX_COMPUTATION)
-public class MentionPrefixTransformer extends MentionPrefixTransformerJavacord {
+class MentionPrefixTransformer extends MentionPrefixTransformerJavacord {
 }
 ```
 
 ```java
 @ApplicationScoped
 @InPhase(AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION)
-public class MyAliasAndParameterStringTransformer implements CommandContextTransformer<Message> {
+class MyAliasAndParameterStringTransformer implements CommandContextTransformer<Message> {
     @Override
     public <T extends Message> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
         return (!commandContext.getAlias().isPresent())
@@ -651,7 +656,7 @@ not found.
 _**Example:**_
 ```java
 @ApplicationScoped
-public class EventObserver {
+class EventObserver {
     private void commandNotFound(@ObservesAsync CommandNotFoundEventJavacord commandNotFoundEvent) {
         commandNotFoundEvent.getMessage()
                 .getChannel()
@@ -673,7 +678,7 @@ allowed.
 _**Example:**_
 ```java
 @ApplicationScoped
-public class EventObserver {
+class EventObserver {
     private void commandNotAllowed(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
         commandNotAllowedEvent.getMessage()
                 .getChannel()
@@ -699,7 +704,7 @@ extends the [`CommandHandler`][CommandHandler JavaDoc] class. You are also welco
 implementation to the library for all users benefit. You should read the JavaDoc of the `CommandHandler` class and have
 a look at any of the existing implementations to get started with writing your own implementation. Most of the common
 logic should be done in the `CommandHandler` class already and just some framework-dependent things like attaching
-message listeners to the underlying framework need to be done in the sub-class.
+message listeners to the underlying framework need to be done in the subclass.
 
 
 

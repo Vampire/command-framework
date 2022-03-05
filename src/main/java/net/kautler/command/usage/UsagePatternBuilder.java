@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,12 +86,6 @@ public class UsagePatternBuilder extends UsageBaseVisitor<String> {
      */
     private final Map<UsageContext, Map<String, List<String>>> groupNamesByTokenNameByUsageContext =
             new ConcurrentHashMap<>();
-
-    /**
-     * Constructs a new usage pattern builder.
-     */
-    private UsagePatternBuilder() {
-    }
 
     /**
      * Constructs a regular expression pattern from the given usage tree. To get a mapping of group names by token name

@@ -42,12 +42,6 @@ import static net.dv8tion.jda.api.entities.Message.MentionType.ROLE;
 @ParameterType("role_mention")
 @ParameterType("roleMention")
 class RoleMentionConverterJda implements ParameterConverter<Message, Role> {
-    /**
-     * Constructs a new role mention converter for JDA.
-     */
-    private RoleMentionConverterJda() {
-    }
-
     @Override
     public Role convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher roleMatcher = ROLE.getPattern().matcher(parameter);

@@ -25,7 +25,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 @ApplicationScoped
-public class PingCommand implements Command<Message> {
+class PingCommand implements Command<Message> {
     @Inject
     private Logger logger;
 

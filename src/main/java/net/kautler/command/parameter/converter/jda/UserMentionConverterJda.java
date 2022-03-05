@@ -43,12 +43,6 @@ import static net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_USER;
 @ParameterType("user_mention")
 @ParameterType("userMention")
 class UserMentionConverterJda implements ParameterConverter<Message, User> {
-    /**
-     * Constructs a new user mention converter for JDA.
-     */
-    private UserMentionConverterJda() {
-    }
-
     @Override
     public User convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher userMatcher = USER.getPattern().matcher(parameter);

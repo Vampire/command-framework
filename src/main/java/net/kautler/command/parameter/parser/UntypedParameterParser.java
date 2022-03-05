@@ -32,13 +32,7 @@ import java.util.Objects;
  * {@code List<String>} for multi-valued parameters.
  */
 @ApplicationScoped
-public class UntypedParameterParser extends BaseParameterParser {
-    /**
-     * Constructs a new untyped parameter parser.
-     */
-    private UntypedParameterParser() {
-    }
-
+class UntypedParameterParser extends BaseParameterParser {
     @Override
     public <V> Parameters<V> parse(CommandContext<?> commandContext) {
         return parse(commandContext, (parameterMatcher, groupNamesByTokenName) -> {

@@ -144,8 +144,13 @@ class AnyOfIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class Either extends AnyOf<Object> {
+        // make bean proxyable according to CDI spec
+        Either() {
+            super()
+        }
+
         @Inject
-        private Either(Boolean1 boolean1, Boolean2 boolean2) {
+        Either(Boolean1 boolean1, Boolean2 boolean2) {
             super(boolean1, boolean2)
         }
     }

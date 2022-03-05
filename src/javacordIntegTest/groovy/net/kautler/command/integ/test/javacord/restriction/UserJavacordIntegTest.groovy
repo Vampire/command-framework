@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ class UserJavacordIntegTest extends Specification {
     static class User extends UserJavacord {
         static criterion
 
-        private User() {
+        User() {
             super(criterion)
         }
     }
@@ -280,7 +280,7 @@ class UserJavacordIntegTest extends Specification {
     static class UserCaseInsensitive extends UserJavacord {
         static userName
 
-        private UserCaseInsensitive() {
+        UserCaseInsensitive() {
             super(userName, false)
         }
     }

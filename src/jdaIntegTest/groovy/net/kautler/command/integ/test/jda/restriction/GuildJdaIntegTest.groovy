@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -286,7 +286,7 @@ class GuildJdaIntegTest extends Specification {
     static class Guild extends GuildJda {
         static criterion
 
-        private Guild() {
+        Guild() {
             super(criterion)
         }
     }
@@ -306,7 +306,7 @@ class GuildJdaIntegTest extends Specification {
     static class GuildCaseInsensitive extends GuildJda {
         static guildName
 
-        private GuildCaseInsensitive() {
+        GuildCaseInsensitive() {
             super(guildName, false)
         }
     }

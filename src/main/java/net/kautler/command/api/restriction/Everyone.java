@@ -27,12 +27,6 @@ import javax.enterprise.context.ApplicationScoped;
  */
 @ApplicationScoped
 public class Everyone implements Restriction<Object> {
-    /**
-     * Constructs a new everyone restriction.
-     */
-    private Everyone() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<?> commandContext) {
         return true;

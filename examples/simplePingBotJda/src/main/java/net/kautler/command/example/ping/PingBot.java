@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,14 @@ import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.inject.Named;
 
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
 @ApplicationScoped
 public class PingBot {
     @Produces
     @Named
-    public static String discordToken;
+    private static String discordToken;
 
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -37,6 +38,7 @@ public class PingBot {
         discordToken = args[0];
         SeContainerInitializer.newInstance()
                 .addProperty("javax.enterprise.inject.scan.implicit", TRUE)
+                .addProperty("org.jboss.weld.construction.relaxed", FALSE)
                 .initialize();
     }
 }

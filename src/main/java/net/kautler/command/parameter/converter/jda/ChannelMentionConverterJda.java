@@ -42,12 +42,6 @@ import static net.dv8tion.jda.api.entities.Message.MentionType.CHANNEL;
 @ParameterType("channel_mention")
 @ParameterType("channelMention")
 class ChannelMentionConverterJda implements ParameterConverter<Message, TextChannel> {
-    /**
-     * Constructs a new channel mention converter for JDA.
-     */
-    private ChannelMentionConverterJda() {
-    }
-
     @Override
     public TextChannel convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher channelMatcher = CHANNEL.getPattern().matcher(parameter);

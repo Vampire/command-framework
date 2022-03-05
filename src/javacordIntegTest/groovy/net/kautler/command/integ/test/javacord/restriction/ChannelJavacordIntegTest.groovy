@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ class ChannelJavacordIntegTest extends Specification {
     static class Channel extends ChannelJavacord {
         static criterion
 
-        private Channel() {
+        Channel() {
             super(criterion)
         }
     }
@@ -280,7 +280,7 @@ class ChannelJavacordIntegTest extends Specification {
     static class ChannelCaseInsensitive extends ChannelJavacord {
         static channelName
 
-        private ChannelCaseInsensitive() {
+        ChannelCaseInsensitive() {
             super(channelName, false)
         }
     }

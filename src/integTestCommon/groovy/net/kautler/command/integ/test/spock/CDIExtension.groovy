@@ -21,6 +21,7 @@ import org.spockframework.runtime.model.SpecInfo
 
 import javax.enterprise.inject.se.SeContainerInitializer
 
+import static java.lang.Boolean.FALSE
 import static java.lang.Boolean.TRUE
 import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
 import static org.junit.Assert.fail
@@ -33,6 +34,7 @@ class CDIExtension extends AbstractGlobalExtension {
                 def annotatedElements = [spec.reflection, featureMethod.reflection]
                 def seContainer = SeContainerInitializer.newInstance()
                         .addProperty('javax.enterprise.inject.scan.implicit', TRUE)
+                        .addProperty('org.jboss.weld.construction.relaxed', FALSE)
                         .addExtensions(new AddBeansExtension(
                                 annotatedElements*.getAnnotationsByType(AddBean).flatten()*.value()))
                         .addExtensions(new VetoBeansExtension(

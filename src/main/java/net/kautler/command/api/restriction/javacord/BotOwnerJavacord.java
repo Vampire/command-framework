@@ -27,12 +27,6 @@ import javax.enterprise.context.ApplicationScoped;
  */
 @ApplicationScoped
 public class BotOwnerJavacord implements Restriction<Message> {
-    /**
-     * Constructs a new bot owner restriction.
-     */
-    private BotOwnerJavacord() {
-    }
-
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return commandContext.getMessage().getAuthor().isBotOwner();
