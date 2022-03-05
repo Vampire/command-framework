@@ -24,11 +24,15 @@ import spock.lang.Subject
 import static org.powermock.reflect.Whitebox.getAllInstanceFields
 
 class RestrictionChainElementTest extends Specification {
-    Restriction<Object> restriction1 = Stub()
+    Restriction<Object> restriction1 = Stub {
+        it.realClass >> { callRealMethod() }
+    }
 
     // additional interface is just that the two restrictions have different
     // classes, so that the restriction lookup can handle them properly
-    Restriction<Object> restriction2 = Stub(additionalInterfaces: [Serializable])
+    Restriction<Object> restriction2 = Stub(additionalInterfaces: [Serializable]) {
+        it.realClass >> { callRealMethod() }
+    }
 
     @Subject
     RestrictionChainElement restrictionChainElement = new RestrictionChainElement(restriction1.getClass())
@@ -348,8 +352,8 @@ class RestrictionChainElementTest extends Specification {
         then:
             toStringResult.contains("$field.name=")
             field.type == String ?
-                    toStringResult.contains("'${field.get(testee)}'") :
-                    toStringResult.contains(String.valueOf(field.get(testee)))
+            toStringResult.contains("'${field.get(testee)}'") :
+            toStringResult.contains(String.valueOf(field.get(testee)))
 
         where:
             [testee, field] << [

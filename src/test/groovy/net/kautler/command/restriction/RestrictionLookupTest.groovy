@@ -16,6 +16,9 @@
 
 package net.kautler.command.restriction
 
+import javax.enterprise.inject.Instance
+import javax.enterprise.inject.Produces
+
 import net.kautler.command.Internal
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.restriction.Restriction
@@ -40,7 +43,8 @@ class RestrictionLookupTest extends Specification {
             .from(
                     Restriction1,
                     Restriction2,
-                    Restriction3
+                    Restriction3,
+                    Restriction4Producer
             )
             .inject(this)
             .build()
@@ -50,6 +54,8 @@ class RestrictionLookupTest extends Specification {
     Restriction<Object> restriction2 = new Restriction2()
 
     Restriction<Object> restriction3 = new Restriction3()
+
+    Restriction<Object> restriction4 = new Restriction4()
 
     @Inject
     Restriction1 injectedRestriction1
@@ -61,24 +67,15 @@ class RestrictionLookupTest extends Specification {
     @Internal
     Restriction3 injectedRestriction3
 
-    def 'inheritance distance from #restriction to #clazz.simpleName should be #expectedDistance'() {
-        given:
-            restriction = this."$restriction"
+    Restriction injectedRestriction4
 
-        expect:
-            RestrictionLookup.getInheritanceDistance(restriction, clazz) == expectedDistance
+    @Inject
+    Instance<Restriction> injectedRestrictions
 
-        where:
-            restriction    | clazz           || expectedDistance
-            'restriction1' | Restriction1    || 0
-            'restriction1' | BaseRestriction || 1
-            'restriction1' | Restriction     || 2
-            'restriction1' | Object          || 2
-            'restriction3' | Restriction3    || 0
-            'restriction3' | Restriction1    || 1
-            'restriction3' | BaseRestriction || 2
-            'restriction3' | Restriction     || 3
-            'restriction3' | Object          || 3
+    def setup() {
+        injectedRestriction4 = injectedRestrictions.find {
+            !(it in [injectedRestriction1, injectedRestriction2, injectedRestriction3])
+        }
     }
 
     def '#restriction should be found for #clazz.simpleName [restrictions: #restrictions]'() {
@@ -97,35 +94,39 @@ class RestrictionLookupTest extends Specification {
                     [
                             'restriction1',
                             'restriction2',
-                            'restriction3'
+                            'restriction3',
+                            'restriction4'
                     ].permutations(),
                     [
                             [Restriction1, 'restriction1'],
                             [Restriction2, 'restriction2'],
-                            [Restriction3, 'restriction3']
+                            [Restriction3, 'restriction3'],
+                            [Restriction4, 'restriction4']
                     ]
             ].combinations() + [
                     [
                             'injectedRestriction1',
                             'injectedRestriction2',
-                            'injectedRestriction3'
+                            'injectedRestriction3',
+                            'injectedRestriction4'
                     ].permutations(),
                     [
                             [Restriction1, 'injectedRestriction1'],
                             [Restriction2, 'injectedRestriction2'],
-                            [Restriction3, 'injectedRestriction3']
+                            [Restriction3, 'injectedRestriction3'],
+                            [Restriction4, 'injectedRestriction4']
                     ]
             ].combinations()
             clazz = validCombination[0]
             restriction = validCombination[1]
     }
 
-    def 'adding a new restriction should reset the resolution cache'() {
+    def 'adding a new restriction should update the resolution map'() {
         when:
             testee.addAllRestrictions([restriction3])
 
         then:
-            testee.getRestriction(Restriction1).is(restriction3)
+            testee.getRestriction(Restriction1) == null
             testee.getRestriction(Restriction3).is(restriction3)
 
         when:
@@ -134,21 +135,6 @@ class RestrictionLookupTest extends Specification {
         then:
             testee.getRestriction(Restriction1).is(restriction1)
             testee.getRestriction(Restriction3).is(restriction3)
-    }
-
-    def 'requesting any restriction should not return null'() {
-        when:
-            testee.addAllRestrictions([
-                    restriction1,
-                    restriction2,
-                    restriction3,
-                    injectedRestriction1,
-                    injectedRestriction2,
-                    injectedRestriction3
-            ])
-
-        then:
-            testee.getRestriction(Restriction)
     }
 
     def 'equals should return #result for [restriction: #restriction, otherRestriction: #otherRestriction]'() {
@@ -224,9 +210,11 @@ class RestrictionLookupTest extends Specification {
                     restriction1,
                     restriction2,
                     restriction3,
+                    restriction4,
                     injectedRestriction1,
                     injectedRestriction2,
-                    injectedRestriction3
+                    injectedRestriction3,
+                    injectedRestriction4
             ])
 
         when:
@@ -258,4 +246,13 @@ class RestrictionLookupTest extends Specification {
     @ApplicationScoped
     @Internal
     static class Restriction3 extends Restriction1 { }
+
+    static class Restriction4 extends BaseRestriction { }
+
+    @ApplicationScoped
+    static class Restriction4Producer {
+        @Produces
+        @ApplicationScoped
+        Restriction restriction = new Restriction4()
+    }
 }

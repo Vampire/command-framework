@@ -16,8 +16,6 @@
 
 package net.kautler.command.restriction;
 
-import net.kautler.command.api.restriction.Restriction;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -26,7 +24,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import static java.util.Comparator.comparingInt;
+import net.kautler.command.api.restriction.Restriction;
 
 /**
  * A directory of restrictions that can be looked up by their type.
@@ -40,8 +38,7 @@ public class RestrictionLookup<M> {
     private final Set<Restriction<? super M>> restrictions = new CopyOnWriteArraySet<>();
 
     /**
-     * The restrictions by class. As the actual restriction instances are proxied by CDI, this map cannot be
-     * built automatically from the available restrictions, but only on the fly.
+     * The restrictions by real class.
      */
     private final Map<Class<?>, Restriction<? super M>> restrictionByClass = new ConcurrentHashMap<>();
 
@@ -52,7 +49,7 @@ public class RestrictionLookup<M> {
      */
     public void addAllRestrictions(Collection<Restriction<? super M>> restrictions) {
         this.restrictions.addAll(restrictions);
-        restrictionByClass.clear();
+        restrictions.forEach(restriction -> restrictionByClass.put(restriction.getRealClass(), restriction));
     }
 
     /**
@@ -62,30 +59,7 @@ public class RestrictionLookup<M> {
      * @return the restriction instance that fits to the given class or {@code null}
      */
     public Restriction<? super M> getRestriction(Class<?> restrictionClass) {
-        return restrictionByClass
-                .computeIfAbsent(restrictionClass,
-                        key -> restrictions.stream()
-                                // we cannot use a map as the classes are proxied by CDI
-                                .filter(key::isInstance)
-                                .min(comparingInt(restriction -> getInheritanceDistance(restriction, key)))
-                                .orElse(null));
-    }
-
-    /**
-     * Calculates the distance between the class of the given restriction and one of its ancestors or itself.
-     *
-     * @param restriction      the restriction to check
-     * @param restrictionClass the ancestor or self to calculate distance from
-     * @return the distance between the class of the given restriction and the given class
-     */
-    private static int getInheritanceDistance(Restriction<?> restriction, Class<?> restrictionClass) {
-        int distance = 0;
-        for (Class<?> clazz = restriction.getClass();
-             !clazz.equals(restrictionClass) && restrictionClass.isAssignableFrom(clazz);
-             clazz = clazz.getSuperclass()) {
-            distance++;
-        }
-        return distance;
+        return restrictionByClass.get(restrictionClass);
     }
 
     @Override

@@ -133,13 +133,6 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "()V",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 3 with 4"),
-            // this causes an endless for-loop
-            new ExplicitMutationFilterDetails(
-                    "net.kautler.command.restriction.RestrictionLookup",
-                    "getInheritanceDistance",
-                    "(Lnet/kautler/command/api/restriction/Restriction;Ljava/lang/Class;)I",
-                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.NakedReceiverMutator",
-                    "replaced call to java/lang/Class::getSuperclass with receiver"),
             // giving a 4 instead of 3 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.usage.UsageErrorListener",

@@ -25,6 +25,17 @@ import net.kautler.command.api.CommandContext;
  */
 public interface Restriction<M> {
     /**
+     * Returns the real class of this restriction. Subclasses usually do not need to overwrite this method as the
+     * default implementation should be appropriate. This is necessary as CDI implementations that create
+     * proxies might not provide the real class that is necessary for restriction lookup.
+     *
+     * @return the real class of this restriction
+     */
+    default Class<?> getRealClass() {
+        return this.getClass();
+    }
+
+    /**
      * Returns whether a command caused by the given command context should be allowed by this restriction or not.
      *
      * @param commandContext the command context, usually fully populated

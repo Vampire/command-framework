@@ -66,9 +66,15 @@ class CommandHandlerTest extends Specification {
 
     CommandHandler<Object> commandHandlerDelegate = Mock()
 
-    Restriction<Object> restriction1 = Stub()
+    Restriction<Object> restriction1 = Stub {
+        it.realClass >> { callRealMethod() }
+    }
 
-    Restriction<Object> restriction2 = Stub()
+    // additional interface is just that the two restrictions have different
+    // classes, so that the restriction lookup can handle them properly
+    Restriction<Object> restriction2 = Stub(additionalInterfaces: [Serializable]) {
+        it.realClass >> { callRealMethod() }
+    }
 
     Command<Object> command1 = Mock()
 
@@ -364,7 +370,7 @@ class CommandHandlerTest extends Specification {
         commandsInstance.eachWithIndex { command, i ->
             with(command.ci()) {
                 it.aliases >> ["test$i" as String]
-                it.restrictionChain >> new RestrictionChainElement(Restriction)
+                it.restrictionChain >> new RestrictionChainElement(restriction1.getClass())
             }
         }
         commandHandler.doSetCommands(commandsInstance)

@@ -66,12 +66,13 @@ class CommandHandlerJdaTest extends Specification {
     ShardManager shardManagerInCollection2 = Mock()
 
     Restriction<Object> restriction = Stub {
+        it.realClass >> { callRealMethod() }
         allowCommand(_) >> false
     }
 
     Command<Object> command = Stub {
         it.aliases >> ['test']
-        it.restrictionChain >> new RestrictionChainElement(Restriction)
+        it.restrictionChain >> new RestrictionChainElement(restriction.getClass())
     }
 
     TestEventReceiver testEventReceiverDelegate = Mock()
