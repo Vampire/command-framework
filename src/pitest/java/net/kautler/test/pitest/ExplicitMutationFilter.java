@@ -60,7 +60,7 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.restriction.RestrictionChainElement",
                     "isCommandAllowed",
-                    "(Lnet/kautler/command/api/CommandContext;Lnet/kautler/command/restriction/RestrictionLookup;)Z",
+                    "(Lnet/kautler/command/api/CommandContext;Ljava/util/Map;)Z",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
             // giving a 3 instead of 2 element array to Objects.hash can be killed, but we do not want to
@@ -94,7 +94,7 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
                     "lambda$doSetAvailableRestrictions",
-                    "(Ljavax/enterprise/inject/Instance;)Lnet/kautler/command/restriction/RestrictionLookup;",
+                    "(Ljavax/enterprise/inject/Instance;)Ljava/util/Map;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
             // giving a 3 instead of 2 element array to logger.info cannot be killed

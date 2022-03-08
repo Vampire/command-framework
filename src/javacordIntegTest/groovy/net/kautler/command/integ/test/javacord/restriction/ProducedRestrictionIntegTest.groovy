@@ -22,19 +22,19 @@ import javax.enterprise.inject.Produces
 import javax.enterprise.inject.Vetoed
 
 import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
-import net.kautler.command.restriction.RestrictionLookup
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.message.Message
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 
-@Subject(RestrictionLookup)
+@Subject(CommandHandler)
 class ProducedRestrictionIntegTest extends Specification {
     @AddBean(RestrictionProducer)
     @AddBean(PingCommand)

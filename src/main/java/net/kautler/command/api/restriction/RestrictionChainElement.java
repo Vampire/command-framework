@@ -16,12 +16,12 @@
 
 package net.kautler.command.api.restriction;
 
-import net.kautler.command.api.CommandContext;
-import net.kautler.command.restriction.RestrictionLookup;
-
+import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Stream;
+
+import net.kautler.command.api.CommandContext;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -59,8 +59,9 @@ public class RestrictionChainElement {
      * @param <M>                   the class of the message in the command context
      * @return whether the command triggered by the given command context should be allowed or not
      */
-    public <M> boolean isCommandAllowed(CommandContext<M> commandContext, RestrictionLookup<? super M> availableRestrictions) {
-        Restriction<? super M> restriction = availableRestrictions.getRestriction(this.restriction);
+    public <M> boolean isCommandAllowed(CommandContext<M> commandContext,
+                                        Map<Class<?>, Restriction<? super M>> availableRestrictions) {
+        Restriction<? super M> restriction = availableRestrictions.get(this.restriction);
         if (restriction == null) {
             throw new IllegalArgumentException(format("The restriction '%s' was not found in the given available restrictions '%s'", this.restriction, availableRestrictions));
         }
@@ -171,7 +172,8 @@ public class RestrictionChainElement {
         }
 
         @Override
-        public <M> boolean isCommandAllowed(CommandContext<M> commandContext, RestrictionLookup<? super M> availableRestrictions) {
+        public <M> boolean isCommandAllowed(CommandContext<M> commandContext,
+                                            Map<Class<?>, Restriction<? super M>> availableRestrictions) {
             return Stream.of(left, right)
                     .allMatch(chainElement -> chainElement.isCommandAllowed(commandContext, availableRestrictions));
         }
@@ -185,8 +187,8 @@ public class RestrictionChainElement {
                 return false;
             }
             AndCombination that = (AndCombination) obj;
-            return Objects.equals(left, that.left) &&
-                    Objects.equals(right, that.right);
+            return Objects.equals(left, that.left)
+                   && Objects.equals(right, that.right);
         }
 
         @Override
@@ -230,7 +232,8 @@ public class RestrictionChainElement {
         }
 
         @Override
-        public <M> boolean isCommandAllowed(CommandContext<M> commandContext, RestrictionLookup<? super M> availableRestrictions) {
+        public <M> boolean isCommandAllowed(CommandContext<M> commandContext,
+                                            Map<Class<?>, Restriction<? super M>> availableRestrictions) {
             return Stream.of(left, right)
                     .anyMatch(chainElement -> chainElement.isCommandAllowed(commandContext, availableRestrictions));
         }
@@ -244,8 +247,8 @@ public class RestrictionChainElement {
                 return false;
             }
             OrCombination that = (OrCombination) obj;
-            return Objects.equals(left, that.left) &&
-                    Objects.equals(right, that.right);
+            return Objects.equals(left, that.left)
+                   && Objects.equals(right, that.right);
         }
 
         @Override
@@ -281,7 +284,8 @@ public class RestrictionChainElement {
         }
 
         @Override
-        public <M> boolean isCommandAllowed(CommandContext<M> commandContext, RestrictionLookup<? super M> availableRestrictions) {
+        public <M> boolean isCommandAllowed(CommandContext<M> commandContext,
+                                            Map<Class<?>, Restriction<? super M>> availableRestrictions) {
             return !negated.isCommandAllowed(commandContext, availableRestrictions);
         }
 

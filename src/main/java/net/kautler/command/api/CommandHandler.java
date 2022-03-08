@@ -16,16 +16,16 @@
 
 package net.kautler.command.api;
 
-import net.kautler.command.Internal;
-import net.kautler.command.api.CommandContextTransformer.InPhase;
-import net.kautler.command.api.CommandContextTransformer.Phase;
-import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord;
-import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord;
-import net.kautler.command.api.parameter.ParameterConverter;
-import net.kautler.command.api.restriction.Restriction;
-import net.kautler.command.restriction.RestrictionLookup;
-import net.kautler.command.util.lazy.LazyReferenceBySupplier;
-import org.apache.logging.log4j.Logger;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -37,20 +37,21 @@ import javax.enterprise.event.ObservesAsync;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import net.kautler.command.Internal;
+import net.kautler.command.api.CommandContextTransformer.InPhase;
+import net.kautler.command.api.CommandContextTransformer.Phase;
+import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord;
+import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord;
+import net.kautler.command.api.parameter.ParameterConverter;
+import net.kautler.command.api.restriction.Restriction;
+import net.kautler.command.util.lazy.LazyReferenceBySupplier;
+import org.apache.logging.log4j.Logger;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -96,7 +97,7 @@ public abstract class CommandHandler<M> {
     private LazyReferenceBySupplier<Map<String, Command<? super M>>> commandByAlias =
             new LazyReferenceBySupplier<>(() -> {
                 logger.info("Got no commands injected");
-                return Collections.emptyMap();
+                return emptyMap();
             });
 
     /**
@@ -108,10 +109,10 @@ public abstract class CommandHandler<M> {
     /**
      * The available restrictions for this command handler.
      */
-    private LazyReferenceBySupplier<RestrictionLookup<M>> availableRestrictions =
+    private LazyReferenceBySupplier<Map<Class<?>, Restriction<? super M>>> availableRestrictions =
             new LazyReferenceBySupplier<>(() -> {
                 logger.info("Got no restrictions injected");
-                return new RestrictionLookup<>();
+                return emptyMap();
             });
 
     /**
@@ -167,14 +168,14 @@ public abstract class CommandHandler<M> {
      */
     protected void doSetAvailableRestrictions(Instance<Restriction<? super M>> availableRestrictions) {
         this.availableRestrictions = new LazyReferenceBySupplier<>(() -> {
-            RestrictionLookup<M> result = new RestrictionLookup<>();
-            Collection<Restriction<? super M>> restrictions = availableRestrictions.stream().peek(restriction ->
-                    logger.debug("Got restriction {} injected", () -> restriction.getClass().getName())
-            ).collect(toList());
-            result.addAllRestrictions(restrictions);
+            Map<Class<?>, Restriction<? super M>> result = availableRestrictions
+                    .stream()
+                    .peek(restriction ->
+                            logger.debug("Got restriction {} injected", () -> restriction.getRealClass().getName()))
+                    .collect(toMap(Restriction::getRealClass, identity()));
             logger.info("Got {} restriction{} injected",
-                    restrictions::size,
-                    () -> restrictions.size() == 1 ? "" : 's');
+                    result::size,
+                    () -> result.size() == 1 ? "" : 's');
             return result;
         });
     }
@@ -568,14 +569,14 @@ public abstract class CommandHandler<M> {
         }
 
         if (((phase == BEFORE_PREFIX_COMPUTATION) || (phase == BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION))
-                && commandContext.getAlias().isPresent()) {
+            && commandContext.getAlias().isPresent()) {
             logger.debug("Fast forwarding {} to command computation", commandContext);
             computeCommand(commandContext);
             return true;
         }
 
         if ((phase == BEFORE_PREFIX_COMPUTATION)
-                && commandContext.getPrefix().isPresent()) {
+            && commandContext.getPrefix().isPresent()) {
             logger.debug("Fast forwarding {} to alias and parameter string computation", commandContext);
             computeAliasAndParameterString(commandContext);
             return true;

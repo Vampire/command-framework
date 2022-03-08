@@ -17,7 +17,6 @@
 package net.kautler.command.api.restriction
 
 import net.kautler.command.api.CommandContext
-import net.kautler.command.restriction.RestrictionLookup
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -37,9 +36,7 @@ class RestrictionChainElementTest extends Specification {
     @Subject
     RestrictionChainElement restrictionChainElement = new RestrictionChainElement(restriction1.getClass())
 
-    RestrictionLookup<Object> restrictionLookup = new RestrictionLookup<>().tap {
-        addAllRestrictions([restriction1, restriction2])
-    }
+    def availableRestrictions =  [restriction1, restriction2].collectEntries { [it.realClass, it] }
 
     def 'constructor does not accept null argument'() {
         when:
@@ -55,7 +52,7 @@ class RestrictionChainElementTest extends Specification {
             restriction2.allowCommand(_) >> restriction2Allowed
 
         expect:
-            restrictionChainElement.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
+            restrictionChainElement.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -66,7 +63,7 @@ class RestrictionChainElementTest extends Specification {
 
     def 'IllegalArgumentException is thrown if restriction cannot be found by class'() {
         when:
-            restrictionChainElement.isCommandAllowed(Stub(CommandContext), new RestrictionLookup<Object>())
+            restrictionChainElement.isCommandAllowed(Stub(CommandContext), [:])
 
         then:
             IllegalArgumentException iae = thrown()
@@ -83,7 +80,7 @@ class RestrictionChainElementTest extends Specification {
                     new RestrictionChainElement(restriction2.getClass())
 
         expect:
-            andCombination.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
+            andCombination.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -101,7 +98,7 @@ class RestrictionChainElementTest extends Specification {
             def andCombination = restrictionChainElement & restriction2.getClass()
 
         expect:
-            andCombination.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
+            andCombination.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -120,7 +117,7 @@ class RestrictionChainElementTest extends Specification {
                     new RestrictionChainElement(restriction2.getClass())
 
         expect:
-            orCombination.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
+            orCombination.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -138,7 +135,7 @@ class RestrictionChainElementTest extends Specification {
             def orCombination = restrictionChainElement | restriction2.getClass()
 
         expect:
-            orCombination.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
+            orCombination.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<
@@ -156,7 +153,7 @@ class RestrictionChainElementTest extends Specification {
             def negated = restrictionChainElement.negate()
 
         expect:
-            negated.isCommandAllowed(Stub(CommandContext), restrictionLookup) == allowed
+            negated.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
             [restriction1Allowed, restriction2Allowed] <<

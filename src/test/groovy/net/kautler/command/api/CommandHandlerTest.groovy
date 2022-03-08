@@ -210,10 +210,9 @@ class CommandHandlerTest extends Specification {
                     .findAll { it.level == DEBUG }
             availableRestrictions
                     .stream()
-                    .limit(amount)
                     .each { restriction ->
                         assert debugEvents.any {
-                            it.message.formattedMessage == "Got restriction ${restriction.getClass().name} injected"
+                            it.message.formattedMessage == "Got restriction ${restriction.realClass.name} injected"
                         }
                     } ?: true
 
@@ -259,7 +258,6 @@ class CommandHandlerTest extends Specification {
                     .findAll { it.level == DEBUG }
             commands
                     .stream()
-                    .limit(amount)
                     .each { command ->
                         assert debugEvents.any {
                             it.message.formattedMessage == "Got command ${command.getClass().name} injected"
