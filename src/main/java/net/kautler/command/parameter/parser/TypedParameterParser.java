@@ -65,7 +65,7 @@ class TypedParameterParser extends BaseParameterParser {
      */
     @Inject
     @Any
-    private Instance<ParameterConverter<?, ?>> parameterConverters;
+    Instance<ParameterConverter<?, ?>> parameterConverters;
 
     /**
      * A mapping from message types to type literals for selecting matching parameter converters
@@ -82,7 +82,7 @@ class TypedParameterParser extends BaseParameterParser {
      */
     @SuppressWarnings("unchecked")
     @Inject
-    private void setCommandHandlers(Instance<CommandHandler<?>> commandHandlers) {
+    void setCommandHandlers(Instance<CommandHandler<?>> commandHandlers) {
         parameterConverterTypeLiteralsByMessageType = new LazyReferenceBySupplier<>(() -> commandHandlers
                 .stream()
                 .map(CommandHandler::getParameterConverterTypeLiteralByMessageType)

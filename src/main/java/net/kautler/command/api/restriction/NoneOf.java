@@ -38,7 +38,7 @@ import static java.util.Arrays.asList;
  *     }
  *
  *     }&#64;{@code Inject
- *     private NeitherRoleANorRoleB(RoleA roleA, RoleB roleB) {
+ *     NeitherRoleANorRoleB(RoleA roleA, RoleB roleB) {
  *         super(roleA, roleB);
  *     }
  * }}{@code

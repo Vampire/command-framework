@@ -36,7 +36,7 @@ class LoggerProducer {
      */
     @Produces
     @Internal
-    private Logger getLogger(InjectionPoint injectionPoint) {
+    Logger getLogger(InjectionPoint injectionPoint) {
         return LogManager.getLogger(injectionPoint.getMember().getDeclaringClass());
     }
 }

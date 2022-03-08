@@ -57,7 +57,7 @@ public abstract class BaseParameterParser implements ParameterParser {
      * the token name to group names mapping for transformed usage patterns.
      */
     @Inject
-    private UsagePatternBuilder usagePatternBuilder;
+    UsagePatternBuilder usagePatternBuilder;
 
     /**
      * A cache for usage trees built from usage specifications so that the usage parser does not need to be invoked

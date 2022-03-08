@@ -29,15 +29,15 @@ import javax.inject.Named;
 @ApplicationScoped
 class JavacordProducer {
     @Inject
-    private Logger logger;
+    Logger logger;
 
     @Inject
     @Named
-    private String discordToken;
+    String discordToken;
 
     @Produces
     @ApplicationScoped
-    private DiscordApi produceDiscordApi() {
+    DiscordApi produceDiscordApi() {
         return new DiscordApiBuilder()
                 .setToken(discordToken)
                 .login()

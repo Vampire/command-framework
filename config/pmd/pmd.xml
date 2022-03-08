@@ -67,6 +67,23 @@
         <exclude name="UselessParentheses"/>
     </rule>
     <rule ref="category/java/codestyle.xml/ClassNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/DefaultPackage">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        ((MethodDeclaration/@MethodName = 'ensureInitializationAtStartup') and descendant::FormalParameter[
+                            Annotation[typeIsExactly('javax.enterprise.event.Observes')]
+                                and Annotation[typeIsExactly('javax.enterprise.context.Initialized')]])
+                        or (Annotation[typeIsExactly('javax.enterprise.inject.Produces')]
+                            or Annotation[typeIsExactly('javax.inject.Inject')]
+                            or Annotation[typeIsExactly('javax.annotation.PostConstruct')]
+                            or Annotation[typeIsExactly('javax.annotation.PreDestroy')])
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
     <rule ref="category/java/codestyle.xml/EmptyMethodInAbstractClassShouldBeAbstract">
         <properties>
             <property name="violationSuppressXPath">

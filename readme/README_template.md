@@ -131,15 +131,15 @@ _**Example:**_
 @ApplicationScoped
 class JavacordProducer {
     @Inject
-    private Logger logger;
+    Logger logger;
 
     @Inject
     @Named
-    private String discordToken;
+    String discordToken;
 
     @Produces
     @ApplicationScoped
-    private DiscordApi produceDiscordApi() {
+    DiscordApi produceDiscordApi() {
         return new DiscordApiBuilder()
                 .setToken(discordToken)
                 .login()
@@ -172,15 +172,15 @@ _**Example:**_
 @ApplicationScoped
 class JdaProducer {
     @Inject
-    private Logger logger;
+    Logger logger;
 
     @Inject
     @Named
-    private String discordToken;
+    String discordToken;
 
     @Produces
     @ApplicationScoped
-    private JDA produceJda() {
+    JDA produceJda() {
         try {
             return JDABuilder
                     .createLight(discordToken)
@@ -292,7 +292,7 @@ class MyFancyServer extends ServerJavacord {
     }
 
     @Inject
-    private MyFancyServer(@Named("myFancyServerId") long myFancyServerId) {
+    MyFancyServer(@Named("myFancyServerId") long myFancyServerId) {
         super(myFancyServerId);
     }
 }
@@ -388,7 +388,7 @@ _**Examples:**_
 @Usage("<text...>")
 class PingCommand implements Command<Message> {
     @Inject
-    private ParameterParser parameterParser;
+    ParameterParser parameterParser;
 
     @Override
     public void execute(CommandContext<? extends Message> commandContext) {
@@ -416,7 +416,7 @@ class PingCommand implements Command<Message> {
 class DoCommand implements Command<Message> {
     @Inject
     @Typed
-    private ParameterParser parameterParser;
+    ParameterParser parameterParser;
 
     @Override
     public void execute(CommandContext<? extends Message> commandContext) {
@@ -657,7 +657,7 @@ _**Example:**_
 ```java
 @ApplicationScoped
 class EventObserver {
-    private void commandNotFound(@ObservesAsync CommandNotFoundEventJavacord commandNotFoundEvent) {
+    void commandNotFound(@ObservesAsync CommandNotFoundEventJavacord commandNotFoundEvent) {
         commandNotFoundEvent.getMessage()
                 .getChannel()
                 .sendMessage(format(
@@ -679,7 +679,7 @@ _**Example:**_
 ```java
 @ApplicationScoped
 class EventObserver {
-    private void commandNotAllowed(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
+    void commandNotAllowed(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
         commandNotAllowedEvent.getMessage()
                 .getChannel()
                 .sendMessage(format(

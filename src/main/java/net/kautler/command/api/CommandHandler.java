@@ -84,7 +84,7 @@ public abstract class CommandHandler<M> {
      */
     @Inject
     @Internal
-    private Logger logger;
+    Logger logger;
 
     /**
      * The command context transformers that were provided.
@@ -126,7 +126,7 @@ public abstract class CommandHandler<M> {
      *
      * @param event the event that was fired due to the application scope being initialized
      */
-    private void ensureInitializationAtStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
+    void ensureInitializationAtStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
         // just ensure initialization at startup
     }
 
@@ -138,7 +138,7 @@ public abstract class CommandHandler<M> {
      *
      * <pre>{@code
      * }&#64;{@code Inject
-     * private void setCommandContextTransformers(
+     * void setCommandContextTransformers(
      *         }&#64;{@code Any Instance<CommandContextTransformer<? super Message>> commandContextTransformers) {
      *     doSetCommandContextTransformers(commandContextTransformers);
      * }
@@ -159,7 +159,7 @@ public abstract class CommandHandler<M> {
      *
      * <pre>{@code
      * }&#64;{@code Inject
-     * private void setAvailableRestrictions(Instance<Restriction<? super Message>> availableRestrictions) {
+     * void setAvailableRestrictions(Instance<Restriction<? super Message>> availableRestrictions) {
      *     doSetAvailableRestrictions(availableRestrictions);
      * }
      * }</pre>
@@ -188,7 +188,7 @@ public abstract class CommandHandler<M> {
      *
      * <pre>{@code
      * }&#64;{@code Inject
-     * private void setCommands(Instance<Command<? super Message>> commands) {
+     * void setCommands(Instance<Command<? super Message>> commands) {
      *     doSetCommands(commands);
      * }
      * }</pre>
@@ -238,7 +238,7 @@ public abstract class CommandHandler<M> {
      * Shuts down the executor service used for asynchronous command execution if one was used actually.
      */
     @PreDestroy
-    private void shutdownExecutorService() {
+    void shutdownExecutorService() {
         if (executorService.isSet()) {
             executorService.get().shutdown();
         }

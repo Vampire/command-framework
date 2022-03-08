@@ -60,7 +60,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      */
     @Inject
     @Internal
-    private Logger logger;
+    Logger logger;
 
     /**
      * A {@code JDA} {@link Produces produced} by the framework user if JDA support should be used.
@@ -68,7 +68,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * could be produced, for example if sharding is used.
      */
     @Inject
-    private Instance<JDA> jdas;
+    Instance<JDA> jdas;
 
     /**
      * A collection of {@code JDA}s {@link Produces produced} by the framework user if JDA support should
@@ -76,7 +76,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * or {@code Collection<ShardManager>} could be produced.
      */
     @Inject
-    private Instance<Collection<JDA>> jdaCollections;
+    Instance<Collection<JDA>> jdaCollections;
 
     /**
      * A {@code ShardManager} {@link Produces produced} by the framework user if JDA support should be used.
@@ -84,7 +84,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * could be produced.
      */
     @Inject
-    private Instance<ShardManager> shardManagers;
+    Instance<ShardManager> shardManagers;
 
     /**
      * A collection of {@code ShardManager}s {@link Produces produced} by the framework user if JDA support should
@@ -92,19 +92,19 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * could be produced.
      */
     @Inject
-    private Instance<Collection<ShardManager>> shardManagerCollections;
+    Instance<Collection<ShardManager>> shardManagerCollections;
 
     /**
      * A CDI event for firing command not allowed events.
      */
     @Inject
-    private Event<CommandNotAllowedEventJda> commandNotAllowedEvent;
+    Event<CommandNotAllowedEventJda> commandNotAllowedEvent;
 
     /**
      * A CDI event for firing command not found events.
      */
     @Inject
-    private Event<CommandNotFoundEventJda> commandNotFoundEvent;
+    Event<CommandNotFoundEventJda> commandNotFoundEvent;
 
     /**
      * Sets the command context transformers for this command handler.
@@ -112,7 +112,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * @param commandContextTransformers the command context transformers for this command handler
      */
     @Inject
-    private void setCommandContextTransformers(
+    void setCommandContextTransformers(
             @Any Instance<CommandContextTransformer<? super Message>> commandContextTransformers) {
         doSetCommandContextTransformers(commandContextTransformers);
     }
@@ -123,7 +123,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * @param availableRestrictions the available restrictions for this command handler
      */
     @Inject
-    private void setAvailableRestrictions(Instance<Restriction<? super Message>> availableRestrictions) {
+    void setAvailableRestrictions(Instance<Restriction<? super Message>> availableRestrictions) {
         doSetAvailableRestrictions(availableRestrictions);
     }
 
@@ -133,7 +133,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * @param commands the available commands for this command handler
      */
     @Inject
-    private void setCommands(Instance<Command<? super Message>> commands) {
+    void setCommands(Instance<Command<? super Message>> commands) {
         doSetCommands(commands);
     }
 
@@ -141,7 +141,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * Adds this command handler to the injected {@code JDA} and {@code ShardManager} instances as event listener.
      */
     @PostConstruct
-    private void addListener() {
+    void addListener() {
         if (jdas.isUnsatisfied() && jdaCollections.isUnsatisfied()
                 && shardManagers.isUnsatisfied() && shardManagerCollections.isUnsatisfied()) {
             logger.info("No JDA, Collection<JDA>, ShardManager or Collection<ShardManager> injected, CommandHandlerJda will not be used.");
@@ -178,7 +178,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * Removes this command handler from the injected {@code JDA} and {@code ShardManager} instances as event listener.
      */
     @PreDestroy
-    private void removeListener() {
+    void removeListener() {
         Stream.concat(
                 jdas.stream(),
                 jdaCollections.stream().flatMap(Collection::stream)

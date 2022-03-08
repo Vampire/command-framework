@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ class AddBeansExtension implements Extension {
         this.beans = beans
     }
 
-    private void addBeans(@Observes BeforeBeanDiscovery beforeBeanDiscovery) {
+    void addBeans(@Observes BeforeBeanDiscovery beforeBeanDiscovery) {
         beans.each {
             beforeBeanDiscovery
                     .addAnnotatedType(it, "${it.name}_manuallyRegistered")

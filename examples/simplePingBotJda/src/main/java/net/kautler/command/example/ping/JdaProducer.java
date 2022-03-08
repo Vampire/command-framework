@@ -30,15 +30,15 @@ import javax.security.auth.login.LoginException;
 @ApplicationScoped
 class JdaProducer {
     @Inject
-    private Logger logger;
+    Logger logger;
 
     @Inject
     @Named
-    private String discordToken;
+    String discordToken;
 
     @Produces
     @ApplicationScoped
-    private JDA produceJda() {
+    JDA produceJda() {
         try {
             return JDABuilder
                     .createLight(discordToken)

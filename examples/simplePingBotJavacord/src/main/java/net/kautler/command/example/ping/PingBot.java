@@ -28,7 +28,7 @@ import static java.lang.Boolean.TRUE;
 public class PingBot {
     @Produces
     @Named
-    private static String discordToken;
+    static String discordToken;
 
     public static void main(String[] args) {
         if (args.length != 1) {

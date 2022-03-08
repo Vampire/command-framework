@@ -60,33 +60,33 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      */
     @Inject
     @Internal
-    private Logger logger;
+    Logger logger;
 
     /**
      * A {@code DiscordApi} {@link Produces produced} by the framework user if Javacord support should be used.
      * Alternatively a {@code Collection<DiscordApi>} could be produced, for example if sharding is used.
      */
     @Inject
-    private Instance<DiscordApi> discordApis;
+    Instance<DiscordApi> discordApis;
 
     /**
      * A collection of {@code DiscordApi}s {@link Produces produced} by the framework user if Javacord support should
      * be used for example with sharding. Alternatively a single {@code DiscordApi} could be produced.
      */
     @Inject
-    private Instance<Collection<DiscordApi>> discordApiCollections;
+    Instance<Collection<DiscordApi>> discordApiCollections;
 
     /**
      * A CDI event for firing command not allowed events.
      */
     @Inject
-    private Event<CommandNotAllowedEventJavacord> commandNotAllowedEvent;
+    Event<CommandNotAllowedEventJavacord> commandNotAllowedEvent;
 
     /**
      * A CDI event for firing command not found events.
      */
     @Inject
-    private Event<CommandNotFoundEventJavacord> commandNotFoundEvent;
+    Event<CommandNotFoundEventJavacord> commandNotFoundEvent;
 
     /**
      * The listener managers for the added listeners,
@@ -100,7 +100,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      * @param commandContextTransformers the command context transformers for this command handler
      */
     @Inject
-    private void setCommandContextTransformers(
+    void setCommandContextTransformers(
             @Any Instance<CommandContextTransformer<? super Message>> commandContextTransformers) {
         doSetCommandContextTransformers(commandContextTransformers);
     }
@@ -111,7 +111,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      * @param availableRestrictions the available restrictions for this command handler
      */
     @Inject
-    private void setAvailableRestrictions(Instance<Restriction<? super Message>> availableRestrictions) {
+    void setAvailableRestrictions(Instance<Restriction<? super Message>> availableRestrictions) {
         doSetAvailableRestrictions(availableRestrictions);
     }
 
@@ -121,7 +121,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      * @param commands the available commands for this command handler
      */
     @Inject
-    private void setCommands(Instance<Command<? super Message>> commands) {
+    void setCommands(Instance<Command<? super Message>> commands) {
         doSetCommands(commands);
     }
 
@@ -129,7 +129,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      * Adds this command handler to the injected {@code DiscordApi} instances as message create listener.
      */
     @PostConstruct
-    private void addListener() {
+    void addListener() {
         if (discordApis.isUnsatisfied() && discordApiCollections.isUnsatisfied()) {
             logger.info("No DiscordApi or Collection<DiscordApi> injected, CommandHandlerJavacord will not be used.");
         } else {
@@ -154,7 +154,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
      * Removes this command handler from the injected {@code DiscordApi} instances as message create listener.
      */
     @PreDestroy
-    private void removeListener() {
+    void removeListener() {
         listenerManagers.forEach(ListenerManager::remove);
     }
 

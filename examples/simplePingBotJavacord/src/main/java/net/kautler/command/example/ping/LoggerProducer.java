@@ -26,7 +26,7 @@ import javax.enterprise.inject.spi.InjectionPoint;
 @ApplicationScoped
 class LoggerProducer {
     @Produces
-    private Logger getLogger(InjectionPoint injectionPoint) {
+    Logger getLogger(InjectionPoint injectionPoint) {
         return LogManager.getLogger(injectionPoint.getMember().getDeclaringClass());
     }
 }

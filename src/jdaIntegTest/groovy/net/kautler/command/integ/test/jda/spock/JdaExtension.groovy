@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static net.dv8tion.jda.api.Permission.ALL_PERMISSIONS
 class JdaExtension implements IGlobalExtension {
     @Produces
     @ApplicationScoped
-    private static JDA botJda
+    static JDA botJda
 
     private static Guild guildAsBot
 

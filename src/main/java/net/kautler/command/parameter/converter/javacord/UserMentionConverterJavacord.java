@@ -50,7 +50,7 @@ class UserMentionConverterJavacord implements ParameterConverter<Message, User> 
      * and unwrap completion and execution exceptions.
      */
     @Inject
-    private ExceptionUtil exceptionUtil;
+    ExceptionUtil exceptionUtil;
 
     @Override
     public User convert(String parameter, String type, CommandContext<? extends Message> commandContext)

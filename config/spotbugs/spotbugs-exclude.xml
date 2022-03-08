@@ -32,36 +32,6 @@
         </Or>
     </Match>
 
-    <!-- work-around for https://github.com/spotbugs/spotbugs/issues/947 -->
-    <Match>
-        <Or>
-            <And>
-                <Class name="net.kautler.command.LoggerProducer"/>
-                <Method name="getLogger" params="javax.enterprise.inject.spi.InjectionPoint" returns="org.apache.logging.log4j.Logger"/>
-            </And>
-            <And>
-                <Class name="net.kautler.command.api.CommandHandler"/>
-                <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
-            </And>
-            <And>
-                <Or>
-                    <Class name="net.kautler.command.handler.CommandHandlerJavacord"/>
-                    <Class name="net.kautler.command.handler.CommandHandlerJda"/>
-                </Or>
-                <Or>
-                    <Method name="setAvailableRestrictions" params="javax.enterprise.inject.Instance" returns="void"/>
-                    <Method name="setCommands" params="javax.enterprise.inject.Instance" returns="void"/>
-                    <Method name="setCommandContextTransformers" params="javax.enterprise.inject.Instance" returns="void"/>
-                </Or>
-            </And>
-            <And>
-                <Class name="net.kautler.command.parameter.parser.TypedParameterParser"/>
-                <Method name="setCommandHandlers" params="javax.enterprise.inject.Instance" returns="void"/>
-            </And>
-        </Or>
-        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
-    </Match>
-
     <Match>
         <Class name="net.kautler.command.parameter.parser.BaseParameterParser"/>
         <Method name="parse" params="net.kautler.command.api.CommandContext, java.util.function.BiFunction" returns="net.kautler.command.api.parameter.Parameters"/>
@@ -174,5 +144,12 @@
             <Bug pattern="NPMC_NON_PRODUCTIVE_METHOD_CALL"/>
             <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
         </Or>
+    </Match>
+
+    <!-- the field gets set in an @Inject setter, so should never be null at usage time -->
+    <Match>
+        <Class name="net.kautler.command.parameter.parser.TypedParameterParser"/>
+        <Field name="parameterConverterTypeLiteralsByMessageType"/>
+        <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
     </Match>
 </FindBugsFilter>

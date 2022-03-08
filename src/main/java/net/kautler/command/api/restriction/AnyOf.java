@@ -38,7 +38,7 @@ import static java.util.Arrays.asList;
  *     }
  *
  *     }&#64;{@code Inject
- *     private RoleAOrRoleB(RoleA roleA, RoleB roleB) {
+ *     RoleAOrRoleB(RoleA roleA, RoleB roleB) {
  *         super(roleA, roleB);
  *     }
  * }}{@code
