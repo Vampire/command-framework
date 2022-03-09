@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ plugins {
 repositories {
     mavenCentral()
     jcenter()
+    maven("https://m2.dv8tion.net/releases")
 }
 
 dependencies {
@@ -30,7 +31,7 @@ dependencies {
     runtimeOnly("org.jboss.weld.se:weld-se-core:3.1.2.Final") { because("CDI implementation") }
     runtimeOnly("org.jboss:jandex:2.1.1.Final") { because("faster CDI bean scanning") }
 
-    implementation("net.dv8tion:JDA:4.2.0_214") {
+    implementation("net.dv8tion:JDA:4.4.0_352") {
         exclude("club.minnced", "opus-java")
         exclude("com.google.code.findbugs", "jsr305")
     }

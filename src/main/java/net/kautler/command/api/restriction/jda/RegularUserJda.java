@@ -34,7 +34,7 @@ public class RegularUserJda implements Restriction<Message> {
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.of(commandContext.getMessage().getAuthor())
-                .filter(author -> !author.isFake())
+                .filter(author -> !author.isSystem())
                 .map(author -> !author.isBot())
                 .orElse(FALSE);
     }

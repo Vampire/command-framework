@@ -198,7 +198,6 @@ public abstract class UserJda implements Restriction<Message> {
      */
     private boolean allowCommandByUserId(Message message) {
         return Optional.of(message.getAuthor())
-                .filter(author -> !author.isFake())
                 .map(ISnowflake::getIdLong)
                 .map(authorId -> authorId == userId)
                 .orElse(FALSE);
@@ -212,7 +211,6 @@ public abstract class UserJda implements Restriction<Message> {
      */
     private boolean allowCommandByUserName(Message message) {
         return Optional.of(message.getAuthor())
-                .filter(author -> !author.isFake())
                 .map(User::getName)
                 .map(authorName -> {
                     if (this.userName == null) {

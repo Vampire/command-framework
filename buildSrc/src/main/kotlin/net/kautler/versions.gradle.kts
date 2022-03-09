@@ -34,11 +34,12 @@ repositories {
     // have both in case JCenter is again refusing to work properly and Maven Central first
     mavenCentral()
     jcenter()
+    maven("https://m2.dv8tion.net/releases")
 }
 
 val messageFrameworkVersions by extra(mapOf(
         "javacord" to listOf("3.4.0"),
-        "jda" to listOf("4.2.0_214")
+        "jda" to listOf("4.4.0_352")
 ))
 
 val versions by extra(mapOf(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Bjoern Kautler
+ * Copyright 2019-2022 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ tasks.withType<Javadoc>().configureEach {
             add("https://static.javadoc.io/javax.enterprise/cdi-api/${versions["cdi"]}/")
             add("https://static.javadoc.io/javax.inject/javax.inject/${versions["javax.inject"]}/")
             add("https://static.javadoc.io/org.javacord/javacord-api/${messageFrameworkVersions.safeGet("javacord").first()}/")
-            add("https://static.javadoc.io/net.dv8tion/JDA/${messageFrameworkVersions.safeGet("jda").first()}/")
+            add("https://ci.dv8tion.net/job/JDA/javadoc/")
         }
         isUse = true
         isVersion = true

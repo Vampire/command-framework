@@ -16,6 +16,8 @@
 
 package net.kautler.command.api.restriction.jda
 
+import java.util.regex.Pattern
+
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.kautler.command.api.CommandContext
@@ -25,23 +27,11 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
 
-import java.util.regex.Pattern
-
 @Subject(UserJda)
 class UserJdaTest extends Specification {
-    CommandContext<Message> commandContextByFakeUser = Stub {
-        it.message >> Stub(Message) {
-            it.author >> Stub(User) {
-                it.fake >> true
-            }
-        }
-    }
-
     CommandContext<Message> commandContext = Stub {
         it.message >> Stub(Message) {
-            it.author >> Stub(User) {
-                it.fake >> false
-            }
+            it.author >> Stub(User)
         }
     }
 
@@ -50,12 +40,9 @@ class UserJdaTest extends Specification {
             UserJda userJda = Spy(constructorArgs: [expectedUserId])
 
         and:
-            [commandContext, commandContextByFakeUser].each {
-                it.message.author.idLong >> actualUserId
-            }
+            commandContext.message.author.idLong >> actualUserId
 
         expect:
-            !userJda.allowCommand(commandContextByFakeUser)
             userJda.allowCommand(commandContext) == allowed
 
         where:
@@ -70,12 +57,9 @@ class UserJdaTest extends Specification {
             UserJda userJda = Spy(constructorArgs: [expectedUserName])
 
         and:
-            [commandContext, commandContextByFakeUser].each {
-                it.message.author.name >> actualUserName
-            }
+            commandContext.message.author.name >> actualUserName
 
         expect:
-            !userJda.allowCommand(commandContextByFakeUser)
             userJda.allowCommand(commandContext) == allowed
 
         where:
@@ -90,12 +74,9 @@ class UserJdaTest extends Specification {
             UserJda userJda = Spy(constructorArgs: [expectedUserName, false])
 
         and:
-            [commandContext, commandContextByFakeUser].each {
-                it.message.author.name >> actualUserName
-            }
+            commandContext.message.author.name >> actualUserName
 
         expect:
-            !userJda.allowCommand(commandContextByFakeUser)
             userJda.allowCommand(commandContext) == allowed
 
         where:
@@ -110,12 +91,9 @@ class UserJdaTest extends Specification {
             UserJda userJda = Spy(constructorArgs: [expectedUserPattern])
 
         and:
-            [commandContext, commandContextByFakeUser].each {
-                it.message.author.name >> actualUserName
-            }
+            commandContext.message.author.name >> actualUserName
 
         expect:
-            !userJda.allowCommand(commandContextByFakeUser)
             userJda.allowCommand(commandContext) == allowed
 
         where:
