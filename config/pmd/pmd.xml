@@ -110,6 +110,11 @@
             <property name="constantPattern" value="[a-z][a-zA-Z0-9]*|[A-Z][A-Z_0-9]*"/>
         </properties>
     </rule>
+    <rule ref="category/java/codestyle.xml/FormalParameterNamingConventions">
+        <properties>
+            <property name="lambdaParameterPattern" value="[a-z][a-zA-Z0-9]*|__+" />
+        </properties>
+    </rule>
     <rule ref="category/java/codestyle.xml/LinguisticNaming">
         <properties>
             <property name="violationSuppressXPath">

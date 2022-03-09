@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ class EveryoneIntegTest extends Specification {
             }
 
         when:
-            new WebhookClientBuilder(webhook.id, webhook.token.orElseThrow { new AssertionError() })
+            new WebhookClientBuilder(webhook.id, webhook.token)
                     .setWait(false)
                     .build()
                     .send("!ping $random")

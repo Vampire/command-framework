@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ dependencies {
     runtimeOnly("org.jboss.weld.se:weld-se-core:3.1.2.Final") { because("CDI implementation") }
     runtimeOnly("org.jboss:jandex:2.1.1.Final") { because("faster CDI bean scanning") }
 
-    implementation("org.javacord:javacord:3.0.5")
+    implementation("org.javacord:javacord:3.4.0")
     implementation("org.apache.logging.log4j:log4j-api:2.12.1")
 
     runtimeOnly("org.apache.logging.log4j:log4j-core:2.12.1")

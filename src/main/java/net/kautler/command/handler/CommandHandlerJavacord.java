@@ -181,7 +181,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     @Override
     protected void executeAsync(CommandContext<Message> commandContext, Runnable commandExecutor) {
         runAsync(commandExecutor, commandContext.getMessage().getApi().getThreadPool().getExecutorService())
-                .whenComplete((nothing, throwable) -> {
+                .whenComplete((__, throwable) -> {
                     if (throwable != null) {
                         logger.error("Exception while executing command asynchronously", throwable);
                     }

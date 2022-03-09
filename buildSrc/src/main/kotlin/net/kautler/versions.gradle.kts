@@ -37,7 +37,7 @@ repositories {
 }
 
 val messageFrameworkVersions by extra(mapOf(
-        "javacord" to listOf("3.1.1"),
+        "javacord" to listOf("3.4.0"),
         "jda" to listOf("4.2.0_214")
 ))
 
