@@ -51,6 +51,10 @@
             <Class name="net.kautler.command.api.restriction.javacord.RoleJavacord"/>
             <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord"/>
             <Class name="net.kautler.command.api.restriction.javacord.UserJavacord"/>
+            <Class name="net.kautler.command.api.restriction.javacord.slash.ChannelJavacordSlash"/>
+            <Class name="net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlash"/>
+            <Class name="net.kautler.command.api.restriction.javacord.slash.ServerJavacordSlash"/>
+            <Class name="net.kautler.command.api.restriction.javacord.slash.UserJavacordSlash"/>
             <Class name="net.kautler.command.api.restriction.jda.ChannelJda"/>
             <Class name="net.kautler.command.api.restriction.jda.GuildJda"/>
             <Class name="net.kautler.command.api.restriction.jda.RoleJda"/>

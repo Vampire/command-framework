@@ -32,6 +32,8 @@ Table of Contents
 * [Usage](#usage)
   * [Message Framework](#message-framework)
     * [Javacord](#javacord)
+      * [Text Commands](#text-commands)
+      * [Slash Commands](#slash-commands)
     * [JDA](#jda)
   * [Creating Commands](#creating-commands)
     * [Command Aliases](#command-aliases)
@@ -68,8 +70,8 @@ Table of Contents
 Prerequisites
 -------------
 * Java 8+
-* At least one of the supported [message frameworks](#supported-message-frameworks) unless an own `CommandHandler` is
-  used; without one there will be no error, but this framework will simply have nothing to do
+* At least one of the supported [message frameworks](#supported-message-frameworks) unless a custom `CommandHandler`
+  is used; without one there will be no error, but this framework will simply have nothing to do
 * An implementation of CDI that implements CDI $cdiVersion like [Weld SE][Weld SE Website]
 * [Optional] ANTLR runtime $antlrVersion if the [`ParameterParser`][ParameterParser JavaDoc] is used
 
@@ -80,8 +82,8 @@ Supported Message Frameworks
 
 The following message frameworks are currently supported out of the box:
 
-* [Javacord](#javacord)
-* [JDA](#jda)
+* [Javacord](#javacord) (text and slash commands)
+* [JDA](#jda) (text commands)
 
 If you want to have support for an additional framework, do not hesitate to open a pull request or feature request
 issue.
@@ -121,6 +123,8 @@ Usage
 
 #### Javacord
 
+##### Text Commands
+
 For the [Javacord][Javacord Website] support, include Javacord as implementation dependency and create a CDI producer
 that produces either one `DiscordApi`, or if you use sharding a `Collection<DiscordApi>` with all shards where you want
 commands to be handled. You should also have a disposer method that properly disconnects the produced `DiscordApi`
@@ -143,16 +147,59 @@ class JavacordProducer {
         return new DiscordApiBuilder()
                 .setToken(discordToken)
                 .login()
-                .whenComplete((discordApi, throwable) -> {
-                    if (throwable != null) {
-                        logger.error("Exception while logging in to Discord", throwable);
-                    }
-                })
+                .exceptionally(ExceptionLogger.get())
                 .join();
     }
 
     private void disposeDiscordApi(@Disposes DiscordApi discordApi) {
         discordApi.disconnect();
+    }
+}
+```
+
+_**Tested versions:**_
+$testedJavacordVersions
+
+##### Slash Commands
+
+For slash commands you need to do the same as for [Text Commands](#text-commands).
+
+Additionally, the [commands](#creating-commands) have to implement
+[`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] instead of `Command`. Furthermore, they must have a
+[description](#command-description) defined, and all [aliases](#command-aliases) have to consist of one to three
+slash separated parts, so either `command`, `command/subcommand`, or `command/subcommand-group/subcommand`.
+
+If your command needs parameters, you overwrite the `SlashCommandJavacord#getOptions` method, which just returns
+an empty list in its default implementation. In the implementation of the method you can then use the full API
+for Javacord slash command options.
+
+When using [command context transformers](#customizing-the-command-recognition-and-resolution-process) with slash
+commands, all phases before `BEFORE_COMMAND_COMPUTATION` are skipped by the command handler already.
+
+Finally, this framework does not register the slash commands with Discord for you automatically, because you
+might want to register them globally, or per server, or you might want to add further commands not managed by
+this framework, and so on. Instead, you can register the commands yourself by injecting the provided
+`List<SlashCommandBuilder>`. This injected list can directly be used as argument for methods like
+`DiscordApi#bulkOverwriteGlobalApplicationCommands` or `DiscordApi#bulkOverwriteServerApplicationCommands`.
+The requirements described above regarding description and aliases are only enforced if you inject it somewhere.
+
+A fully self-contained example containing a text, a slash, and a combined command can be found at
+`examples/simplePingBotJavacord`.
+
+_**Example:**_
+```java
+@ApplicationScoped
+public class SlashCommandRegisterer {
+    @Inject
+    DiscordApi discordApi;
+
+    @Inject
+    List<SlashCommandBuilder> slashCommandBuilders;
+
+    void registerSlashCommands(@Observes @Initialized(ApplicationScoped.class) Object __) {
+        discordApi
+                .bulkOverwriteGlobalApplicationCommands(slashCommandBuilders)
+                .exceptionally(ExceptionLogger.get());
     }
 }
 ```
@@ -235,6 +282,10 @@ aliases to which the command reacts can be configured. If no aliases are configu
 or `Cmd` suffix / prefix stripped and the first letter lowercased is used as a default. If at least one alias is
 configured, only the explicitly configured ones are used.
 
+_Javacord slash command specific:_ When injecting a `List<SlashCommandBuilder>` anywhere, all aliases of commands
+implementing [`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] have to follow a pre-defined format that is described
+at [slash commands](#slash-commands).
+
 #### Asynchronous Command Execution
 
 By overwriting the `Command#isAsynchronous()` method or applying the [`@Asynchronous`][@Asynchronous JavaDoc]
@@ -255,8 +306,10 @@ being configured asynchronously if the underlying message framework dispatches m
 #### Command Description
 
 By overwriting the `Command#getDescription()` method or applying the [`@Description`][@Description JavaDoc] annotation,
-the description of the command can be configured. This description is not currently used by this framework, but it can
-be used, for example, in a custom help command.
+the description of the command can be configured. This description can be used, for example, in a custom help command.
+
+_Javacord slash command specific:_ When injecting a `List<SlashCommandBuilder>` anywhere, all commands implementing
+[`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] have to provide a description.
 
 #### Command Restrictions
 
@@ -553,7 +606,7 @@ method, given the current phase, you can transform the current command context, 
 Additionally the bean has to be annotated with at least one [`@InPhase`][@InPhase JavaDoc] qualifier annotation, or it
 will simply not be used silently. The transformer will be called for each sub phase that is added with that annotation.
 
-There are also helper classes that can be used as super classes for own command context transformers, for example,
+There are also helper classes that can be used as super classes for custom command context transformers, for example,
 a transformer that returns the mention string for the bot as command prefix if Javacord is used as the underlying
 message framework.
 
@@ -813,6 +866,8 @@ limitations under the License.
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/restriction/javacord/RoleJavacord.html
 [ServerJavacord JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/restriction/javacord/ServerJavacord.html
+[SlashCommandJavacord JavaDoc]:
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/slash/javacord/SlashCommandJavacord.html
 [@Usage JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/annotation/Usage.html
 [UserJavacord JavaDoc]:

@@ -270,7 +270,9 @@
                     \QFound 'DD'-anomaly for variable 'distance' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'channelId' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'roleId' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'userId' (lines '\E.*
+                    \QFound 'DU'-anomaly for variable 'userId' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'alias' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'subcommandOrGroup' (lines '\E.*
                 </value>
             </property>
         </properties>

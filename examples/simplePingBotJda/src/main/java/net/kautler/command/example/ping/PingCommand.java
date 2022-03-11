@@ -36,8 +36,8 @@ class PingCommand implements Command<Message> {
                 .getChannel()
                 .sendMessage(commandContext
                         .getParameterString()
-                        .filter(parameterString -> !parameterString.isEmpty())
-                        .map(parameterString -> "pong: " + parameterString)
+                        .filter(nonce -> !nonce.isEmpty())
+                        .map(nonce -> "pong: " + nonce)
                         .orElse("pong"))
                 .queue(null, throwable -> logger.error("Exception while executing ping command", throwable));
     }

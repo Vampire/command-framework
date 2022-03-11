@@ -232,7 +232,52 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "hashCode",
                     "()I",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
-                    "Substituted 4 with 5")
+                    "Substituted 4 with 5"),
+            // giving a 4 instead of 3 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.handler.CommandHandlerJavacordSlash",
+                    CURRENT_JAVA_MAJOR_VERSION >= 9 ? "lambda$handleSlashCommandCreateEvent" : "lambda$null",
+                    "(Ljava/lang/String;Ljava/lang/String;Lorg/javacord/api/interaction/SlashCommandInteractionOption;)Ljava/lang/String;",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 3 with 4"),
+            // giving a 3 instead of 2 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.handler.CommandHandlerJavacordSlash",
+                    CURRENT_JAVA_MAJOR_VERSION >= 9 ? "lambda$handleSlashCommandCreateEvent" : "lambda$null",
+                    "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3"),
+            // giving a 3 instead of 2 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.handler.CommandHandlerJavacordSlash",
+                    "handleSlashCommandCreateEvent",
+                    "(Lorg/javacord/api/event/interaction/SlashCommandCreateEvent;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3"),
+            // giving a 3 instead of 2 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.SlashCommandBuilderProducer$AliasParts",
+                    "<init>",
+                    "(Ljava/lang/String;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3",
+                    96),
+            // not assigning null to final field in constructor cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.SlashCommandBuilderProducer$AliasParts",
+                    "<init>",
+                    "(Ljava/lang/String;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.MemberVariableMutator",
+                    "Removed assignment to member variable subcommandGroup",
+                    33, 54),
+            // not assigning null to final field in constructor cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.SlashCommandBuilderProducer$AliasParts",
+                    "<init>",
+                    "(Ljava/lang/String;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.MemberVariableMutator",
+                    "Removed assignment to member variable subcommand",
+                    38)
             ).collect(groupingBy(ExplicitMutationFilterDetails::getClazz));
 
     // work-around for https://github.com/hcoles/pitest/issues/689

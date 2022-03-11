@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright 2019-2020 Björn Kautler
+  ~ Copyright 2019-2022 Björn Kautler
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -33,10 +33,19 @@
         <exclude name="net.kautler.command.api.restriction.javacord.*">
             <if-class-not-available name="org.javacord.api.Javacord"/>
         </exclude>
+        <exclude name="net.kautler.command.api.restriction.javacord.slash.*">
+            <if-class-not-available name="org.javacord.api.Javacord"/>
+        </exclude>
         <exclude name="net.kautler.command.handler.CommandHandlerJavacord">
             <if-class-not-available name="org.javacord.api.Javacord"/>
         </exclude>
+        <exclude name="net.kautler.command.handler.CommandHandlerJavacordSlash">
+            <if-class-not-available name="org.javacord.api.Javacord"/>
+        </exclude>
         <exclude name="net.kautler.command.parameter.converter.javacord.*">
+            <if-class-not-available name="org.javacord.api.Javacord"/>
+        </exclude>
+        <exclude name="net.kautler.command.util.SlashCommandBuilderProducer">
             <if-class-not-available name="org.javacord.api.Javacord"/>
         </exclude>
 

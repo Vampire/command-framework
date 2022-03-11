@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,34 @@
 
 package net.kautler.command.example.ping;
 
-import net.kautler.command.api.Command;
-import net.kautler.command.api.CommandContext;
-import org.apache.logging.log4j.Logger;
-import org.javacord.api.entity.message.Message;
+import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Initialized;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import org.apache.logging.log4j.Logger;
+import org.javacord.api.DiscordApi;
+import org.javacord.api.interaction.SlashCommandBuilder;
+
 @ApplicationScoped
-class PingCommand implements Command<Message> {
+public class SlashCommandRegisterer {
     @Inject
     Logger logger;
 
-    @Override
-    public void execute(CommandContext<? extends Message> commandContext) {
-        commandContext
-                .getMessage()
-                .getChannel()
-                .sendMessage(commandContext
-                        .getParameterString()
-                        .filter(nonce -> !nonce.isEmpty())
-                        .map(nonce -> "pong: " + nonce)
-                        .orElse("pong"))
-                .whenComplete((sentMessage, throwable) -> {
+    @Inject
+    DiscordApi discordApi;
+
+    @Inject
+    List<SlashCommandBuilder> slashCommandBuilders;
+
+    void registerSlashCommands(@Observes @Initialized(ApplicationScoped.class) Object __) {
+        discordApi
+                .bulkOverwriteGlobalApplicationCommands(slashCommandBuilders)
+                .whenComplete((slashCommands, throwable) -> {
                     if (throwable != null) {
-                        logger.error("Exception while executing ping command", throwable);
+                        logger.error("Exception while registering slash commands", throwable);
                     }
                 });
     }

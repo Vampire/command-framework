@@ -302,6 +302,7 @@ ruleset {
     ExplicitCallToCompareToMethod {
         doNotApplyToClassNames = [
                 'net.kautler.command.api.restriction.javacord.RoleJavacordTest',
+                'net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlashTest',
                 'net.kautler.command.api.restriction.jda.RoleJdaTest'
         ].join(', ')
     }
@@ -415,7 +416,9 @@ ruleset {
     ObjectOverrideMisspelledMethodName
     //PackageName
     PackageNameMatchesFilePath
-    ParameterName
+    ParameterName {
+        ignoreParameterNames = '_'
+    }
     PropertyName
     VariableName
 
@@ -507,7 +510,11 @@ ruleset {
     // rulesets/unused.xml
     UnusedArray
     UnusedMethodParameter {
-        doNotApplyToClassNames = 'net.kautler.command.integ.test.VersionIntegTest$VersionHolder'
+        doNotApplyToClassNames = [
+                'net.kautler.command.integ.test.VersionIntegTest$VersionHolder',
+                'net.kautler.command.integ.test.javacord.PingSlashIntegTest$SlashCommandRegisterer',
+                'net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest$SlashCommandRegisterer'
+        ].join(', ')
     }
     UnusedObject
     UnusedPrivateField

@@ -34,6 +34,8 @@ import net.kautler.command.api.restriction.javacord.ChannelJavacord;
 import net.kautler.command.api.restriction.javacord.RoleJavacord;
 import net.kautler.command.api.restriction.javacord.ServerJavacord;
 import net.kautler.command.api.restriction.javacord.UserJavacord;
+import net.kautler.command.api.slash.javacord.SlashCommandJavacord;
+import org.javacord.api.interaction.SlashCommandBuilder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -64,6 +66,10 @@ public interface Command<M> {
 
     /**
      * Returns the aliases for this command.
+     *
+     * <p>When injecting a {@link SlashCommandBuilder List&lt;SlashCommandBuilder&gt;} anywhere, all aliases
+     * of commands implementing {@link SlashCommandJavacord} have to follow a pre-defined format that is described
+     * at {@code SlashCommandJavacord}.
      *
      * <p>The default implementation of this method returns the aliases configured using the {@link Alias @Alias}
      * annotation. If no alias is configured by annotation, the class name, stripped by {@code Command} or {@code Cmd}
@@ -97,7 +103,10 @@ public interface Command<M> {
 
     /**
      * Returns the description of this command.
-     * Currently this description is used nowhere, but can for example be displayed in an own help command.
+     * This description can for example be displayed in an own help command.
+     *
+     * <p>When injecting a {@link SlashCommandBuilder List&lt;SlashCommandBuilder&gt;} anywhere, all commands
+     * implementing {@link SlashCommandJavacord} have to provide a description.
      *
      * <p>The default implementation of this method returns the description configured using the
      * {@link Description @Description} annotation. If no description is configured by annotation,

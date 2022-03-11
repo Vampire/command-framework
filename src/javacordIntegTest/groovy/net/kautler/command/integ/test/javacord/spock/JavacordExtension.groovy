@@ -40,6 +40,8 @@ class JavacordExtension implements IGlobalExtension {
     @ApplicationScoped
     static DiscordApi botDiscordApi
 
+    @Produces
+    @ApplicationScoped
     private static Server serverAsBot
 
     private static DiscordApi userDiscordApi
@@ -86,6 +88,15 @@ class JavacordExtension implements IGlobalExtension {
                 .orElse(FALSE)) {
             throw new IllegalArgumentException('Bot with testDiscordToken1 must have higher role than highest role of bot with testDiscordToken2')
         }
+
+        // make sure the owner has not roles to begin with,
+        // so all roles deleted further below were added by some test
+        if (botDiscordApi
+                .owner
+                .join()
+                .getRoles(serverAsBot) != [serverAsBot.everyoneRole]) {
+            throw new IllegalArgumentException('The owner of bot with testDiscordToken1 must not have any roles in the test server')
+        }
     }
 
     @Override
@@ -128,6 +139,32 @@ class JavacordExtension implements IGlobalExtension {
                 serverAsBot
                         .createUpdater()
                         .removeAllRolesFromUser(userDiscordApi.yourself)
+                        .update()
+                        .join()
+
+                rolesUpdateReceived.get()
+            } finally {
+                listenerManager?.remove()
+            }
+
+            // remove all roles from owner
+            // this is necessary for RoleJavacordSlashIntegTest
+            // if these get automated somehow with another account,
+            // this can be removed or rather changed to modify that account
+            rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            listenerManager = serverAsBot.addUserRoleRemoveListener {
+                if (serverAsBot.getRoles(botDiscordApi.owner.join()) == [serverAsBot.everyoneRole]) {
+                    rolesUpdateReceived.set(true)
+                }
+            }
+            try {
+                if (serverAsBot.getRoles(botDiscordApi.owner.join()) == [serverAsBot.everyoneRole]) {
+                    rolesUpdateReceived.set(true)
+                }
+
+                serverAsBot
+                        .createUpdater()
+                        .removeAllRolesFromUser(botDiscordApi.owner.join())
                         .update()
                         .join()
 

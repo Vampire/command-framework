@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package net.kautler.command.api.annotation;
 
 import net.kautler.command.api.Command;
+import net.kautler.command.api.slash.javacord.SlashCommandJavacord;
+import org.javacord.api.interaction.SlashCommandBuilder;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -27,7 +29,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * An annotation with which a description of the command can be configured.
- * Currently this description is used nowhere, but can for example be displayed in an own help command.
+ * This description can for example be displayed in an own help command.
+ *
+ * <p>When injecting a {@link SlashCommandBuilder List&lt;SlashCommandBuilder&gt;} anywhere, all commands
+ * implementing {@link SlashCommandJavacord} have to provide a description.
  *
  * <p>Alternatively to using this annotation the {@link Command#getDescription()} method can be overwritten.
  * If that method is overwritten and this annotation is used, the method overwrite takes precedence.
