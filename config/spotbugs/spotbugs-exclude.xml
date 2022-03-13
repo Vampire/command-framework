@@ -26,23 +26,13 @@
     <Match>
         <Class name="net.kautler.command.api.CommandHandler"/>
         <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
-        <Or>
-            <Bug pattern="ACEM_ABSTRACT_CLASS_EMPTY_METHODS"/>
-            <Bug pattern="UP_UNUSED_PARAMETER"/>
-        </Or>
+        <Bug pattern="ACEM_ABSTRACT_CLASS_EMPTY_METHODS"/>
     </Match>
 
     <Match>
         <Class name="net.kautler.command.parameter.parser.BaseParameterParser"/>
         <Method name="parse" params="net.kautler.command.api.CommandContext, java.util.function.BiFunction" returns="net.kautler.command.api.parameter.Parameters"/>
         <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
-    </Match>
-
-    <Match>
-        <Class name="net.kautler.command.usage.UsagePatternBuilder"/>
-        <Method name="getUsageContext" params="net.kautler.command.usage.UsageParserRuleContext" returns="net.kautler.command.usage.UsageParser$UsageContext"/>
-        <Local name="current"/>
-        <Bug pattern="BC_UNCONFIRMED_CAST"/>
     </Match>
 
     <Match>
@@ -112,13 +102,6 @@
         <Bug pattern="CRLF_INJECTION_LOGS"/>
     </Match>
 
-    <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/372 -->
-    <Match>
-        <Class name="net.kautler.command.handler.CommandHandlerJda"/>
-        <Method name="onEvent" params="net.dv8tion.jda.api.events.GenericEvent" returns="void"/>
-        <Bug pattern="ITC_INHERITANCE_TYPE_CHECKING"/>
-    </Match>
-
     <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/384 -->
     <Match>
         <Or>
@@ -132,13 +115,6 @@
             </And>
         </Or>
         <Bug pattern="OI_OPTIONAL_ISSUES_USES_ORELSEGET_WITH_NULL"/>
-    </Match>
-
-    <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/385 -->
-    <Match>
-        <Class name="net.kautler.command.parameter.converter.javacord.UserMentionConverterJavacord"/>
-        <Method name="convert" params="java.lang.String, java.lang.String, net.kautler.command.api.CommandContext" returns="org.javacord.api.entity.user.User"/>
-        <Bug pattern="AI_ANNOTATION_ISSUES_NEEDS_NULLABLE"/>
     </Match>
 
     <Match>

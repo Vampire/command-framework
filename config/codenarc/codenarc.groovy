@@ -37,7 +37,6 @@ ruleset {
                 'net.kautler.command.api.parameter.ParameterParseExceptionTest',
                 'net.kautler.command.api.restriction.RestrictionChainElementTest',
                 'net.kautler.command.parameter.ParametersImplTest',
-                'net.kautler.command.restriction.RestrictionLookupTest',
                 'net.kautler.command.util.lazy.LazyReferenceByFunctionTest',
                 'net.kautler.command.util.lazy.LazyReferenceBySupplierTest',
                 'net.kautler.command.util.lazy.LazyReferenceTest'
@@ -314,7 +313,6 @@ ruleset {
                 'net.kautler.command.api.parameter.ParameterParseExceptionTest',
                 'net.kautler.command.api.restriction.RestrictionChainElementTest',
                 'net.kautler.command.parameter.ParametersImplTest',
-                'net.kautler.command.restriction.RestrictionLookupTest',
                 'net.kautler.command.util.lazy.LazyReferenceByFunctionTest',
                 'net.kautler.command.util.lazy.LazyReferenceBySupplierTest',
                 'net.kautler.command.util.lazy.LazyReferenceTest'
@@ -325,9 +323,7 @@ ruleset {
     ExplicitCallToMinusMethod
     ExplicitCallToModMethod
     ExplicitCallToMultiplyMethod
-    ExplicitCallToOrMethod {
-        doNotApplyToClassNames = 'net.kautler.command.api.restriction.RestrictionChainElementTest'
-    }
+    ExplicitCallToOrMethod
     ExplicitCallToPlusMethod
     ExplicitCallToPowerMethod
     ExplicitCallToPutAtMethod
@@ -518,12 +514,7 @@ ruleset {
     }
     UnusedObject
     UnusedPrivateField
-    UnusedPrivateMethod {
-        doNotApplyToClassNames = [
-                'net.kautler.command.integ.test.spock.AddBeansExtension',
-                'net.kautler.command.integ.test.spock.VetoBeansExtension'
-        ].join(', ')
-    }
+    UnusedPrivateMethod
     UnusedPrivateMethodParameter
     UnusedVariable
 }
