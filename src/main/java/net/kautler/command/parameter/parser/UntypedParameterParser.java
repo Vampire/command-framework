@@ -16,11 +16,11 @@
 
 package net.kautler.command.parameter.parser;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.Parameters;
 import net.kautler.command.parameter.ParametersImpl;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Bjoern Kautler
+ * Copyright 2019-2022 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,9 +58,9 @@ if (JavaVersion.current().isJava9Compatible) {
             val module = moduleInfoFile
                     .setModule("net.kautler.command")
                     .addDirective("requires org.apache.logging.log4j;")
-                    .addDirective("requires cdi.api;")
-                    .addDirective("requires static javax.inject;")
-                    .addDirective("requires static java.annotation;")
+                    .addDirective("requires jakarta.cdi;")
+                    .addDirective("requires static jakarta.inject;")
+                    .addDirective("requires static jakarta.annotation;")
                     .addDirective("requires static com.github.spotbugs.annotations;")
                     .addDirective("requires static org.antlr.antlr4.runtime;")
                     .addDirective("requires static org.javacord.api;")

@@ -25,14 +25,15 @@ repositories {
 dependencies {
     implementation("net.kautler:command-framework")
 
-    implementation("javax.enterprise:cdi-api:2.0")
-    runtimeOnly("org.jboss.weld.se:weld-se-core:3.1.2.Final") { because("CDI implementation") }
+    implementation("jakarta.enterprise:jakarta.enterprise.cdi-api:3.0.0")
+    runtimeOnly("org.jboss.weld.se:weld-se-core:4.0.3.Final") { because("CDI implementation") }
     runtimeOnly("org.jboss:jandex:2.1.1.Final") { because("faster CDI bean scanning") }
 
     implementation("org.javacord:javacord:3.4.0")
-    implementation("org.apache.logging.log4j:log4j-api:2.12.1")
+    implementation(platform("org.apache.logging.log4j:log4j-bom:2.17.2"))
+    implementation("org.apache.logging.log4j:log4j-api")
 
-    runtimeOnly("org.apache.logging.log4j:log4j-core:2.12.1")
+    runtimeOnly("org.apache.logging.log4j:log4j-core")
     runtimeOnly("org.fusesource.jansi:jansi:1.18") { because("ANSI colors on Windows") }
 }
 

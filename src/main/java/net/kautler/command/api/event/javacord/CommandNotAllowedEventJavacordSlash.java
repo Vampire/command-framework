@@ -16,8 +16,7 @@
 
 package net.kautler.command.api.event.javacord;
 
-import javax.enterprise.event.ObservesAsync;
-
+import jakarta.enterprise.event.ObservesAsync;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.annotation.RestrictedTo;
 import net.kautler.command.api.event.CommandEvent;

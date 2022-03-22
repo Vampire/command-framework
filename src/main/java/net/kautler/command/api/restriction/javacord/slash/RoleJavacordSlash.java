@@ -21,8 +21,7 @@ import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.ApplicationScoped;
-
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 import org.javacord.api.entity.DiscordEntity;

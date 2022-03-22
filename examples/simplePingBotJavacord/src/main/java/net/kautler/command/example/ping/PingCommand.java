@@ -16,13 +16,12 @@
 
 package net.kautler.command.example.ping;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandContext;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.message.Message;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
 @ApplicationScoped
 class PingCommand implements Command<Message> {

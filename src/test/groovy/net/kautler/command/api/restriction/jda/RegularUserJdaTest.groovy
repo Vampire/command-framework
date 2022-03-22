@@ -16,8 +16,7 @@
 
 package net.kautler.command.api.restriction.jda
 
-import javax.inject.Inject
-
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.kautler.command.api.CommandContext

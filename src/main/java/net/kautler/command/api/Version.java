@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package net.kautler.command.api;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.time.Instant;
 import java.util.Properties;
 import java.util.StringJoiner;
+
+import jakarta.enterprise.context.ApplicationScoped;
 
 import static java.lang.String.format;
 

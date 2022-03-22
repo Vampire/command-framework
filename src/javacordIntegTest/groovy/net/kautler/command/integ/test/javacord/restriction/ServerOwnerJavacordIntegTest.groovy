@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package net.kautler.command.integ.test.javacord.restriction
 
+import jakarta.enterprise.event.ObservesAsync
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.javacord.ServerOwnerJavacord
@@ -27,8 +28,6 @@ import org.junit.experimental.categories.Category
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.event.ObservesAsync
 
 import static java.util.UUID.randomUUID
 

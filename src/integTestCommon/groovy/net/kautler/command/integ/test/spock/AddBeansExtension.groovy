@@ -16,10 +16,10 @@
 
 package net.kautler.command.integ.test.spock
 
-import javax.enterprise.event.Observes
-import javax.enterprise.inject.Vetoed
-import javax.enterprise.inject.spi.BeforeBeanDiscovery
-import javax.enterprise.inject.spi.Extension
+import jakarta.enterprise.event.Observes
+import jakarta.enterprise.inject.Vetoed
+import jakarta.enterprise.inject.spi.BeforeBeanDiscovery
+import jakarta.enterprise.inject.spi.Extension
 
 class AddBeansExtension implements Extension {
     def beans

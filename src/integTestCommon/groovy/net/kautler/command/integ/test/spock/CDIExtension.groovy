@@ -16,10 +16,9 @@
 
 package net.kautler.command.integ.test.spock
 
+import jakarta.enterprise.inject.se.SeContainerInitializer
 import org.spockframework.runtime.extension.AbstractGlobalExtension
 import org.spockframework.runtime.model.SpecInfo
-
-import javax.enterprise.inject.se.SeContainerInitializer
 
 import static java.lang.Boolean.FALSE
 import static java.lang.Boolean.TRUE
@@ -33,7 +32,7 @@ class CDIExtension extends AbstractGlobalExtension {
             featureMethod.addInterceptor { invocation ->
                 def annotatedElements = [spec.reflection, featureMethod.reflection]
                 def seContainer = SeContainerInitializer.newInstance()
-                        .addProperty('javax.enterprise.inject.scan.implicit', TRUE)
+                        .addProperty('jakarta.enterprise.inject.scan.implicit', TRUE)
                         .addProperty('org.jboss.weld.construction.relaxed', FALSE)
                         .addExtensions(new AddBeansExtension(
                                 annotatedElements*.getAnnotationsByType(AddBean).flatten()*.value()))

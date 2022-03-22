@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package net.kautler.command.api
 
+import jakarta.inject.Inject
 import net.kautler.test.ContextualInstanceCategory
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.jboss.weld.junit4.WeldInitiator
@@ -24,8 +25,6 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.environment.RestoreSystemProperties
 import spock.util.mop.Use
-
-import javax.inject.Inject
 
 import static java.nio.charset.StandardCharsets.UTF_8
 import static java.time.Instant.now

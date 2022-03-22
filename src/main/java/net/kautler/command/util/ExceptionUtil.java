@@ -16,10 +16,11 @@
 
 package net.kautler.command.util;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * A utility class with helper methods for handling exceptions.

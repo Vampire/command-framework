@@ -27,17 +27,16 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.event.Event;
-import javax.enterprise.event.Observes;
-import javax.enterprise.event.ObservesAsync;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Inject;
-
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.ObservesAsync;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
 import net.kautler.command.Internal;
 import net.kautler.command.api.CommandContextTransformer.InPhase;
 import net.kautler.command.api.CommandContextTransformer.Phase;
@@ -447,10 +446,10 @@ public abstract class CommandHandler<M> {
     private void warnAboutEmptyPrefix(String prefix) {
         if (prefix.length() == 0) {
             logger.warn("The command prefix is empty, this means that every message will be checked against a " +
-                    "regular expression and that for every non-matching message an event will be sent. It is better " +
-                    "for the performance if you set a command prefix instead of including it in the aliases " +
-                    "directly. If you do not care, just configure your logging framework to ignore this warning, " +
-                    "as it also costs additional performance and might hide other important log messages. ;-)");
+                        "regular expression and that for every non-matching message an event will be sent. It is better " +
+                        "for the performance if you set a command prefix instead of including it in the aliases " +
+                        "directly. If you do not care, just configure your logging framework to ignore this warning, " +
+                        "as it also costs additional performance and might hide other important log messages. ;-)");
         }
     }
 

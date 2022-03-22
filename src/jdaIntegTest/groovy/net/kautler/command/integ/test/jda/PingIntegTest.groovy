@@ -16,6 +16,8 @@
 
 package net.kautler.command.integ.test.jda
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
@@ -31,9 +33,6 @@ import net.kautler.command.integ.test.spock.AddBean
 import org.junit.experimental.categories.Category
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Vetoed
 
 import static java.util.UUID.randomUUID
 

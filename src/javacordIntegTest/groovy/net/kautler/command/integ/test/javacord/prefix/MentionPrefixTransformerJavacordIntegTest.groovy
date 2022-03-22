@@ -16,6 +16,8 @@
 
 package net.kautler.command.integ.test.javacord.prefix
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Vetoed
 import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.prefix.javacord.MentionPrefixTransformerJavacord
@@ -25,9 +27,6 @@ import org.javacord.api.entity.channel.ServerTextChannel
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Vetoed
 
 import static java.util.UUID.randomUUID
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION

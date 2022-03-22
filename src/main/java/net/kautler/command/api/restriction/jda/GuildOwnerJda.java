@@ -16,12 +16,12 @@
 
 package net.kautler.command.api.restriction.jda;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.Optional;
 
 import static java.lang.Boolean.FALSE;

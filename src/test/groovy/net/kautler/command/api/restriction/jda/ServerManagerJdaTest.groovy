@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.jda
 
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.kautler.command.api.CommandContext
@@ -23,8 +24,6 @@ import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Subject
-
-import javax.inject.Inject
 
 import static net.dv8tion.jda.api.Permission.MANAGE_SERVER
 

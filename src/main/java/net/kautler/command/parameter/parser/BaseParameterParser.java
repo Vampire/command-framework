@@ -16,6 +16,7 @@
 
 package net.kautler.command.parameter.parser;
 
+import jakarta.inject.Inject;
 import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.ParameterParseException;
@@ -29,7 +30,6 @@ import net.kautler.command.usage.UsagePatternBuilder;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

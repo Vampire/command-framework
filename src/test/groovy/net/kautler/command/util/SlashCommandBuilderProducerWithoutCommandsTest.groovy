@@ -16,8 +16,7 @@
 
 package net.kautler.command.util
 
-import javax.inject.Inject
-
+import jakarta.inject.Inject
 import org.javacord.api.interaction.SlashCommandBuilder
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule

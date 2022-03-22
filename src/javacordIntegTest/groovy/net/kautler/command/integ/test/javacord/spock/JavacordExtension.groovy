@@ -16,6 +16,8 @@
 
 package net.kautler.command.integ.test.javacord.spock
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Produces
 import org.javacord.api.DiscordApi
 import org.javacord.api.DiscordApiBuilder
 import org.javacord.api.entity.channel.ServerChannel
@@ -24,9 +26,6 @@ import org.javacord.api.entity.server.Server
 import org.spockframework.runtime.extension.IGlobalExtension
 import org.spockframework.runtime.model.SpecInfo
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Produces
 
 import static java.lang.Boolean.FALSE
 import static java.lang.System.arraycopy

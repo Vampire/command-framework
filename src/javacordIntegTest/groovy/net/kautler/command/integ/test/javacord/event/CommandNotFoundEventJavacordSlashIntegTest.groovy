@@ -18,13 +18,12 @@ package net.kautler.command.integ.test.javacord.event
 
 import java.util.concurrent.CompletableFuture
 
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.context.Initialized
-import javax.enterprise.event.Observes
-import javax.enterprise.event.ObservesAsync
-import javax.enterprise.inject.Vetoed
-import javax.inject.Inject
-
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.context.Initialized
+import jakarta.enterprise.event.Observes
+import jakarta.enterprise.event.ObservesAsync
+import jakarta.enterprise.inject.Vetoed
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacordSlash
 import net.kautler.command.integ.test.ManualTests

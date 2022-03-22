@@ -113,8 +113,8 @@ dependencies {
 
     val integTestCommonImplementation by configurations
     integTestCommonImplementation("org.spockframework:spock-core:${versions["spock"]}")
-    integTestCommonImplementation("javax.enterprise:cdi-api:${versions["cdi"]}")
-    integTestCommonImplementation("javax.annotation:javax.annotation-api:${versions["javax.annotation-api"]}")
+    integTestCommonImplementation("jakarta.enterprise:jakarta.enterprise.cdi-api:${versions["cdi"]}")
+    integTestCommonImplementation("jakarta.annotation:jakarta.annotation-api:${versions["jakarta.annotation-api"]}")
     integTestCommonImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}:tests")
     integTestCommonImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}")
 
@@ -138,9 +138,9 @@ dependencies {
     integTestSourceSets.keys.forEach {
         "${it}Implementation"(integTestCommon.let { it.output + it.runtimeClasspath })
         "${it}Implementation"("org.spockframework:spock-core:${versions["spock"]}")
-        "${it}Implementation"("javax.enterprise:cdi-api:${versions["cdi"]}")
+        "${it}Implementation"("jakarta.enterprise:jakarta.enterprise.cdi-api:${versions["cdi"]}")
 
-        "${it}CompileOnly"("javax.annotation:javax.annotation-api:${versions["javax.annotation-api"]}")
+        "${it}CompileOnly"("jakarta.annotation:jakarta.annotation-api:${versions["jakarta.annotation-api"]}")
     }
 
     val messageFrameworkDependencies = mapOf(

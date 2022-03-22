@@ -18,10 +18,9 @@ package net.kautler.command.integ.test.jda
 
 import java.util.concurrent.CompletableFuture
 
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.event.ObservesAsync
-import javax.enterprise.inject.Vetoed
-
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.event.ObservesAsync
+import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener

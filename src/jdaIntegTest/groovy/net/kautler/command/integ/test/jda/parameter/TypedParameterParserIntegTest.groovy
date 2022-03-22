@@ -16,6 +16,11 @@
 
 package net.kautler.command.integ.test.jda.parameter
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Any
+import jakarta.enterprise.inject.Instance
+import jakarta.enterprise.inject.Vetoed
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
@@ -37,12 +42,6 @@ import net.kautler.command.parameter.parser.missingdependency.MissingDependencyP
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Any
-import javax.enterprise.inject.Instance
-import javax.enterprise.inject.Vetoed
-import javax.inject.Inject
 
 import static java.util.UUID.randomUUID
 

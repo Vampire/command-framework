@@ -16,13 +16,13 @@
 
 package net.kautler.command.parameter.converter;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.Internal;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
 import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.parameter.ParameterType;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.math.BigInteger;
 
 import static java.lang.String.format;

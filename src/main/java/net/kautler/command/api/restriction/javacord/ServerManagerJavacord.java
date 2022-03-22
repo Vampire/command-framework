@@ -16,11 +16,10 @@
 
 package net.kautler.command.api.restriction.javacord;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 import org.javacord.api.entity.message.Message;
-
-import javax.enterprise.context.ApplicationScoped;
 
 /**
  * A restriction that allows a command for server managers and is evaluated by the Javacord command handler.

@@ -44,12 +44,12 @@
                 <value>
                     .[
                         ((MethodDeclaration/@MethodName = 'ensureInitializationAtStartup') and descendant::FormalParameter[
-                            Annotation[typeIsExactly('javax.enterprise.event.Observes')]
-                                and Annotation[typeIsExactly('javax.enterprise.context.Initialized')]])
-                        or Annotation[typeIsExactly('javax.enterprise.inject.Produces')]
-                        or Annotation[typeIsExactly('javax.inject.Inject')]
-                        or Annotation[typeIsExactly('javax.annotation.PostConstruct')]
-                        or Annotation[typeIsExactly('javax.annotation.PreDestroy')]
+                            Annotation[typeIsExactly('jakarta.enterprise.event.Observes')]
+                                and Annotation[typeIsExactly('jakarta.enterprise.context.Initialized')]])
+                        or Annotation[typeIsExactly('jakarta.enterprise.inject.Produces')]
+                        or Annotation[typeIsExactly('jakarta.inject.Inject')]
+                        or Annotation[typeIsExactly('jakarta.annotation.PostConstruct')]
+                        or Annotation[typeIsExactly('jakarta.annotation.PreDestroy')]
                     ]
                 </value>
             </property>
@@ -62,8 +62,8 @@
                 <value>
                     .[
                         ((@MethodName = 'ensureInitializationAtStartup') and descendant::FormalParameter[
-                            Annotation[typeIsExactly('javax.enterprise.event.Observes')]
-                                and Annotation[typeIsExactly('javax.enterprise.context.Initialized')]])
+                            Annotation[typeIsExactly('jakarta.enterprise.event.Observes')]
+                                and Annotation[typeIsExactly('jakarta.enterprise.context.Initialized')]])
                         or (((@MethodName = 'expression')
                              or (@MethodName = 'optional')
                              or (@MethodName = 'placeholder')

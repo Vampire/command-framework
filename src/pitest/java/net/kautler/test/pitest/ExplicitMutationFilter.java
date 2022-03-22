@@ -94,14 +94,14 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
                     "lambda$doSetAvailableRestrictions",
-                    "(Ljavax/enterprise/inject/Instance;)Ljava/util/Map;",
+                    "(Ljakarta/enterprise/inject/Instance;)Ljava/util/Map;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
             // giving a 3 instead of 2 element array to logger.info cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
                     "lambda$doSetCommands",
-                    "(Ljavax/enterprise/inject/Instance;)Ljava/util/Map;",
+                    "(Ljakarta/enterprise/inject/Instance;)Ljava/util/Map;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
             // giving a 3 instead of 2 element array to String.format cannot be killed

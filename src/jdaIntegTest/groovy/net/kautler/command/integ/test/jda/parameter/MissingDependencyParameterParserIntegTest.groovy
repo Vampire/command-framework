@@ -16,6 +16,9 @@
 
 package net.kautler.command.integ.test.jda.parameter
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Vetoed
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
@@ -30,10 +33,6 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 import spock.util.concurrent.PollingConditions
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Vetoed
-import javax.inject.Inject
 
 import static org.apache.logging.log4j.Level.ERROR
 import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Björn Kautler
+ * Copyright 2020-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,15 @@
 
 package net.kautler.command.integ.test
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.context.Initialized
+import jakarta.enterprise.event.Observes
+import jakarta.enterprise.inject.Vetoed
+import jakarta.inject.Inject
 import net.kautler.command.api.Version
 import net.kautler.command.integ.test.spock.AddBean
 import spock.lang.Specification
 import spock.lang.Subject
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.context.Initialized
-import javax.enterprise.event.Observes
-import javax.enterprise.inject.Vetoed
-import javax.inject.Inject
 
 @Subject(Version)
 class VersionIntegTest extends Specification {

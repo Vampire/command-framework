@@ -16,11 +16,10 @@
 
 package net.kautler.command.integ.test.javacord.restriction
 
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.event.ObservesAsync
-import javax.enterprise.inject.Produces
-import javax.enterprise.inject.Vetoed
-
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.event.ObservesAsync
+import jakarta.enterprise.inject.Produces
+import jakarta.enterprise.inject.Vetoed
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.annotation.RestrictedTo

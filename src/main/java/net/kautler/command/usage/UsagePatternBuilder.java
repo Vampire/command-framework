@@ -16,6 +16,7 @@
 
 package net.kautler.command.usage;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.usage.UsageParser.AlternativesContext;
 import net.kautler.command.usage.UsageParser.ExpressionContext;
 import net.kautler.command.usage.UsageParser.LiteralContext;
@@ -26,7 +27,6 @@ import net.kautler.command.usage.UsageParser.UsageContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

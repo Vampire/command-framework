@@ -16,6 +16,11 @@
 
 package net.kautler.command.parameter.parser
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.AmbiguousResolutionException
+import jakarta.enterprise.inject.Any
+import jakarta.enterprise.util.TypeLiteral
+import jakarta.inject.Inject
 import net.kautler.command.Internal
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
@@ -34,11 +39,6 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
 
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.AmbiguousResolutionException
-import javax.enterprise.inject.Any
-import javax.enterprise.util.TypeLiteral
-import javax.inject.Inject
 import java.util.AbstractMap.SimpleEntry
 
 import static java.util.Comparator.comparingInt

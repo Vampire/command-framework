@@ -16,6 +16,7 @@
 
 package net.kautler.command.parameter.converter.jda;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.kautler.command.Internal;
@@ -25,7 +26,6 @@ import net.kautler.command.api.parameter.InvalidParameterValueException;
 import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.parameter.ParameterType;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.Optional;
 import java.util.regex.Matcher;
 

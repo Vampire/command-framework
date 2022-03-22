@@ -16,10 +16,9 @@
 
 package net.kautler.command.util
 
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Instance
-import javax.inject.Inject
-
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Instance
+import jakarta.inject.Inject
 import net.kautler.command.api.slash.javacord.SlashCommandJavacord
 import net.kautler.test.ContextualInstanceCategory
 import org.javacord.api.interaction.SlashCommandBuilder

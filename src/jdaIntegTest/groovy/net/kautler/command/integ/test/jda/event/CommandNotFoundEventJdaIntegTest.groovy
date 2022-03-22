@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package net.kautler.command.integ.test.jda.event
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.event.ObservesAsync
+import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.entities.TextChannel
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.event.jda.CommandNotFoundEventJda
@@ -23,10 +26,6 @@ import net.kautler.command.integ.test.spock.AddBean
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.event.ObservesAsync
-import javax.enterprise.inject.Vetoed
 
 @Subject([CommandHandler, CommandNotFoundEventJda])
 class CommandNotFoundEventJdaIntegTest extends Specification {

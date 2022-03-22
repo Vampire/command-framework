@@ -16,10 +16,10 @@
 
 package net.kautler.command.example.ping;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.se.SeContainerInitializer;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.se.SeContainerInitializer;
+import jakarta.inject.Named;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -37,7 +37,7 @@ public class PingBot {
         }
         discordToken = args[0];
         SeContainerInitializer.newInstance()
-                .addProperty("javax.enterprise.inject.scan.implicit", TRUE)
+                .addProperty("jakarta.enterprise.inject.scan.implicit", TRUE)
                 .addProperty("org.jboss.weld.construction.relaxed", FALSE)
                 .initialize();
     }

@@ -20,9 +20,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.annotation.Alias;

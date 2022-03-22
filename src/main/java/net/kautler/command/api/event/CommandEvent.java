@@ -16,9 +16,9 @@
 
 package net.kautler.command.api.event;
 
+import jakarta.enterprise.event.ObservesAsync;
 import net.kautler.command.api.CommandContext;
 
-import javax.enterprise.event.ObservesAsync;
 import java.util.StringJoiner;
 
 /**

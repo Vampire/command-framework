@@ -16,13 +16,12 @@
 
 package net.kautler.command.api.restriction
 
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Subject
-
-import javax.inject.Inject
 
 class EveryoneTest extends Specification {
     @Rule

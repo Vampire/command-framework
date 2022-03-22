@@ -16,6 +16,7 @@
 
 package net.kautler.command.parameter.converter.jda
 
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
@@ -28,8 +29,6 @@ import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.environment.Jvm
-
-import javax.inject.Inject
 
 import static org.junit.Assume.assumeFalse
 

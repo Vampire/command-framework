@@ -16,12 +16,12 @@
 
 package net.kautler.command.api.prefix.javacord;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.CommandContextTransformer;
 import net.kautler.command.util.lazy.LazyReferenceByFunction;
 import org.javacord.api.entity.message.Message;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.StringJoiner;
 
 import static java.lang.String.format;

@@ -16,10 +16,9 @@
 
 package net.kautler.command.integ.test.javacord.restriction.slash
 
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.event.ObservesAsync
-import javax.enterprise.inject.Vetoed
-
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.event.ObservesAsync
+import jakarta.enterprise.inject.Vetoed
 import net.kautler.command.api.annotation.Alias
 import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.annotation.RestrictedTo

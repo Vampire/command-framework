@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Bjoern Kautler
+ * Copyright 2019-2022 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,9 @@ java {
 dependencies {
     val versions: Map<String, String> by project
 
-    implementation("javax.enterprise:cdi-api:${versions["cdi"]}")
-    compileOnly("javax.inject:javax.inject:${versions["javax.inject"]}")
-    compileOnly("javax.annotation:javax.annotation-api:${versions["javax.annotation-api"]}")
+    implementation("jakarta.enterprise:jakarta.enterprise.cdi-api:${versions["cdi"]}")
+    compileOnly("jakarta.inject:jakarta.inject-api:${versions["jakarta.inject-api"]}")
+    compileOnly("jakarta.annotation:jakarta.annotation-api:${versions["jakarta.annotation-api"]}")
     compileOnly("com.github.spotbugs:spotbugs-annotations:${versions["spotbugs"]}") {
         exclude("com.google.code.findbugs", "jsr305")
     }

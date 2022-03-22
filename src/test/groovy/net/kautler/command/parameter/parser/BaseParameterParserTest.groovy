@@ -16,6 +16,9 @@
 
 package net.kautler.command.parameter.parser
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.util.TypeLiteral
+import jakarta.inject.Inject
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.ParameterParseException
@@ -30,9 +33,6 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
 
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.util.TypeLiteral
-import javax.inject.Inject
 import java.util.function.BiFunction
 import java.util.regex.Matcher
 

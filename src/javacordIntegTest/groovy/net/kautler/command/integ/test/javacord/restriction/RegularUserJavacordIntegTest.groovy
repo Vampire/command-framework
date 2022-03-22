@@ -17,6 +17,7 @@
 package net.kautler.command.integ.test.javacord.restriction
 
 import club.minnced.discord.webhook.WebhookClientBuilder
+import jakarta.enterprise.event.ObservesAsync
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.javacord.RegularUserJavacord
@@ -28,8 +29,6 @@ import org.junit.experimental.categories.Category
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.event.ObservesAsync
 
 import static java.util.UUID.randomUUID
 

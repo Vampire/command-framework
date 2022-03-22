@@ -16,8 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord.slash;
 
-import javax.enterprise.context.ApplicationScoped;
-
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 import org.javacord.api.entity.channel.ServerTextChannel;

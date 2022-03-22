@@ -16,12 +16,11 @@
 
 package net.kautler.command.api.event.javacord;
 
+import jakarta.enterprise.event.ObservesAsync;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.annotation.RestrictedTo;
 import net.kautler.command.api.event.CommandEvent;
 import org.javacord.api.entity.message.Message;
-
-import javax.enterprise.event.ObservesAsync;
 
 /**
  * An event that is sent asynchronously via the CDI event mechanism if a command was not allowed due to some

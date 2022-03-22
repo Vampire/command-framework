@@ -16,6 +16,8 @@
 
 package net.kautler.command.parameter.parser
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.ParameterParseException
@@ -28,9 +30,6 @@ import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
-
-import javax.enterprise.context.ApplicationScoped
-import javax.inject.Inject
 
 import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField

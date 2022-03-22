@@ -16,13 +16,12 @@
 
 package net.kautler.command.parameter.parser.missingdependency;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.ParameterParser;
 import net.kautler.command.api.parameter.ParameterParser.Typed;
 import net.kautler.command.api.parameter.Parameters;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Default;
 
 /**
  * A parameter parser that is present if the ANTLR dependency is missing and throws an

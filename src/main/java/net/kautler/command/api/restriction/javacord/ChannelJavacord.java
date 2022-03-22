@@ -16,12 +16,12 @@
 
 package net.kautler.command.api.restriction.javacord;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.message.Message;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
 

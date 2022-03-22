@@ -44,10 +44,10 @@ val messageFrameworkVersions by extra(mapOf(
 
 val versions by extra(mapOf(
         // production versions
-        "cdi" to "2.0",
-        "javax.annotation-api" to "1.3.2",
-        "javax.inject" to "1",
-        "log4j" to "2.12.1",
+        "cdi" to "3.0.0",
+        "jakarta.annotation-api" to "2.0.0",
+        "jakarta.inject-api" to "2.0.1",
+        "log4j" to "2.17.2",
         "antlr" to "4.7.2",
 
         // tool versions
@@ -66,8 +66,8 @@ val versions by extra(mapOf(
         "spock-global-unroll" to "0.5.1",
         "byte-buddy" to "1.10.1",
         "objenesis" to "3.1",
-        "weld-junit" to "2.0.1.Final",
-        "weld-se" to "3.1.2.Final",
+        "weld-junit" to "3.0.0.Final",
+        "weld-se" to "4.0.3.Final",
         "jandex" to "2.1.1.Final",
         "jansi" to "1.18",
         "discordWebhooks" to "0.1.8"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2022 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package net.kautler.command.usage
 
+import jakarta.inject.Inject
 import net.kautler.command.usage.UsageParser.UsageContext
 import net.kautler.test.ContextualInstanceCategory
 import org.antlr.v4.runtime.CharStreams
@@ -25,8 +26,6 @@ import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
-
-import javax.inject.Inject
 
 import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField

@@ -16,12 +16,11 @@
 
 package net.kautler.command.parameter.converter;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.Internal;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.parameter.ParameterType;
-
-import javax.enterprise.context.ApplicationScoped;
 
 /**
  * A parameter converter that reacts to the types {@code string} and {@code text} and just returns the parameter as-is.

@@ -16,6 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.message.MessageAuthor
@@ -23,8 +24,6 @@ import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Subject
-
-import javax.inject.Inject
 
 class ServerManagerJavacordTest extends Specification {
     @Rule

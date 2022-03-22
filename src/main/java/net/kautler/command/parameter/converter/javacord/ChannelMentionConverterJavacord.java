@@ -16,6 +16,7 @@
 
 package net.kautler.command.parameter.converter.javacord;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.Internal;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
@@ -25,7 +26,6 @@ import net.kautler.command.api.parameter.ParameterType;
 import org.javacord.api.entity.channel.Channel;
 import org.javacord.api.entity.message.Message;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.regex.Matcher;
 
 import static java.lang.Long.parseUnsignedLong;

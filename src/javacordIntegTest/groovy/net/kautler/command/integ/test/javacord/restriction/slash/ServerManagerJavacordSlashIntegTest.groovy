@@ -16,8 +16,7 @@
 
 package net.kautler.command.integ.test.javacord.restriction.slash
 
-import javax.enterprise.event.ObservesAsync
-
+import jakarta.enterprise.event.ObservesAsync
 import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacordSlash

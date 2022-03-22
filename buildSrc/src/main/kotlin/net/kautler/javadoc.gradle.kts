@@ -53,8 +53,8 @@ tasks.withType<Javadoc>().configureEach {
                 error("JavaDoc URL for JRE needs to be adapted to new target compatibility ${java.targetCompatibility}")
             }
             add("https://docs.oracle.com/javase/8/docs/api/")
-            add("https://static.javadoc.io/javax.enterprise/cdi-api/${versions["cdi"]}/")
-            add("https://static.javadoc.io/javax.inject/javax.inject/${versions["javax.inject"]}/")
+            add("https://static.javadoc.io/jakarta.enterprise/jakarta.enterprise.cdi-api/${versions["cdi"]}/")
+            add("https://static.javadoc.io/jakarta.inject/jakarta.inject-api/${versions["jakarta.inject-api"]}/")
             add("https://static.javadoc.io/org.javacord/javacord-api/${messageFrameworkVersions.safeGet("javacord").first()}/")
             add("https://ci.dv8tion.net/job/JDA/javadoc/")
         }

@@ -16,8 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord.slash
 
-import javax.inject.Inject
-
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.user.User
 import org.javacord.api.interaction.SlashCommandInteraction

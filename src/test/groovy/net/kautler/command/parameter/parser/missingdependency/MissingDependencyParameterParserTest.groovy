@@ -16,9 +16,8 @@
 
 package net.kautler.command.parameter.parser.missingdependency
 
-import javax.enterprise.inject.Instance
-import javax.inject.Inject
-
+import jakarta.enterprise.inject.Instance
+import jakarta.inject.Inject
 import org.jboss.weld.junit4.WeldInitiator
 import org.junit.Rule
 import spock.lang.Specification

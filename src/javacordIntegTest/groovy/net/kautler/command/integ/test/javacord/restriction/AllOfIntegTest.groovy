@@ -16,6 +16,10 @@
 
 package net.kautler.command.integ.test.javacord.restriction
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.event.ObservesAsync
+import jakarta.enterprise.inject.Vetoed
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
@@ -27,11 +31,6 @@ import org.javacord.api.entity.channel.ServerTextChannel
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.event.ObservesAsync
-import javax.enterprise.inject.Vetoed
-import javax.inject.Inject
 
 import static java.util.UUID.randomUUID
 

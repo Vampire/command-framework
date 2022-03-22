@@ -16,9 +16,8 @@
 
 package net.kautler.command.api.restriction;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.api.CommandContext;
-
-import javax.enterprise.context.ApplicationScoped;
 
 /**
  * A restriction that allows a command for everyone. This always allows a command and is effectively the same as not

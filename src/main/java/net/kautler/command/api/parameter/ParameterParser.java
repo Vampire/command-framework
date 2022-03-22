@@ -16,9 +16,9 @@
 
 package net.kautler.command.api.parameter;
 
+import jakarta.inject.Qualifier;
 import net.kautler.command.api.CommandContext;
 
-import javax.inject.Qualifier;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;

@@ -16,6 +16,8 @@
 
 package net.kautler.command.parameter.converter.javacord;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import net.kautler.command.Internal;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
@@ -27,8 +29,6 @@ import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.user.User;
 import org.javacord.api.exception.NotFoundException;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 import java.util.concurrent.CompletionException;
 import java.util.regex.Matcher;
 

@@ -16,6 +16,11 @@
 
 package net.kautler.command.parameter.parser;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
 import net.kautler.command.Internal;
 import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandContext;
@@ -28,11 +33,6 @@ import net.kautler.command.api.parameter.Parameters;
 import net.kautler.command.parameter.ParametersImpl;
 import net.kautler.command.util.lazy.LazyReferenceBySupplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

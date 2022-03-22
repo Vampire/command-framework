@@ -19,14 +19,13 @@ package net.kautler.command.api
 import java.util.Map.Entry
 import java.util.concurrent.ExecutorService
 
-import javax.annotation.PostConstruct
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Any
-import javax.enterprise.inject.Default
-import javax.enterprise.inject.Instance
-import javax.enterprise.util.TypeLiteral
-import javax.inject.Inject
-
+import jakarta.annotation.PostConstruct
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Any
+import jakarta.enterprise.inject.Default
+import jakarta.enterprise.inject.Instance
+import jakarta.enterprise.util.TypeLiteral
+import jakarta.inject.Inject
 import net.kautler.command.Internal
 import net.kautler.command.InvalidAnnotationCombinationException
 import net.kautler.command.LoggerProducer

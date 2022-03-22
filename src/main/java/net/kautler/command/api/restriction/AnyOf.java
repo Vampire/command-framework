@@ -16,9 +16,9 @@
 
 package net.kautler.command.api.restriction;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.kautler.command.api.CommandContext;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.Collection;
 
 import static java.util.Arrays.asList;

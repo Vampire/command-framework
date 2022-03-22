@@ -16,12 +16,12 @@
 
 package net.kautler.command.api.prefix.jda;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import net.dv8tion.jda.api.entities.Message;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.CommandContextTransformer;
 import net.kautler.command.util.lazy.LazyReferenceByFunction;
 
-import javax.enterprise.context.ApplicationScoped;
 import java.util.StringJoiner;
 
 import static java.lang.String.format;

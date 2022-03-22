@@ -16,6 +16,8 @@
 
 package net.kautler.command.integ.test.jda.spock
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Produces
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Guild
@@ -27,9 +29,6 @@ import net.dv8tion.jda.api.requests.GatewayIntent
 import org.spockframework.runtime.extension.IGlobalExtension
 import org.spockframework.runtime.model.SpecInfo
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Produces
 
 import static java.lang.System.arraycopy
 import static java.util.UUID.randomUUID

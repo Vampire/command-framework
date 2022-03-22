@@ -16,6 +16,8 @@
 
 package net.kautler.command.parameter.converter.javacord
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.kautler.command.Internal
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
@@ -33,8 +35,6 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.environment.Jvm
 
-import javax.enterprise.context.ApplicationScoped
-import javax.inject.Inject
 import java.util.concurrent.CompletableFuture
 
 import static java.util.concurrent.CompletableFuture.completedFuture

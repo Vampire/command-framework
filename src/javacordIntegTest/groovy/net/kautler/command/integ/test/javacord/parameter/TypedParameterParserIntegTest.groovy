@@ -16,6 +16,11 @@
 
 package net.kautler.command.integ.test.javacord.parameter
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.Any
+import jakarta.enterprise.inject.Instance
+import jakarta.enterprise.inject.Vetoed
+import jakarta.inject.Inject
 import net.kautler.command.Internal.Literal
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
@@ -36,12 +41,6 @@ import org.javacord.api.util.logging.ExceptionLogger
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
-
-import javax.enterprise.context.ApplicationScoped
-import javax.enterprise.inject.Any
-import javax.enterprise.inject.Instance
-import javax.enterprise.inject.Vetoed
-import javax.inject.Inject
 
 import static java.util.UUID.randomUUID
 
