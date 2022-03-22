@@ -72,7 +72,7 @@ Prerequisites
 * Java 8+
 * At least one of the supported [message frameworks](#supported-message-frameworks) unless a custom `CommandHandler`
   is used; without one there will be no error, but this framework will simply have nothing to do
-* An implementation of CDI that implements CDI 2.0 like [Weld SE][Weld SE Website]
+* An implementation of CDI that implements CDI 3.0.0 like [Weld SE][Weld SE Website]
 * [Optional] ANTLR runtime 4.7.2 if the [`ParameterParser`][ParameterParser JavaDoc] is used
 
 
@@ -97,7 +97,7 @@ Setup
 
 ```gradle
 repositories { mavenCentral() }
-dependencies { implementation 'net.kautler:command-framework:0.4.0' }
+dependencies { implementation 'net.kautler:command-framework:0.5.0' }
 ```
 
 ### Maven
@@ -106,7 +106,7 @@ dependencies { implementation 'net.kautler:command-framework:0.4.0' }
 <dependency>
   <groupId>net.kautler</groupId>
   <artifactId>command-framework</artifactId>
-  <version>0.4.0</version>
+  <version>0.5.0</version>
 </dependency>
 ```
 
