@@ -26,6 +26,7 @@ dependencies {
     implementation("net.kautler:command-framework")
 
     implementation("jakarta.enterprise:jakarta.enterprise.cdi-api:3.0.0")
+    implementation("jakarta.inject:jakarta.inject-api:2.0.0")
     runtimeOnly("org.jboss.weld.se:weld-se-core:4.0.3.Final") { because("CDI implementation") }
     runtimeOnly("org.jboss:jandex:2.1.1.Final") { because("faster CDI bean scanning") }
 
