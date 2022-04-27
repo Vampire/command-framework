@@ -792,25 +792,25 @@ limitations under the License.
 
 
 [Version Badge]:
-    https://shields.javacord.org/maven-central/v/net.kautler/command-framework.svg?label=Version
+    https://shields.io/maven-central/v/net.kautler/command-framework.svg?label=Version
 [JavaDoc Badge]:
-    https://shields.javacord.org/badge/JavaDoc-Latest-yellow.svg?style=flat
+    https://shields.io/badge/JavaDoc-Latest-yellow.svg?style=flat
 [License Badge]:
-    https://shields.javacord.org/github/license/Vampire/command-framework.svg?label=License
+    https://shields.io/github/license/Vampire/command-framework.svg?label=License
 [License File]:
     https://github.com/Vampire/command-framework/blob/master/LICENSE
 [Discord Badge]:
-    https://shields.javacord.org/discord/534420861294346255.svg?label=Discord
+    https://shields.io/discord/534420861294346255.svg?label=Discord
 [Unit Test Coverage Badge]:
-    https://shields.javacord.org/badge/Unit%20Test%20Coverage-100%25-brightgreen.svg?style=flat
+    https://shields.io/badge/Unit%20Test%20Coverage-100%25-brightgreen.svg?style=flat
 [Mutant Coverage Badge]:
-    https://shields.javacord.org/badge/PIT%20Mutant%20Coverage-100%25-brightgreen.svg?style=flat
+    https://shields.io/badge/PIT%20Mutant%20Coverage-100%25-brightgreen.svg?style=flat
 [Integration Test Coverage Badge]:
-    https://shields.javacord.org/badge/Integration%20Test%20Coverage-~70%25-brightgreen.svg?style=flat
+    https://shields.io/badge/Integration%20Test%20Coverage-~70%25-brightgreen.svg?style=flat
 [Supported Java Versions Badge]:
-    https://shields.javacord.org/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
+    https://shields.io/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:
-    https://shields.javacord.org/badge/Supported%20Message%20Frameworks-Javacord%20%7C%20JDA-lightgrey.svg
+    https://shields.io/badge/Supported%20Message%20Frameworks-Javacord%20%7C%20JDA-lightgrey.svg
 [Weld SE Website]:
     https://docs.jboss.org/weld/reference/latest/en-US/html/environments.html#weld-se
 [Semantic Versioning Website]:
