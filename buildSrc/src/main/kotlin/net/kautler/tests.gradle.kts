@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Bjoern Kautler
+ * Copyright 2019-2023 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -360,12 +360,11 @@ if (JavaVersion.current().isJava9Compatible) {
             "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED",
             "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED"
     )
-    tasks.withType<Test> {
+    tasks.withType<Test>().configureEach {
         jvmArgs(jvmArgs)
     }
-    tasks.withType<PitestTask> {
-        @Suppress("UnstableApiUsage")
-        childProcessJvmArgs.set(jvmArgs)
+    pitest {
+        this.jvmArgs.addAll(jvmArgs)
     }
 }
 
@@ -500,13 +499,10 @@ pitest {
 }
 
 tasks.pitest {
-    // work-around for https://github.com/szpak/gradle-pitest-plugin/pull/141
-    shouldRunAfter(tasks.test)
-
     val pitest by sourceSets
-    launchClasspath += pitest.let { it.output + it.runtimeClasspath }
+    launchClasspath.from(pitest.let { it.output + it.runtimeClasspath })
     // work-around for https://github.com/hcoles/pitest/pull/682
-    additionalClasspath += pitest.let { it.output + it.runtimeClasspath }
+    additionalClasspath.from(pitest.let { it.output + it.runtimeClasspath })
 
     doFirst("validate configured mutators") {
         val notExplicitlyEnabledMutators = setOf(
