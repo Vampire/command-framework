@@ -79,6 +79,11 @@
                     <Method name="getAdditionalData" params="java.lang.String, java.lang.Object" returns="java.lang.Object"/>
                 </Or>
             </And>
+            <!-- currently not used outside the class, but should be available for usage -->
+            <And>
+                <Class name="net.kautler.test.pitest.ExplicitMutationFilterDetails"/>
+                <Method name="&lt;init&gt;" params="int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String" returns="void"/>
+            </And>
         </Or>
         <Bug pattern="OPM_OVERLY_PERMISSIVE_METHOD"/>
     </Match>
@@ -145,5 +150,11 @@
         <Class name="net.kautler.command.parameter.parser.TypedParameterParser"/>
         <Field name="parameterConverterTypeLiteralsByMessageType"/>
         <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    </Match>
+
+    <!-- the nonKilledSurvivors field is constantly changing, it is not part of the instance identity -->
+    <Match>
+        <Class name="net.kautler.test.pitest.NonkilledSurvivorDetector"/>
+        <Bug pattern="IMC_IMMATURE_CLASS_NO_EQUALS"/>
     </Match>
 </FindBugsFilter>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,66 +20,56 @@ import org.pitest.mutationtest.ClassMutationResults;
 import org.pitest.mutationtest.MutationResult;
 import org.pitest.mutationtest.MutationResultListener;
 
-import java.util.Objects;
 import java.util.StringJoiner;
 
 import static java.text.MessageFormat.format;
-import static org.pitest.mutationtest.DetectionStatus.NO_COVERAGE;
+import static org.pitest.mutationtest.DetectionStatus.KILLED;
 
 /**
  * A mutation result listener that throws an exception at the end
- * if any uncovered mutants were encountered.
+ * if any non-killed survivors were encountered. This does not
+ * count mutants in uncovered lines.
+ *
+ * <p>Unlike the built-in checks only KILLED are deemed non-survivors.
+ * Other things like RUN_ERROR, MEMORY_ERROR, TIMED_OUT,
+ * and so on are complained about using this listener, so they can either be
+ * fixed or manually excluded. This way running saves time and increases
+ * confidence in actually killing mutants by assertions.
  */
-public class UncoveredDetector implements MutationResultListener {
+public class NonkilledSurvivorDetector implements MutationResultListener {
     /**
-     * The amount of encountered survivors.
+     * The amount of encountered non-killed survivors.
      */
-    private int uncovered;
+    private int nonKilledSurvivors;
 
     @Override
     public void runStart() {
-        uncovered = 0;
+        nonKilledSurvivors = 0;
     }
 
     @Override
     public void handleMutationResult(ClassMutationResults results) {
-        uncovered += results.getMutations()
+        nonKilledSurvivors += results.getMutations()
                 .stream()
                 .map(MutationResult::getStatus)
-                .filter(NO_COVERAGE::equals)
+                .filter(status -> (status != KILLED)
+                        && status.isDetected())
                 .count();
     }
 
     @Override
     public void runEnd() {
-        if (uncovered > 0) {
+        if (nonKilledSurvivors > 0) {
             throw new IllegalStateException(format(
-                    "{0, number} uncovered mutant{0, choice, 1#| 2#s} discovered",
-                    uncovered));
+                    "{0, number} surviving mutant{0, choice, 1#| 2#s} discovered that {0, choice, 1#was| 2#were} not killed",
+                    nonKilledSurvivors));
         }
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if ((obj == null) || (getClass() != obj.getClass())) {
-            return false;
-        }
-        UncoveredDetector that = (UncoveredDetector) obj;
-        return uncovered == that.uncovered;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(uncovered);
     }
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", UncoveredDetector.class.getSimpleName() + "[", "]")
-                .add("uncovered=" + uncovered)
+        return new StringJoiner(", ", NonkilledSurvivorDetector.class.getSimpleName() + "[", "]")
+                .add("nonKilledSurvivors=" + nonKilledSurvivors)
                 .toString();
     }
 }

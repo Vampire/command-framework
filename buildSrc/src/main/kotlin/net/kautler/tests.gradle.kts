@@ -20,6 +20,9 @@ import info.solidsoft.gradle.pitest.PitestTask
 import net.kautler.Property.Companion.double
 import net.kautler.Property.Companion.optionalString
 import org.pitest.mutationtest.engine.gregor.config.Mutator
+import org.pitest.util.Verbosity.NO_SPINNER
+import org.pitest.util.Verbosity.VERBOSE_NO_SPINNER
+import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.TimeUnit.SECONDS
 
 plugins {
@@ -99,6 +102,8 @@ dependencies {
     testRuntimeOnly("info.solidsoft.spock:spock-global-unroll:${versions["spock-global-unroll"]}")
     testRuntimeOnly("net.bytebuddy:byte-buddy:${versions["byte-buddy"]}")
     testRuntimeOnly("org.objenesis:objenesis:${versions["objenesis"]}")
+
+    pitest("org.pitest:pitest-rv-plugin:${versions["pitest-rv-plugin"]}")
 
     val pitestImplementation by configurations
     pitestImplementation("org.pitest:pitest-entry:${versions["pitest"]}")
@@ -368,7 +373,7 @@ if (JavaVersion.current().isJava9Compatible) {
     }
 }
 
-tasks.withType<Test> {
+tasks.withType<Test>().configureEach {
     if (extra.properties["testType"] == "integration") {
         finalizedBy(jacocoIntegTestReport)
     }
@@ -442,8 +447,6 @@ tasks.check {
 
 pitest {
     pitestVersion(versions.safeGet("pitest"))
-    // work-around for https://github.com/hcoles/pitest/pull/687
-    testPlugin("spock")
     mutators(listOf(
             "INVERT_NEGS",
             "MATH",
@@ -452,7 +455,6 @@ pitest {
             "CONDITIONALS_BOUNDARY",
             "INCREMENTS",
 
-            "RETURN_VALS",
             "TRUE_RETURNS",
             "FALSE_RETURNS",
             "PRIMITIVE_RETURNS",
@@ -468,23 +470,22 @@ pitest {
             "EXPERIMENTAL_ARGUMENT_PROPAGATION",
             "EXPERIMENTAL_NAKED_RECEIVER",
             "EXPERIMENTAL_BIG_INTEGER",
+            "EXPERIMENTAL_BIG_DECIMAL",
             "EXPERIMENTAL_SWITCH",
             "REMOVE_SWITCH",
-            "AOR",
-            "AOD",
-            "OBBN",
-            "UOI3", "UOI4"
+            "AOR"
+            // work-around for https://github.com/pitest/pitest-rv-plugin/issues/3
+            //"AOR",
+            //"AOD",
+            //"OBBN",
+            //"UOI3", "UOI4"
     ))
-    verbose(logger.isDebugEnabled)
     targetTests(listOf("net.kautler.*Test"))
     outputFormats(listOf(
             "HTML",
             "XML",
-            "SURVIVOR_DETECTOR",
-            "UNCOVERED_DETECTOR"
+            "NON_KILLED_SURVIVOR_DETECTOR"
     ))
-    detectInlinedCode(true)
-    timestampedReports(false)
     features(listOf("-FLOGCALL"))
     timeoutFactor(3.toBigDecimal())
     timeoutConstInMillis(SECONDS.toMillis(30).toInt())
@@ -499,6 +500,16 @@ pitest {
 }
 
 tasks.pitest {
+    argumentProviders.add(
+        CommandLineArgumentProvider {
+            listOf(
+                "--inputEncoding=$UTF_8",
+                "--outputEncoding=$UTF_8",
+                "--verbosity=${if (logger.isInfoEnabled) VERBOSE_NO_SPINNER else NO_SPINNER}"
+            )
+        }
+    )
+
     val pitest by sourceSets
     launchClasspath.from(pitest.let { it.output + it.runtimeClasspath })
     // work-around for https://github.com/hcoles/pitest/pull/682
@@ -506,17 +517,15 @@ tasks.pitest {
 
     doFirst("validate configured mutators") {
         val notExplicitlyEnabledMutators = setOf(
-                "ALL",
                 "DEFAULTS",
-                "NEW_DEFAULTS",
                 "RETURNS",
                 "STRONGER",
-                "REMOVE_CONDITIONALS_EQ_IF",
-                "REMOVE_CONDITIONALS_EQ_ELSE",
-                "REMOVE_CONDITIONALS_ORD_IF",
-                "REMOVE_CONDITIONALS_ORD_ELSE",
+                "REMOVE_CONDITIONALS_EQUAL_IF",
+                "REMOVE_CONDITIONALS_EQUAL_ELSE",
+                "REMOVE_CONDITIONALS_ORDER_IF",
+                "REMOVE_CONDITIONALS_ORDER_ELSE",
                 "ABS",
-                "AOR_1", "AOR_2", "AOR_3", "AOR_4",
+                "AOR1", "AOR2", "AOR3", "AOR4",
                 "AOD1", "AOD2",
                 "CRCR1", "CRCR2", "CRCR3", "CRCR4", "CRCR5", "CRCR6",
                 "CRCR",
@@ -524,30 +533,30 @@ tasks.pitest {
                 "ROR1", "ROR2", "ROR3", "ROR4", "ROR5",
                 "ROR",
                 "UOI",
-                "UOI1", "UOI2"
+                // work-around for https://github.com/pitest/pitest-rv-plugin/issues/3
+                //"UOI1", "UOI2"
+                "UOI1", "UOI2",
+                "AOD",
+                "OBBN",
+                "UOI3", "UOI4"
         )
 
-        val availableMutators = Mutator::class.java
-                .getDeclaredField("MUTATORS")
-                .apply { isAccessible = true }
-                .get(null)
-                .let {
-                    when (it) {
-                        is Map<*, *> -> it.keys.map(Any?::toString).toSet()
-                        else -> emptySet()
-                    }
-                }
+        val availableMutators = Mutator.allMutatorIds()
+        val enabledMutators = mutators.get()
 
-        val mutators = mutators.get()
-
-        val schroedingersMutatorChamber = mutators.intersect(notExplicitlyEnabledMutators)
-        if (schroedingersMutatorChamber.isNotEmpty()) {
-            error("There are enabled and at the same time not enabled mutators: ${schroedingersMutatorChamber.sorted()}")
+        val schroedingersMutatorChamber = enabledMutators.intersect(notExplicitlyEnabledMutators)
+        check(schroedingersMutatorChamber.isEmpty()) {
+            "There are enabled and at the same time not enabled mutators: ${schroedingersMutatorChamber.sorted()}"
         }
 
-        val newMutators = availableMutators - mutators - notExplicitlyEnabledMutators
-        if (newMutators.isNotEmpty()) {
-            error("There are new mutators: ${newMutators.sorted()}")
+        val removedMutators = enabledMutators + notExplicitlyEnabledMutators - availableMutators
+        check(removedMutators.isEmpty()) {
+            "There are removed mutators: ${removedMutators.sorted()}"
+        }
+
+        val newMutators = availableMutators - enabledMutators - notExplicitlyEnabledMutators
+        check(newMutators.isEmpty()) {
+            "There are new mutators: ${newMutators.sorted()}"
         }
     }
 }

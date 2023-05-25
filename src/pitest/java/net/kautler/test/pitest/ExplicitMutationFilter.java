@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import org.pitest.mutationtest.build.MutationInterceptor;
 import org.pitest.mutationtest.engine.Mutater;
 import org.pitest.mutationtest.engine.MutationDetails;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -78,18 +77,19 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
             // these two mutants change static state of the synthetic switch map field
-            new ExplicitMutationFilterDetails(
-                    "net.kautler.command.api.Command",
-                    "getRestrictionChain",
-                    "()Lnet/kautler/command/api/restriction/RestrictionChainElement;",
-                    "org.pitest.mutationtest.engine.gregor.mutators.rv.UOI3Mutator",
-                    "Incremented (++a) integer array field"),
-            new ExplicitMutationFilterDetails(
-                    "net.kautler.command.api.Command",
-                    "getRestrictionChain",
-                    "()Lnet/kautler/command/api/restriction/RestrictionChainElement;",
-                    "org.pitest.mutationtest.engine.gregor.mutators.rv.UOI4Mutator",
-                    "Decremented (--a) integer array field"),
+            // work-around for https://github.com/pitest/pitest-rv-plugin/issues/3
+            //new ExplicitMutationFilterDetails(
+            //        "net.kautler.command.api.Command",
+            //        "getRestrictionChain",
+            //        "()Lnet/kautler/command/api/restriction/RestrictionChainElement;",
+            //        "org.pitest.mutationtest.engine.gregor.mutators.rv.UOI3Mutator",
+            //        "Incremented (++a) integer array field"),
+            //new ExplicitMutationFilterDetails(
+            //        "net.kautler.command.api.Command",
+            //        "getRestrictionChain",
+            //        "()Lnet/kautler/command/api/restriction/RestrictionChainElement;",
+            //        "org.pitest.mutationtest.engine.gregor.mutators.rv.UOI4Mutator",
+            //        "Decremented (--a) integer array field"),
             // giving a 3 instead of 2 element array to logger.info cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
@@ -278,57 +278,7 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "org.pitest.mutationtest.engine.gregor.mutators.experimental.MemberVariableMutator",
                     "Removed assignment to member variable subcommand",
                     38)
-            ).collect(groupingBy(ExplicitMutationFilterDetails::getClazz));
-
-    // work-around for https://github.com/hcoles/pitest/issues/689
-    static {
-        if (CURRENT_JAVA_MAJOR_VERSION >= 11) {
-            Stream.of(
-                    new ExplicitMutationFilterDetails(
-                            "net.kautler.command.api.Version",
-                            "<init>",
-                            "()V",
-                            "org.pitest.mutationtest.engine.gregor.mutators.NegateConditionalsMutator",
-                            "negated conditional",
-                            24, 33),
-                    new ExplicitMutationFilterDetails(
-                            "net.kautler.command.api.Version",
-                            "<init>",
-                            "()V",
-                            "org.pitest.mutationtest.engine.gregor.mutators.RemoveConditionalMutator_EQUAL_ELSE",
-                            "removed conditional - replaced equality check with false",
-                            24, 33),
-                    new ExplicitMutationFilterDetails(
-                            "net.kautler.command.api.Version",
-                            "<init>",
-                            "()V",
-                            "org.pitest.mutationtest.engine.gregor.mutators.RemoveConditionalMutator_EQUAL_IF",
-                            "removed conditional - replaced equality check with true",
-                            24, 33),
-                    new ExplicitMutationFilterDetails(
-                            2,
-                            "net.kautler.command.api.Version",
-                            "<init>",
-                            "()V",
-                            "org.pitest.mutationtest.engine.gregor.mutators.VoidMethodCallMutator",
-                            "removed call to java/io/InputStream::close"),
-                    new ExplicitMutationFilterDetails(
-                            "net.kautler.command.api.Version",
-                            "<init>",
-                            "()V",
-                            "org.pitest.mutationtest.engine.gregor.mutators.VoidMethodCallMutator",
-                            "removed call to java/lang/Throwable::addSuppressed")
-            )
-                    .collect(groupingBy(ExplicitMutationFilterDetails::getClazz))
-                    .forEach((clazz, details) ->
-                            filter.merge(clazz, details, (defaultDetails, additionalDetails) -> {
-                                List<ExplicitMutationFilterDetails> result = new ArrayList<>(defaultDetails);
-                                result.addAll(additionalDetails);
-                                return result;
-                            })
-                    );
-        }
-    }
+    ).collect(groupingBy(ExplicitMutationFilterDetails::getClazz));
 
     @Override
     public InterceptorType type() {

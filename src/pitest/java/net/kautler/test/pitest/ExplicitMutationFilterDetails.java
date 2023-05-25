@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,7 +162,7 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
     @Override
     public boolean test(MutationDetails mutationDetails) {
         return clazz.equals(mutationDetails.getClassName().asJavaName())
-                && methodPattern.matcher(mutationDetails.getMethod().name()).matches()
+                && methodPattern.matcher(mutationDetails.getMethod()).matches()
                 && methodDesc.equals(mutationDetails.getId().getLocation().getMethodDesc())
                 && mutator.equals(mutationDetails.getMutator())
                 && description.equals(mutationDetails.getDescription())

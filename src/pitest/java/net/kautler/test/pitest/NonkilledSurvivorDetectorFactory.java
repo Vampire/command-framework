@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,21 @@ import org.pitest.mutationtest.MutationResultListenerFactory;
 import java.util.Properties;
 
 /**
- * A mutation result listener factory that produces {@link SurvivorDetector}s.
+ * A mutation result listener factory that produces {@link NonkilledSurvivorDetector}s.
  */
-public class SurvivorDetectorFactory implements MutationResultListenerFactory {
+public class NonkilledSurvivorDetectorFactory implements MutationResultListenerFactory {
     @Override
     public MutationResultListener getListener(Properties props, ListenerArguments args) {
-        return new SurvivorDetector();
+        return new NonkilledSurvivorDetector();
     }
 
     @Override
     public String name() {
-        return "SURVIVOR_DETECTOR";
+        return "NON_KILLED_SURVIVOR_DETECTOR";
     }
 
     @Override
     public String description() {
-        return "Detects survivors and fails the run if any are found";
+        return "Detects non-killed survivors and fails the run if any are found";
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.pitest.junit.adapter.AdaptedJUnitTestUnit;
 import org.pitest.reflection.IsAnnotatedWith;
 import org.pitest.testapi.TestGroupConfig;
 import org.pitest.testapi.TestUnit;
+import org.pitest.testapi.TestUnitExecutionListener;
 import org.pitest.testapi.TestUnitFinder;
 import org.spockframework.runtime.model.FeatureMetadata;
 import spock.lang.Shared;
@@ -95,7 +96,7 @@ public class SpockTestUnitFinder implements TestUnitFinder {
     }
 
     @Override
-    public List<TestUnit> findTestUnits(Class<?> clazz) {
+    public List<TestUnit> findTestUnits(Class<?> clazz, TestUnitExecutionListener listener) {
         Runner runner = AdaptedJUnitTestUnit.createRunner(clazz);
 
         if ((runner == null) || isExcluded(runner) || !isIncluded(clazz)) {

@@ -58,7 +58,8 @@ dependencies {
     implementation("com.github.javaparser:javaparser-core:3.15.1")
     implementation("org.kohsuke:github-api:1.99")
     implementation("net.sf.saxon:Saxon-HE:9.9.1-5")
-    implementation("org.pitest:pitest:1.4.10")
+    implementation("org.pitest:pitest:1.17.4")
+    implementation("org.pitest:pitest-rv-plugin:0.1")
 }
 
 kotlinDslPluginOptions {
