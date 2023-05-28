@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,12 +131,12 @@ class ParameterParseExceptionTest extends Specification {
 
         where:
             [messageA, messageB, causeA, causeB, parameterNameA, parameterNameB, parameterValueA, parameterValueB] <<
-            [
-                    ([[null, 'message1', 'message2']] * 2).combinations(),
-                    ([[null, 'cause1', 'cause2']] * 2).combinations(),
-                    ([[null, 'name1', 'name2']] * 2).combinations(),
-                    ([[null, 'value1', 'value2']] * 2).combinations(),
-            ].combinations()*.flatten()
+                    [
+                            ([[null, 'message']] * 2).combinations() + [['message1', 'message2']],
+                            ([[null, 'cause1']] * 2).combinations() + [['cause1', 'cause2']],
+                            ([[null, 'name']] * 2).combinations() + [['name1', 'name2']],
+                            ([[null, 'value']] * 2).combinations() + [['value1', 'value2']],
+                    ].combinations()*.flatten()
 
         and:
             result = (messageA == messageB) &&
@@ -184,10 +184,10 @@ class ParameterParseExceptionTest extends Specification {
         where:
             [messageA, messageB, causeA, causeB, parameterNameA, parameterNameB, parameterValueA, parameterValueB] <<
                     [
-                            ([[null, 'message1', 'message2']] * 2).combinations(),
-                            ([[null, 'cause1', 'cause2']] * 2).combinations(),
-                            ([[null, 'name1', 'name2']] * 2).combinations(),
-                            ([[null, 'value1', 'value2']] * 2).combinations(),
+                            ([[null, 'message']] * 2).combinations() + [['message1', 'message2']],
+                            ([[null, 'cause1']] * 2).combinations() + [['cause1', 'cause2']],
+                            ([[null, 'name']] * 2).combinations() + [['name1', 'name2']],
+                            ([[null, 'value']] * 2).combinations() + [['value1', 'value2']],
                     ].combinations()*.flatten()
 
         and:
