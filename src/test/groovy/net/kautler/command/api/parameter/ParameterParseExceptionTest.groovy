@@ -229,7 +229,7 @@ class ParameterParseExceptionTest extends Specification {
     }
 
     static class ParameterParseExceptionSub extends ParameterParseException {
-        ParameterParseExceptionSub(String message) {
+        ParameterParseExceptionSub() {
             super(null)
         }
     }
