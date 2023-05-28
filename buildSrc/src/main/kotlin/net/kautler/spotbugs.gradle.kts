@@ -66,6 +66,10 @@ tasks.named<SpotBugsTask>("spotbugsMain") {
     }
 }
 
+tasks.named<SpotBugsTask>("spotbugsTest") {
+    maxHeapSize = "1G"
+}
+
 //TODO: replace the HTML report task after the task supports multiple output formats natively
 //      and change "all" to "configureEach"
 tasks.withType<SpotBugsTask>().all {

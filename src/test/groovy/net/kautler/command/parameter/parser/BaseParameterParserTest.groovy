@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -362,6 +362,7 @@ class BaseParameterParserTest extends Specification {
         where:
             field << getAllInstanceFields(Stub(getField(getClass(), 'testee').type))
                     .findAll { !(it.name in ['$spock_interceptor']) }
+                    .toSorted { "$it" }
     }
 
     @ApplicationScoped

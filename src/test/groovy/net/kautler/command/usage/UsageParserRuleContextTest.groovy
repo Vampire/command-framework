@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ class UsageParserRuleContextTest extends Specification {
                         UsageParserRuleContext.isAssignableFrom(it.returnType) ||
                                 Collection.isAssignableFrom(it.returnType)
                     }
+                    .toSorted { "$it" }
     }
 
     def 'invokingState should be forwarded unaltered to superclass'() {

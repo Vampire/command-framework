@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -354,6 +354,7 @@ class LazyReferenceByFunctionTest extends Specification {
         where:
             field << getAllInstanceFields(Stub(getField(getClass(), 'testee').type))
                     .findAll { !(it.name in ['$spock_interceptor', 'readLock', 'writeLock', 'valueFunction']) }
+                    .toSorted { "$it" }
     }
 
     static class LazyReferenceByFunctionSub extends LazyReferenceByFunction<Object, Object> {

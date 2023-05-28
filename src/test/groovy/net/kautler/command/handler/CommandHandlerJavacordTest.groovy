@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -491,6 +491,7 @@ class CommandHandlerJavacordTest extends Specification {
                                 'executorService'
                         ])
                     }
+                    .toSorted { "$it" }
     }
 
     @ApplicationScoped
