@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ ruleset {
     HardCodedWindowsRootDirectory
     IntegerGetInteger
     MultipleUnaryOperators
+    ParameterAssignmentInFilterClosure
     RandomDoubleCoercedToZero
     RemoveAllOnSelf
     ReturnFromFinallyBlock
@@ -137,12 +138,20 @@ ruleset {
     //FieldTypeRequired
     HashtableIsObsolete
     IfStatementCouldBeTernary
+    //ImplicitClosureParameter
+    //ImplicitReturnStatement
     InvertedCondition
     InvertedIfElse
     LongLiteralWithLowerCaseL
     //MethodParameterTypeRequired
     //MethodReturnTypeRequired
     //NoDef
+    NoDouble {
+        doNotApplyToClassNames = 'net.kautler.test.PrivateFinalFieldSetterCategory'
+    }
+    NoFloat {
+        doNotApplyToClassNames = 'net.kautler.test.PrivateFinalFieldSetterCategory'
+    }
     NoJavaUtilDate
     NoTabCharacter
     //ParameterReassignment
@@ -177,6 +186,9 @@ ruleset {
     }
     LocaleSetDefault
     NestedForLoop
+    OptionalCollectionReturnType
+    OptionalField
+    OptionalMethodParameter
     PrivateFieldCouldBeFinal
     PublicInstanceField
     ReturnsNullInsteadOfEmptyArray
@@ -237,17 +249,15 @@ ruleset {
     //LineLength
     MissingBlankLineAfterImports
     MissingBlankLineAfterPackage
+    MissingBlankLineBeforeAnnotatedField
     SpaceAfterCatch
-    SpaceAfterClosingBrace {
-        // work-around for https://github.com/CodeNarc/CodeNarc/issues/452
-        doNotApplyToClassNames = [
-                'net.kautler.command.integ.test.javacord.spock.JavacordExtension',
-                'net.kautler.command.integ.test.jda.spock.JdaExtension'
-        ].join(', ')
-    }
+    SpaceAfterClosingBrace
     SpaceAfterComma
     SpaceAfterFor
     SpaceAfterIf
+    SpaceAfterMethodCallName
+    SpaceAfterMethodDeclarationName
+    SpaceAfterNotOperator
     SpaceAfterOpeningBrace
     SpaceAfterSemicolon
     SpaceAfterSwitch
@@ -258,12 +268,8 @@ ruleset {
     }
     SpaceAroundOperator
     SpaceBeforeClosingBrace
-    SpaceBeforeOpeningBrace {
-        doNotApplyToClassNames = [
-                'net.kautler.command.util.lazy.LazyReferenceByFunctionTest$1',
-                'net.kautler.command.util.lazy.LazyReferenceBySupplierTest$1'
-        ].join(', ')
-    }
+    SpaceBeforeOpeningBrace
+    SpaceInsideParentheses
     TrailingWhitespace
 
     // rulesets/generic.xml
@@ -278,6 +284,7 @@ ruleset {
     StatelessClass
 
     // rulesets/grails.xml
+    GrailsDomainGormMethods
     GrailsDomainHasEquals
     GrailsDomainHasToString
     GrailsDomainReservedSqlKeywordName
@@ -337,12 +344,7 @@ ruleset {
     ExplicitTreeSetInstantiation
     GStringAsMapKey
     GStringExpressionWithinString
-    GetterMethodCouldBeProperty {
-        doNotApplyToClassNames = [
-                'net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest$PingCommand',
-                'net.kautler.command.integ.test.jda.restriction.RestrictionChainElementIntegTest$PingCommand'
-        ].join(', ')
-    }
+    GetterMethodCouldBeProperty
     GroovyLangImmutable
     UseCollectMany
     UseCollectNested

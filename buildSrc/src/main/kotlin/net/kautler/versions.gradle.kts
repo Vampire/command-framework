@@ -49,7 +49,7 @@ val versions by extra(mapOf(
         "antlr" to "4.7.2",
 
         // tool versions
-        "codenarc" to "1.4",
+        "codenarc" to "2.2.0",
         "findsecbugs" to "1.9.0",
         "jacoco" to "0.8.5",
         "pitest" to "1.17.4",

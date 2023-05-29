@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ class VersionIntegTest extends Specification {
     @AddBean(VersionHolder)
     def 'display version should be equal to version if and only if the version is not a snapshot version'() {
         expect:
-            with (VersionHolder.version) {
+            with(VersionHolder.version) {
                 (displayVersion == version) != (version.endsWith('-SNAPSHOT') || version == '<unknown>')
             }
     }

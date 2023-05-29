@@ -36,8 +36,10 @@ class CommandContextTest extends Specification {
     def alias = randomUUID() as String
     def parameterString = randomUUID() as String
     Command command = Stub()
+
     @Shared
     def additionalDataKey = randomUUID() as String
+
     @Shared
     def additionalDataValue = randomUUID()
 

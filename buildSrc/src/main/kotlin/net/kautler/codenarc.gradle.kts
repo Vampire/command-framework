@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Bjoern Kautler
+ * Copyright 2019-2023 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ val versions: Map<String, String> by project
 
 codenarc {
     toolVersion = versions.safeGet("codenarc")
-    // customized copy from http://codenarc.sourceforge.net/StarterRuleSet-AllRulesByCategory.groovy.txt
-    // update with new rules when version is updated (previous version: 1.4)
+    // customized copy from https://github.com/CodeNarc/CodeNarc/blob/v2.2.0/docs/StarterRuleSet-AllRulesByCategory.groovy.txt
+    // update with new rules when version is updated (previous version: 2.2.0)
     config = resources.text.fromFile("config/codenarc/codenarc.groovy")
 }
 
