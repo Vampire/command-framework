@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 
 package net.kautler.command.api
-
-import java.util.Map.Entry
-import java.util.concurrent.ExecutorService
 
 import jakarta.annotation.PostConstruct
 import jakarta.enterprise.context.ApplicationScoped
@@ -37,13 +34,17 @@ import net.kautler.command.api.restriction.RestrictionChainElement
 import net.kautler.command.util.lazy.LazyReferenceBySupplier
 import net.kautler.test.ContextualInstanceCategory
 import org.jboss.weld.junit.MockBean
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 import spock.util.mop.Use
+
+import java.util.Map.Entry
+import java.util.concurrent.ExecutorService
 
 import static java.lang.Thread.currentThread
 import static java.util.concurrent.TimeUnit.DAYS
@@ -53,13 +54,15 @@ import static net.kautler.command.api.CommandContextTransformer.Phase.AFTER_PREF
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
+import static net.kautler.test.spock.LogContextHandler.ITERATION_CONTEXT_KEY
 import static org.apache.logging.log4j.Level.DEBUG
 import static org.apache.logging.log4j.Level.ERROR
 import static org.apache.logging.log4j.Level.INFO
 import static org.apache.logging.log4j.Level.TRACE
 import static org.apache.logging.log4j.Level.WARN
-import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
+import static org.apache.logging.log4j.core.test.appender.ListAppender.getListAppender
 
+@EnableWeld
 class CommandHandlerTest extends Specification {
     boolean[] initialized = [false]
 
@@ -83,8 +86,8 @@ class CommandHandlerTest extends Specification {
 
     CommandContextTransformer<Object> beforePrefixComputationCommandContextTransformer = Mock()
 
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(
                     TestCommandHandler,
                     LoggerProducer
@@ -96,8 +99,7 @@ class CommandHandlerTest extends Specification {
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
+                            .qualifiers(Internal.Literal.INSTANCE)
                             .types(new TypeLiteral<CommandHandler<Object>>() { }.type)
                             .creating(commandHandlerDelegate)
                             .build(),
@@ -124,8 +126,6 @@ class CommandHandlerTest extends Specification {
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .qualifiers(
-                                    // work-around for https://github.com/weld/weld-junit/issues/97
-                                    Any.Literal.INSTANCE,
                                     *Phase
                                             .values()
                                             .findAll { it != BEFORE_PREFIX_COMPUTATION }
@@ -136,11 +136,7 @@ class CommandHandlerTest extends Specification {
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .qualifiers(
-                                    // work-around for https://github.com/weld/weld-junit/issues/97
-                                    Any.Literal.INSTANCE,
-                                    new InPhase.Literal(BEFORE_PREFIX_COMPUTATION)
-                            )
+                            .qualifiers(new InPhase.Literal(BEFORE_PREFIX_COMPUTATION))
                             .types(new TypeLiteral<CommandContextTransformer<Object>>() { }.type)
                             .creating(beforePrefixComputationCommandContextTransformer)
                             .build()
@@ -167,35 +163,45 @@ class CommandHandlerTest extends Specification {
             initialized.every()
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'setting no restrictions should be logged properly'() {
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
+    def 'setting no restrictions should be logged properly'(iterationIdentifier) {
         when:
             commandHandler.ci().getInternalState('availableRestrictions').get()
 
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == INFO }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == INFO)
+                    }
                     .any { it.message.formattedMessage == 'Got no restrictions injected' }
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'setting no commands should be logged properly'() {
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
+    def 'setting no commands should be logged properly'(iterationIdentifier) {
         when:
             commandHandler.ci().getInternalState('commandByAlias').get()
 
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == INFO }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == INFO)
+                    }
                     .any { it.message.formattedMessage == 'Got no commands injected' }
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'setting #amount #restrictions should be logged properly'() {
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
+    def 'setting #amount #restrictions should be logged properly'(iterationIdentifier) {
         given:
             def availableRestrictions = Spy(availableRestrictionsInstance)
             availableRestrictions.stream() >> { callRealMethod().limit(amount) }
+            availableRestrictions.iterator() >> { callRealMethod().take(amount) }
 
         and:
             commandHandler.doSetAvailableRestrictions(availableRestrictions)
@@ -206,19 +212,23 @@ class CommandHandlerTest extends Specification {
         then:
             def debugEvents = getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
-            availableRestrictions
-                    .stream()
-                    .each { restriction ->
-                        assert debugEvents.any {
-                            it.message.formattedMessage == "Got restriction ${restriction.realClass.name} injected"
-                        }
-                    } ?: true
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
+            verifyEach(availableRestrictions) { restriction ->
+                debugEvents.any {
+                    it.message.formattedMessage == "Got restriction ${restriction.realClass.name} injected"
+                }
+            }
 
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == INFO }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == INFO)
+                    }
                     .any { it.message.formattedMessage == "Got $amount $restrictions injected" }
 
         where:
@@ -228,14 +238,16 @@ class CommandHandlerTest extends Specification {
             2      | 'restrictions'
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
     def 'default command pattern should never match if no commands were set'() {
         expect:
             commandHandler.ci().getInternalState('commandPattern').get().pattern() == /[^\w\W]/
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'setting #amount #command should be logged properly'() {
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
+    def 'setting #amount #commandsText should be logged properly'(iterationIdentifier) {
         given:
             commandsInstance.eachWithIndex { command, i ->
                 command.ci().aliases >> ["test$i" as String]
@@ -244,6 +256,7 @@ class CommandHandlerTest extends Specification {
         and:
             def commands = Spy(commandsInstance)
             commands.stream() >> { callRealMethod().limit(amount) }
+            commands.iterator() >> { callRealMethod().take(amount) }
 
         and:
             commandHandler.doSetCommands(commands)
@@ -254,29 +267,34 @@ class CommandHandlerTest extends Specification {
         then:
             def debugEvents = getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
-            commands
-                    .stream()
-                    .each { command ->
-                        assert debugEvents.any {
-                            it.message.formattedMessage == "Got command ${command.getClass().name} injected"
-                        }
-                    } ?: true
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
+            verifyEach(commands) { command ->
+                debugEvents.any {
+                    it.message.formattedMessage == "Got command ${command.getClass().name} injected"
+                }
+            }
 
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == INFO }
-                    .any { it.message.formattedMessage == "Got $amount $command injected" }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == INFO)
+                    }
+                    .any { it.message.formattedMessage == "Got $amount $commandsText injected" }
 
         where:
-            amount | command
+            amount | commandsText
             0      | 'commands'
             1      | 'command'
             2      | 'commands'
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
     def 'two commands with the same alias should throw exception'() {
         given:
             [command1, command2].each { it.aliases >> ['test'] }
@@ -298,7 +316,8 @@ class CommandHandlerTest extends Specification {
             ].collect { it as String }
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
     def 'restriction annotations combination should be verified for all commands on first command access for fail-fast'() {
         given:
             commandsInstance.eachWithIndex { command, i ->
@@ -318,7 +337,8 @@ class CommandHandlerTest extends Specification {
             thrown(InvalidAnnotationCombinationException)
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
     def 'shutting down the container should shut down an existing executor service'() {
         given:
             ExecutorService executorService = Mock()
@@ -335,7 +355,8 @@ class CommandHandlerTest extends Specification {
             1 * executorService./shutdown(?:Now)?/()
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
     def 'shutting down the container should not shut down an executor service if not previously created'() {
         given:
             ExecutorService executorService = Mock()
@@ -352,14 +373,17 @@ class CommandHandlerTest extends Specification {
             0 * executorService./shutdown(?:Now)?/()
     }
 
-    def 'shutting down the container should not log errors'() {
+    def 'shutting down the container should not log errors'(iterationIdentifier) {
         when:
             weld.shutdown()
 
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == ERROR }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == ERROR)
+                    }
                     .empty
     }
 
@@ -384,7 +408,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'each transformer phase should be called in normal message processing'() {
+    def 'each transformer phase should be called in normal message processing'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -509,14 +533,17 @@ class CommandHandlerTest extends Specification {
             ].each { expectedLevel, expectedMessageStart ->
                 assert getListAppender('Test Appender')
                         .events
-                        .findAll { it.level == expectedLevel }
-                        .any { it.message.formattedMessage.startsWith(expectedMessageStart) } :
+                        .findAll {
+                            (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                    (it.level == expectedLevel)
+                        }
+                        .any { it.message.formattedMessage.startsWith(expectedMessageStart) }:
                         "'$expectedMessageStart' on level '$expectedLevel' not found"
             }
     }
 
     @Use(ContextualInstanceCategory)
-    def 'only alias and command computation phases should be called if initial command context already contains a prefix'() {
+    def 'only alias and command computation phases should be called if initial command context already contains a prefix'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -597,7 +624,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -607,7 +637,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'only command computation phases should be called if initial command context already contains an alias'() {
+    def 'only command computation phases should be called if initial command context already contains an alias'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -664,7 +694,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -674,7 +707,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'no transformer phase should be called if initial command context already contains a command'() {
+    def 'no transformer phase should be called if initial command context already contains a command'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -707,7 +740,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -807,7 +843,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'only command computation phases should be called after before prefix phase set an alias'() {
+    def 'only command computation phases should be called after before prefix phase set an alias'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -874,7 +910,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -884,7 +923,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'no transformer phase should be called after before prefix phase set a command'() {
+    def 'no transformer phase should be called after before prefix phase set a command'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -927,7 +966,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -1039,7 +1081,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'only command computation phases should be called after after prefix phase set an alias'() {
+    def 'only command computation phases should be called after after prefix phase set an alias'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1118,7 +1160,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -1128,7 +1173,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'no transformer phase should be called after after prefix phase set a command'() {
+    def 'no transformer phase should be called after after prefix phase set a command'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1183,7 +1228,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -1193,7 +1241,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'command not found event should be fired after after prefix phase unset the prefix'() {
+    def 'command not found event should be fired after after prefix phase unset the prefix'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1254,7 +1302,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == TRACE }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == TRACE)
+                    }
                     .any { it.message.formattedMessage.contains('No matching command found (prefix missing)') }
     }
 
@@ -1361,7 +1412,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'only command computation phases should be called after before alias phase set an alias'() {
+    def 'only command computation phases should be called after before alias phase set an alias'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1452,7 +1503,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -1462,7 +1516,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'no transformer phase should be called after before alias phase set a command'() {
+    def 'no transformer phase should be called after before alias phase set a command'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1529,7 +1583,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -1539,7 +1596,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'command not found event should be fired after before alias phase unset the prefix'() {
+    def 'command not found event should be fired after before alias phase unset the prefix'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1612,12 +1669,15 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == TRACE }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == TRACE)
+                    }
                     .any { it.message.formattedMessage.contains('No matching command found (prefix missing)') }
     }
 
     @Use(ContextualInstanceCategory)
-    def 'command not found event should not be fired after before alias phase set a prefix that does not match'() {
+    def 'command not found event should not be fired after before alias phase set a prefix that does not match'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1683,7 +1743,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == TRACE }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == TRACE)
+                    }
                     .any { it.message.formattedMessage.contains('Message content does not start with prefix, ignoring message') }
     }
 
@@ -1790,7 +1853,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'no transformer phase should be called after after alias phase set a command'() {
+    def 'no transformer phase should be called after after alias phase set a command'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1869,7 +1932,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -1879,7 +1945,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'command not found event should be fired after after alias phase unset the alias'() {
+    def 'command not found event should be fired after after alias phase unset the alias'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -1964,12 +2030,15 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any { it.message.formattedMessage.contains('No matching command found (alias missing)') }
     }
 
     @Use(ContextualInstanceCategory)
-    def 'no transformer phase should be called after before command phase set a command'() {
+    def 'no transformer phase should be called after before command phase set a command'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -2060,7 +2129,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any {
                         it.message.formattedMessage.with {
                             it.startsWith('Fast forwarding CommandContext[') &&
@@ -2070,7 +2142,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'command not found event should be fired after before command phase unset the alias'() {
+    def 'command not found event should be fired after before command phase unset the alias'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -2167,7 +2239,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any { it.message.formattedMessage.contains('No matching command found (alias missing)') }
     }
 
@@ -2274,7 +2349,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'command not found event should be fired after after command phase unset the command'() {
+    def 'command not found event should be fired after after command phase unset the command'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -2383,7 +2458,10 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any { it.message.formattedMessage.contains('No matching command found (command missing)') }
     }
 
@@ -2431,7 +2509,7 @@ class CommandHandlerTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'an empty custom command prefix should log warning'() {
+    def 'an empty custom command prefix should log warning'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -2444,12 +2522,15 @@ class CommandHandlerTest extends Specification {
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == WARN }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == WARN)
+                    }
                     .any { it.message.formattedMessage.contains('command prefix is empty') }
     }
 
     @Use(ContextualInstanceCategory)
-    def 'a non-empty custom command prefix should not log warning'() {
+    def 'a non-empty custom command prefix should not log warning'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -2462,7 +2543,10 @@ class CommandHandlerTest extends Specification {
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == WARN }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == WARN)
+                    }
                     .empty
     }
 
@@ -2630,7 +2714,8 @@ class CommandHandlerTest extends Specification {
             'command2' | _
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
     def '#command should be executed asynchronously: #asynchronous'() {
         given:
             prepareCommandHandlerForCommandExecution()
@@ -2661,10 +2746,9 @@ class CommandHandlerTest extends Specification {
             }
 
         where:
-            [command, asynchronous] << [
-                    ['command1', 'command2'],
-                    [true, false]
-            ].combinations()
+            command << ['command1', 'command2']
+        combined:
+            asynchronous << [true, false]
     }
 
     @Use(ContextualInstanceCategory)
@@ -2697,14 +2781,13 @@ class CommandHandlerTest extends Specification {
             }
 
         where:
-            [command, restricted] << [
-                    ['command1', 'command2'],
-                    [true, false]
-            ].combinations()
+            command << ['command1', 'command2']
+        combined:
+            restricted << [true, false]
     }
 
     @Use(ContextualInstanceCategory)
-    def '#command should log command not allowed event: #restricted'() {
+    def '#command should log command not allowed event: #restricted'(iterationIdentifier) {
         given:
             availableRestrictionsInstance.each {
                 it.ci().allowCommand(_) >> !restricted
@@ -2721,19 +2804,21 @@ class CommandHandlerTest extends Specification {
         then:
             def logMessage = getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any { it.message.formattedMessage == "Command $command was not allowed by restrictions" }
             restricted ? logMessage : !logMessage
 
         where:
-            [command, restricted] << [
-                    ['command1', 'command2'],
-                    [true, false]
-            ].combinations()
+            command << ['command1', 'command2']
+        combined:
+            restricted << [true, false]
     }
 
     @Use(ContextualInstanceCategory)
-    def 'message with correct prefix but wrong trigger should fire command not found event'() {
+    def 'message with correct prefix but wrong trigger should fire command not found event'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -2754,12 +2839,15 @@ class CommandHandlerTest extends Specification {
         and:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any { it.message.formattedMessage.contains('No matching command found (alias missing)') }
     }
 
     @Use(ContextualInstanceCategory)
-    def 'message with correct prefix but wrong trigger should log command not found event'() {
+    def 'message with correct prefix but wrong trigger should log command not found event'(iterationIdentifier) {
         given:
             prepareCommandHandlerForCommandExecution()
 
@@ -2770,7 +2858,10 @@ class CommandHandlerTest extends Specification {
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == DEBUG }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == DEBUG)
+                    }
                     .any { it.message.formattedMessage == 'No matching command found (alias missing)' }
     }
 
@@ -2806,8 +2897,9 @@ class CommandHandlerTest extends Specification {
             executingThread.get() != currentThread()
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'asynchronous command execution should not log an error if none happened'() {
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
+    def 'asynchronous command execution should not log an error if none happened'(iterationIdentifier) {
         when:
             commandHandler.executeAsync(Stub(CommandContext)) { }
 
@@ -2820,12 +2912,16 @@ class CommandHandlerTest extends Specification {
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == ERROR }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == ERROR)
+                    }
                     .empty
     }
 
-    @Use([ContextualInstanceCategory, Whitebox])
-    def 'exception during asynchronous command execution should be logged properly'() {
+    @Use(ContextualInstanceCategory)
+    @Use(Whitebox)
+    def 'exception during asynchronous command execution should be logged properly'(iterationIdentifier) {
         given:
             def exception = new Exception()
 
@@ -2841,7 +2937,10 @@ class CommandHandlerTest extends Specification {
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == ERROR }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == ERROR)
+                    }
                     .any {
                         (it.message.formattedMessage == 'Exception while executing command asynchronously') &&
                                 ((it.thrown == exception) || (it.thrown.cause == exception))

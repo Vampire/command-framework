@@ -72,7 +72,7 @@ class MentionPrefixTransformerJavacordTest extends Specification {
             testee.transform(commandContext, BEFORE_PREFIX_COMPUTATION) == expectedCommandContext
     }
 
-    def '#className toString should start with class name'() {
+    def '#className toString should start with class name'(testee) {
         expect:
             testee.toString().startsWith("$className[")
 

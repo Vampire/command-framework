@@ -45,11 +45,11 @@ val versions by extra(mapOf(
         "cdi" to "3.0.0",
         "jakarta.annotation-api" to "2.0.0",
         "jakarta.inject-api" to "2.0.1",
-        "log4j" to "2.17.2",
+        "log4j" to "2.20.0",
         "antlr" to "4.7.2",
 
         // tool versions
-        "codenarc" to "2.2.0",
+        "codenarc" to "3.7.0",
         "findsecbugs" to "1.9.0",
         "jacoco" to "0.8.5",
         "pitest" to "1.17.4",
@@ -59,13 +59,13 @@ val versions by extra(mapOf(
         "spotbugs" to "3.1.12",
 
         // test versions
-        "spock" to "1.3-groovy-2.5",
+        "spock" to "2.4-groovy-3.0",
+        "junit-platform" to "1.9.0",
         "powermock" to "2.0.2",
-        "groovy" to "2.5.8",
-        "spock-global-unroll" to "0.5.1",
+        "groovy" to "3.0.25",
         "byte-buddy" to "1.10.1",
         "objenesis" to "3.1",
-        "weld-junit" to "3.0.0.Final",
+        "weld-spock" to "3.1.0.Final",
         "weld-se" to "4.0.3.Final",
         "jansi" to "1.18",
         "discordWebhooks" to "0.8.4"

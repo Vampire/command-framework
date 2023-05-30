@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,9 @@ import net.kautler.command.parameter.ParametersImpl
 import net.kautler.command.usage.UsagePatternBuilder
 import net.kautler.test.ContextualInstanceCategory
 import org.jboss.weld.junit.MockBean
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
@@ -35,11 +36,12 @@ import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
 import static org.powermock.reflect.Whitebox.newInstance
 
+@EnableWeld
 class UntypedParameterParserTest extends Specification {
     UsagePatternBuilder usagePatternBuilder = Stub()
 
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(UntypedParameterParser)
             .addBeans(
                     MockBean.builder()

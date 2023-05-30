@@ -19,27 +19,39 @@ package net.kautler.command.integ.test.javacord.restriction
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
-import net.kautler.command.api.annotation.Alias
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.javacord.ChannelJavacord
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
-import static org.junit.Assert.fail
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(ChannelJavacord)
 class ChannelJavacordIntegTest extends Specification {
     @AddBean(Channel)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.Channel.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in correct channel by id'(ServerTextChannel serverTextChannelAsUser) {
         given:
             Channel.criterion = 1
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -47,7 +59,7 @@ class ChannelJavacordIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -56,6 +68,10 @@ class ChannelJavacordIntegTest extends Specification {
 
     @AddBean(Channel)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.Channel.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct channel by id'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
@@ -63,18 +79,20 @@ class ChannelJavacordIntegTest extends Specification {
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -86,16 +104,23 @@ class ChannelJavacordIntegTest extends Specification {
 
     @AddBean(Channel)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.Channel.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in correct channel by name'(ServerTextChannel serverTextChannelAsUser) {
         given:
             def channelName = serverTextChannelAsUser.name.toUpperCase()
             if (channelName == serverTextChannelAsUser.name) {
                 channelName = serverTextChannelAsUser.name.toLowerCase()
-                if (channelName == serverTextChannelAsUser.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert channelName != serverTextChannelAsUser.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             Channel.criterion = channelName
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -103,7 +128,7 @@ class ChannelJavacordIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -112,6 +137,10 @@ class ChannelJavacordIntegTest extends Specification {
 
     @AddBean(Channel)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.Channel.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct channel by name'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
@@ -119,18 +148,20 @@ class ChannelJavacordIntegTest extends Specification {
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -142,9 +173,18 @@ class ChannelJavacordIntegTest extends Specification {
 
     @AddBean(ChannelCaseInsensitive)
     @AddBean(PingCommandCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.ChannelCaseInsensitive.channelName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommandCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommandCaseInsensitive.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in correct channel by name case-insensitively'(ServerTextChannel serverTextChannelAsUser) {
         given:
             ChannelCaseInsensitive.channelName = 'foo'
+
+        and:
+            PingCommandCaseInsensitive.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommandCaseInsensitive.alias}"
 
         and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -152,7 +192,7 @@ class ChannelJavacordIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -161,32 +201,36 @@ class ChannelJavacordIntegTest extends Specification {
 
     @AddBean(ChannelCaseInsensitive)
     @AddBean(PingCommandCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.ChannelCaseInsensitive.channelName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommandCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct channel by name case-insensitively'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def channelName = serverTextChannelAsBot.name.toUpperCase()
             if (channelName == serverTextChannelAsBot.name) {
                 channelName = serverTextChannelAsBot.name.toLowerCase()
-                if (channelName == serverTextChannelAsBot.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert channelName != serverTextChannelAsBot.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             ChannelCaseInsensitive.channelName = channelName
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommandCaseInsensitive.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommandCaseInsensitive.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -198,9 +242,18 @@ class ChannelJavacordIntegTest extends Specification {
 
     @AddBean(Channel)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.Channel.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in correct channel by pattern'(ServerTextChannel serverTextChannelAsUser) {
         given:
             Channel.criterion = ~/[^\w\W]/
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -208,7 +261,7 @@ class ChannelJavacordIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -217,6 +270,10 @@ class ChannelJavacordIntegTest extends Specification {
 
     @AddBean(Channel)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.Channel.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct channel by pattern'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
@@ -224,18 +281,20 @@ class ChannelJavacordIntegTest extends Specification {
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -249,7 +308,13 @@ class ChannelJavacordIntegTest extends Specification {
     @ApplicationScoped
     @RestrictedTo(Channel)
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -259,7 +324,7 @@ class ChannelJavacordIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class Channel extends ChannelJavacord {
-        static criterion
+        static volatile criterion
 
         Channel() {
             super(criterion)
@@ -268,10 +333,15 @@ class ChannelJavacordIntegTest extends Specification {
 
     @Vetoed
     @ApplicationScoped
-    @Alias('ping')
     @RestrictedTo(ChannelCaseInsensitive)
     static class PingCommandCaseInsensitive extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -281,10 +351,24 @@ class ChannelJavacordIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class ChannelCaseInsensitive extends ChannelJavacord {
-        static channelName
+        static volatile channelName
 
         ChannelCaseInsensitive() {
             super(channelName, false)
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

@@ -68,7 +68,8 @@ val integTestSourceSets = messageFrameworkVersions
 
 sourceSets {
     createForTest("pitest")
-    createForTest("spock")
+    // work-around for https://youtrack.jetbrains.com/issue/IDEA-229618
+    create("spock")
     // work-around for https://youtrack.jetbrains.com/issue/IDEA-229618
     create("integTestCommon")
 }
@@ -86,8 +87,9 @@ integTestSourceSets.keys.forEach {
 dependencies {
     testImplementation("org.spockframework:spock-core:${versions["spock"]}")
     testImplementation("org.powermock:powermock-reflect:${versions["powermock"]}")
-    testImplementation("org.jboss.weld:weld-junit4:${versions["weld-junit"]}")
-    testImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}:tests")
+    testImplementation("org.jboss.weld:weld-spock:${versions["weld-spock"]}")
+    testImplementation("org.jboss.weld:weld-junit-common:${versions["weld-spock"]}")
+    testImplementation("org.apache.logging.log4j:log4j-core-test:${versions["log4j"]}") { isTransitive = false }
     testImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}")
     testImplementation("org.antlr:antlr4-runtime:${versions["antlr"]}")
     testImplementation("org.javacord:javacord-api:${messageFrameworkVersions.safeGet("javacord").first()}")
@@ -99,7 +101,6 @@ dependencies {
     val spock by sourceSets
     testImplementation(spock.let { it.output + it.runtimeClasspath })
 
-    testRuntimeOnly("info.solidsoft.spock:spock-global-unroll:${versions["spock-global-unroll"]}")
     testRuntimeOnly("net.bytebuddy:byte-buddy:${versions["byte-buddy"]}")
     testRuntimeOnly("org.objenesis:objenesis:${versions["objenesis"]}")
 
@@ -107,25 +108,29 @@ dependencies {
 
     val pitestImplementation by configurations
     pitestImplementation("org.pitest:pitest-entry:${versions["pitest"]}")
-    pitestImplementation("org.spockframework:spock-core:${versions["spock"]}")
+    pitestImplementation("org.junit.platform:junit-platform-launcher:${versions["junit-platform"]}")
 
     val spockCompileOnly by configurations
     spockCompileOnly("org.codehaus.groovy:groovy:${versions["groovy"]}")
     spockCompileOnly("org.spockframework:spock-core:${versions["spock"]}")
     val spockImplementation by configurations
-    spockImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}:tests")
+    spockImplementation("org.apache.logging.log4j:log4j-core-test:${versions["log4j"]}") { isTransitive = false }
     spockImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}")
+    spockImplementation("org.powermock:powermock-reflect:${versions["powermock"]}")
+    constraints {
+        spockImplementation("net.bytebuddy:byte-buddy:${versions["byte-buddy"]}")
+        spockImplementation("org.objenesis:objenesis:${versions["objenesis"]}")
+    }
 
     val integTestCommonImplementation by configurations
+    integTestCommonImplementation(spock.let { it.output + it.runtimeClasspath })
     integTestCommonImplementation("org.spockframework:spock-core:${versions["spock"]}")
     integTestCommonImplementation("jakarta.enterprise:jakarta.enterprise.cdi-api:${versions["cdi"]}")
     integTestCommonImplementation("jakarta.annotation:jakarta.annotation-api:${versions["jakarta.annotation-api"]}")
-    integTestCommonImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}:tests")
+    integTestCommonImplementation("org.apache.logging.log4j:log4j-core-test:${versions["log4j"]}") { isTransitive = false }
     integTestCommonImplementation("org.apache.logging.log4j:log4j-core:${versions["log4j"]}")
 
     val integTestCommonRuntimeOnly by configurations
-    integTestCommonRuntimeOnly(spock.let { it.output + it.runtimeClasspath })
-    integTestCommonRuntimeOnly("info.solidsoft.spock:spock-global-unroll:${versions["spock-global-unroll"]}")
     integTestCommonRuntimeOnly("org.jboss.weld.se:weld-se-core:${versions["weld-se"]}") {
         @Suppress("UnstableApiUsage")
         because("CDI implementation")
@@ -228,6 +233,11 @@ integTestSourceSets.forEach { (testSourceSetName, referenceSourceSetName) ->
                     + sourceSets.getByName(referenceSourceSetName).output)
                     .filter { it.exists() }
 
+            configure<JacocoTaskExtension> {
+                // addPropertyAliases is already too big to be instrumented further
+                excludes!!.add("groovyjarjarantlr4.v4.unicode.UnicodeData")
+            }
+
             systemProperty("testResponseTimeout", testResponseTimeout)
             systemProperty("testManualCommandTimeout", testManualCommandTimeout)
 
@@ -252,15 +262,15 @@ integTestSourceSets.forEach { (testSourceSetName, referenceSourceSetName) ->
 
     manualTestTask {
         description = "Runs the manual ${testSourceSetName.capitalize()} integration tests."
-        useJUnit {
-            includeCategories("net.kautler.command.integ.test.ManualTests")
+        useJUnitPlatform {
+            includeTags("manual")
         }
     }
 
     testTask {
         description = "Runs the ${testSourceSetName.capitalize()} integration tests."
-        useJUnit {
-            excludeCategories("net.kautler.command.integ.test.ManualTests")
+        useJUnitPlatform {
+            excludeTags("manual")
         }
     }
 
@@ -287,83 +297,11 @@ val jacocoIntegTestReport by tasks.registering(JacocoReport::class) {
 // work-around for https://issues.apache.org/jira/browse/GROOVY-8339
 if (JavaVersion.current().isJava9Compatible) {
     val jvmArgs = listOf(
-            "--add-opens=java.base/java.io=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang.annotation=ALL-UNNAMED",
             "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang.module=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang.ref=ALL-UNNAMED",
             "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
-            "--add-opens=java.base/java.math=ALL-UNNAMED",
-            "--add-opens=java.base/java.net=ALL-UNNAMED",
-            "--add-opens=java.base/java.net.spi=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio.channels=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio.charset=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio.charset.spi=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio.file=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio.file.attribute=ALL-UNNAMED",
-            "--add-opens=java.base/java.nio.file.spi=ALL-UNNAMED",
-            "--add-opens=java.base/java.security=ALL-UNNAMED",
-            "--add-opens=java.base/java.security.acl=ALL-UNNAMED",
-            "--add-opens=java.base/java.security.cert=ALL-UNNAMED",
-            "--add-opens=java.base/java.security.interfaces=ALL-UNNAMED",
-            "--add-opens=java.base/java.security.spec=ALL-UNNAMED",
-            "--add-opens=java.base/java.text=ALL-UNNAMED",
-            "--add-opens=java.base/java.text.spi=ALL-UNNAMED",
-            "--add-opens=java.base/java.time=ALL-UNNAMED",
-            "--add-opens=java.base/java.time.chrono=ALL-UNNAMED",
-            "--add-opens=java.base/java.time.format=ALL-UNNAMED",
-            "--add-opens=java.base/java.time.temporal=ALL-UNNAMED",
-            "--add-opens=java.base/java.time.zone=ALL-UNNAMED",
             "--add-opens=java.base/java.util=ALL-UNNAMED",
-            "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
-            "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED",
             "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED",
-            "--add-opens=java.base/java.util.function=ALL-UNNAMED",
-            "--add-opens=java.base/java.util.jar=ALL-UNNAMED",
-            "--add-opens=java.base/java.util.regex=ALL-UNNAMED",
-            "--add-opens=java.base/java.util.spi=ALL-UNNAMED",
-            "--add-opens=java.base/java.util.stream=ALL-UNNAMED",
-            "--add-opens=java.base/java.util.zip=ALL-UNNAMED",
-            "--add-opens=java.datatransfer/java.awt.datatransfer=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.applet=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.color=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.desktop=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.dnd=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.dnd.peer=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.event=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.geom=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.im=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.im.spi=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.image=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.image.renderable=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.peer=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.awt.print=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.beans=ALL-UNNAMED",
-            "--add-opens=java.desktop/java.beans.beancontext=ALL-UNNAMED",
-            "--add-opens=java.instrument/java.lang.instrument=ALL-UNNAMED",
-            "--add-opens=java.logging/java.util.logging=ALL-UNNAMED",
-            "--add-opens=java.management/java.lang.management=ALL-UNNAMED",
-            "--add-opens=java.prefs/java.util.prefs=ALL-UNNAMED",
-            "--add-opens=java.rmi/java.rmi=ALL-UNNAMED",
-            "--add-opens=java.rmi/java.rmi.activation=ALL-UNNAMED",
-            "--add-opens=java.rmi/java.rmi.dgc=ALL-UNNAMED",
-            "--add-opens=java.rmi/java.rmi.registry=ALL-UNNAMED",
-            "--add-opens=java.rmi/java.rmi.server=ALL-UNNAMED",
-            "--add-opens=java.sql/java.sql=ALL-UNNAMED",
-            "--add-opens=java.desktop/javax.swing=ALL-UNNAMED",
-            "--add-opens=java.desktop/javax.swing.border=ALL-UNNAMED",
-            "--add-opens=java.desktop/javax.swing.text=ALL-UNNAMED",
-            "--add-opens=java.desktop/javax.swing.text.html=ALL-UNNAMED",
-            "--add-opens=java.desktop/sun.awt=ALL-UNNAMED",
-            "--add-opens=java.desktop/sun.java2d=ALL-UNNAMED",
-            "--add-opens=java.desktop/sun.font=ALL-UNNAMED",
-            "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED",
-            "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED"
+            "--add-opens=java.base/java.util.regex=ALL-UNNAMED"
     )
     tasks.withType<Test>().configureEach {
         jvmArgs(jvmArgs)
@@ -380,6 +318,7 @@ tasks.withType<Test>().configureEach {
 }
 
 tasks.test {
+    useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
 }
 

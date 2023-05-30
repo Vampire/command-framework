@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@ import jakarta.enterprise.inject.Any
 import jakarta.enterprise.inject.Instance
 import jakarta.enterprise.inject.Vetoed
 import jakarta.inject.Inject
-import net.kautler.command.Internal.Literal
+import net.kautler.command.Internal
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
-import net.kautler.command.api.annotation.Alias
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.Usage
 import net.kautler.command.api.parameter.ParameterConverter
 import net.kautler.command.api.parameter.ParameterParseException
@@ -38,20 +39,30 @@ import net.kautler.command.parameter.parser.missingdependency.MissingDependencyP
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.message.Message
 import org.javacord.api.util.logging.ExceptionLogger
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(TypedParameterParser)
 @VetoBean(MissingDependencyParameterParser)
 class TypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
     @AddBean(CustomStringsConverter)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'typed parameter parser should work properly with correct arguments'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
+            def random = UUID.randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
+
+        and:
             def random1 = randomUUID()
             def random2 = randomUUID()
             def random3 = randomUUID()
@@ -64,7 +75,7 @@ class TypedParameterParserIntegTest extends Specification {
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
                 if (it.message.author.yourself && (it.message.content == """
-                    pong:
+                    pong_$random:
                     bam: $random1 [java.lang.String]
                     bar: 2.3 [java.math.BigDecimal]
                     baz: $serverTextChannelAsBot.api.yourself [${serverTextChannelAsBot.api.yourself.getClass().name}]
@@ -92,7 +103,7 @@ class TypedParameterParserIntegTest extends Specification {
         when:
             serverTextChannelAsUser
                     .sendMessage([
-                            '!ping',
+                            IgnoreOtherTestsTransformer.expectedStart,
                             '1',
                             '2.3',
                             serverTextChannelAsBot
@@ -122,25 +133,31 @@ class TypedParameterParserIntegTest extends Specification {
     }
 
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'typed parameter parser should throw exception with wrong number of arguments [arguments: #arguments]'(
-            arguments, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def random = UUID.randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == '''
-                    pong:
-                    Wrong arguments for command `!ping`
-                    Usage: `!ping <foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention> <noo:string> <noo:string> <noo:string>`
-                '''.stripIndent().trim())) {
+                if (it.message.author.yourself && (it.message.content == """
+                    pong_$random:
+                    Wrong arguments for command `${IgnoreOtherTestsTransformer.expectedStart}`
+                    Usage: `${IgnoreOtherTestsTransformer.expectedStart} <foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention> <noo:string> <noo:string> <noo:string>`
+                """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $arguments")
+                    .sendMessage("${IgnoreOtherTestsTransformer.expectedStart} $arguments")
                     .join()
 
         then:
@@ -151,30 +168,32 @@ class TypedParameterParserIntegTest extends Specification {
 
         where:
             arguments << ['', 'foo', 'foo bar baz bam boo hoo loo moo noo noo noo doo']
-
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
     }
 
     @AddBean(UsagelessPingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'typed parameter parser should work properly without arguments'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == '''
-                    pong:
-                '''.stripIndent().trim())) {
+                if (it.message.author.yourself && (it.message.content == """
+                    pong_$random:
+                """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedStart)
                     .join()
 
         then:
@@ -185,24 +204,30 @@ class TypedParameterParserIntegTest extends Specification {
     }
 
     @AddBean(UsagelessPingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'typed parameter parser should throw exception with unexpected arguments'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == '''
-                    pong:
-                    Command `!ping` does not expect arguments
-                '''.stripIndent().trim())) {
+                if (it.message.author.yourself && (it.message.content == """
+                    pong_$random:
+                    Command `${IgnoreOtherTestsTransformer.expectedStart}` does not expect arguments
+                """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping foo')
+                    .sendMessage("${IgnoreOtherTestsTransformer.expectedStart} foo")
                     .join()
 
         then:
@@ -215,9 +240,17 @@ class TypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
     @AddBean(CustomStringConverter)
     @AddBean(CustomStringsConverter)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'custom converter should override built-in converter of same type'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
+            def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
+
+        and:
             def random1 = randomUUID()
             def random2 = randomUUID()
             def random3 = randomUUID()
@@ -230,7 +263,7 @@ class TypedParameterParserIntegTest extends Specification {
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
                 if (it.message.author.yourself && (it.message.content == """
-                    pong:
+                    pong_$random:
                     bam: custom: $random1 [java.lang.String]
                     bar: 2.3 [java.math.BigDecimal]
                     baz: $serverTextChannelAsBot.api.yourself [${serverTextChannelAsBot.api.yourself.getClass().name}]
@@ -258,7 +291,7 @@ class TypedParameterParserIntegTest extends Specification {
         when:
             serverTextChannelAsUser
                     .sendMessage([
-                            '!ping',
+                            IgnoreOtherTestsTransformer.expectedStart,
                             '1',
                             '2.3',
                             serverTextChannelAsBot
@@ -288,9 +321,16 @@ class TypedParameterParserIntegTest extends Specification {
     }
 
     @AddBean(ListCustomConvertersCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.ListCustomConvertersCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.TypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'built-in converters should have @Internal qualifier'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
+            ListCustomConvertersCommand.alias = "listCustomConverters_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedStart = "!${ListCustomConvertersCommand.alias}"
+
+        and:
             def customParameterConverters =
                     new BlockingVariable<String>(System.properties.testResponseTimeout as double)
 
@@ -303,8 +343,8 @@ class TypedParameterParserIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!listCustomConverters')
-                    .complete()
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedStart)
+                    .join()
 
         then:
             customParameterConverters.get() == 'custom parameter converters:'
@@ -313,7 +353,6 @@ class TypedParameterParserIntegTest extends Specification {
             listenerManager?.remove()
     }
 
-    @Alias('ping')
     @Vetoed
     @ApplicationScoped
     static class UsagelessPingCommand extends PingCommand {
@@ -323,9 +362,16 @@ class TypedParameterParserIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
+        static volatile String alias
+
         @Inject
         @Typed
         ParameterParser parameterParser
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         @Override
         void execute(CommandContext<? extends Message> commandContext) {
@@ -341,10 +387,14 @@ class TypedParameterParserIntegTest extends Specification {
                 parameters = ppe.message
             }
 
+            def pong = commandContext
+                    .alias
+                    .orElseThrow(AssertionError::new)
+                    .replaceFirst(/^ping/, 'pong')
             commandContext
                     .message
                     .channel
-                    .sendMessage("pong:\n$parameters")
+                    .sendMessage("$pong:\n$parameters")
                     .exceptionally(ExceptionLogger.get())
         }
     }
@@ -352,14 +402,21 @@ class TypedParameterParserIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class ListCustomConvertersCommand implements Command<Message> {
+        static volatile String alias
+
         @Inject
         @Any
         Instance<ParameterConverter<?, ?>> parameterConverters
 
         @Override
+        List<String> getAliases() {
+            [alias]
+        }
+
+        @Override
         void execute(CommandContext<? extends Message> commandContext) {
             def internalParameterConverters = parameterConverters
-                    .select(Literal.INSTANCE)
+                    .select(Internal.Literal.INSTANCE)
                     .toList()
 
             def customParameterConverters = parameterConverters
@@ -393,6 +450,20 @@ class TypedParameterParserIntegTest extends Specification {
         @Override
         List<String> convert(String parameter, String type, CommandContext<?> commandContext) {
             parameter.split(',')
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedStart
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent =~ /^${expectedStart}(?: |$)/)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

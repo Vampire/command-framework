@@ -20,27 +20,40 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
 import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(RestrictionChainElement)
 class RestrictionChainElementIntegTest extends Specification {
     @AddBean(True)
     @AddBean(False)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.restrictionChain')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not both conditions hold for and [boolean1: #boolean1.simpleName, boolean2: #boolean2.simpleName]'(
-            boolean1, boolean2, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsUser) {
         given:
             PingCommand.restrictionChain = new RestrictionChainElement(boolean1) & boolean2
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -48,25 +61,28 @@ class RestrictionChainElementIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
             commandNotAllowedEventReceived.get()
 
         where:
-            boolean1 | boolean2
-            False    | False
-            True     | False
-            False    | True
+            boolean1 << [True, False]
+        combined:
+            boolean2 << [True, False]
 
-        and:
-            serverTextChannelAsUser = null
+        filter:
+            (boolean1 != True) || (boolean2 != True)
     }
 
     @AddBean(True)
     @AddBean(False)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.restrictionChain')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if both conditions hold for and'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
@@ -74,18 +90,20 @@ class RestrictionChainElementIntegTest extends Specification {
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -98,9 +116,18 @@ class RestrictionChainElementIntegTest extends Specification {
     @AddBean(True)
     @AddBean(False)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.restrictionChain')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if neither condition holds for or'(ServerTextChannel serverTextChannelAsUser) {
         given:
             PingCommand.restrictionChain = new RestrictionChainElement(False) | False
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -108,7 +135,7 @@ class RestrictionChainElementIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -118,25 +145,31 @@ class RestrictionChainElementIntegTest extends Specification {
     @AddBean(True)
     @AddBean(False)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.restrictionChain')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if either condition holds for or [boolean1: #boolean1.simpleName, boolean2: #boolean2.simpleName]'(
-            boolean1, boolean2, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             PingCommand.restrictionChain = new RestrictionChainElement(boolean1) | boolean2
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -146,18 +179,20 @@ class RestrictionChainElementIntegTest extends Specification {
             listenerManager?.remove()
 
         where:
-            boolean1 | boolean2
-            True     | True
-            True     | False
-            False    | True
+            boolean1 << [True, False]
+        combined:
+            boolean2 << [True, False]
 
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
+        filter:
+            (boolean1 == True) || (boolean2 == True)
     }
 
     @AddBean(False)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.restrictionChain')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if condition does not hold for negate'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
@@ -165,18 +200,20 @@ class RestrictionChainElementIntegTest extends Specification {
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -188,9 +225,18 @@ class RestrictionChainElementIntegTest extends Specification {
 
     @AddBean(True)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.restrictionChain')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.RestrictionChainElementIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if condition holds for negate'(ServerTextChannel serverTextChannelAsUser) {
         given:
             PingCommand.restrictionChain = new RestrictionChainElement(True).negate()
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -198,7 +244,7 @@ class RestrictionChainElementIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -208,8 +254,14 @@ class RestrictionChainElementIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
-        static restrictionChain
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+        static volatile restrictionChain
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -236,6 +288,20 @@ class RestrictionChainElementIntegTest extends Specification {
         @Override
         boolean allowCommand(CommandContext<?> commandContext) {
             false
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

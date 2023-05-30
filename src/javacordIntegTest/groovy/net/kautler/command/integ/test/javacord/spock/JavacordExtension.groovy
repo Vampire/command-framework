@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,17 @@ import org.javacord.api.entity.permission.PermissionsBuilder
 import org.javacord.api.entity.server.Server
 import org.spockframework.runtime.extension.IGlobalExtension
 import org.spockframework.runtime.model.SpecInfo
+import spock.config.RunnerConfiguration
 import spock.util.concurrent.BlockingVariable
 
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
 import static java.lang.Boolean.FALSE
-import static java.lang.System.arraycopy
 import static java.util.UUID.randomUUID
 import static org.javacord.api.entity.intent.Intent.GUILDS
 import static org.javacord.api.entity.permission.PermissionType.ADMINISTRATOR
+import static org.spockframework.runtime.model.MethodInfo.MISSING_ARGUMENT
 
 @ApplicationScoped
 class JavacordExtension implements IGlobalExtension {
@@ -46,6 +50,18 @@ class JavacordExtension implements IGlobalExtension {
     private static DiscordApi userDiscordApi
 
     private static Server serverAsUser
+
+    private static ExecutorService threadPool
+
+    private final RunnerConfiguration runnerConfiguration
+
+    JavacordExtension() {
+        this(null)
+    }
+
+    JavacordExtension(RunnerConfiguration runnerConfiguration) {
+        this.runnerConfiguration = runnerConfiguration
+    }
 
     @Override
     void start() {
@@ -96,29 +112,37 @@ class JavacordExtension implements IGlobalExtension {
                 .getRoles(serverAsBot) != [serverAsBot.everyoneRole]) {
             throw new IllegalArgumentException('The owner of bot with testDiscordToken1 must not have any roles in the test server')
         }
+
+        threadPool = Executors.newFixedThreadPool(runnerConfiguration.parallel.parallelExecutionConfiguration.parallelism)
     }
 
     @Override
     void visitSpec(SpecInfo spec) {
+        // work-around for https://github.com/junit-team/junit5/issues/3108
+        spec.allFeatures*.addIterationInterceptor {
+            threadPool.submit(it::proceed).get()
+        }
+
         (spec.setupSpecMethods + spec.cleanupSpecMethods)*.addInterceptor { invocation ->
-            def parameterTypes = invocation.method.reflection.parameterTypes
-            if (invocation.arguments.size() < parameterTypes.size()) {
-                def newArguments = new Object[parameterTypes.size()]
-                arraycopy(invocation.arguments, 0, newArguments, 0, invocation.arguments.size())
-                invocation.arguments = newArguments
-            }
+            invocation
+                    .method
+                    .reflection
+                    .parameterTypes
+                    .eachWithIndex { parameterType, i ->
+                        if (invocation.arguments[i] != MISSING_ARGUMENT) {
+                            return
+                        }
 
-            parameterTypes.eachWithIndex { parameterType, i ->
-                switch (parameterType) {
-                    case DiscordApi:
-                        invocation.arguments[i] = botDiscordApi
-                        break
+                        switch (parameterType) {
+                            case DiscordApi:
+                                invocation.arguments[i] = botDiscordApi
+                                break
 
-                    case Server:
-                        invocation.arguments[i] = serverAsBot
-                        break
-                }
-            }
+                            case Server:
+                                invocation.arguments[i] = serverAsBot
+                                break
+                        }
+                    }
 
             invocation.proceed()
         }
@@ -189,13 +213,11 @@ class JavacordExtension implements IGlobalExtension {
                             .join()
                 }
 
-                if (invocation.arguments.size() < parameterNames.size()) {
-                    def newArguments = new Object[parameterNames.size()]
-                    arraycopy(invocation.arguments, 0, newArguments, 0, invocation.arguments.size())
-                    invocation.arguments = newArguments
-                }
-
                 parameterNames.eachWithIndex { parameterName, i ->
+                    if (invocation.arguments[i] != MISSING_ARGUMENT) {
+                        return
+                    }
+
                     switch (parameterName) {
                         case { this.hasProperty("$parameterName") }:
                             invocation.arguments[i] = this."$parameterName"
@@ -234,5 +256,6 @@ class JavacordExtension implements IGlobalExtension {
     void stop() {
         userDiscordApi?.disconnect()
         botDiscordApi?.disconnect()
+        threadPool?.shutdown()
     }
 }

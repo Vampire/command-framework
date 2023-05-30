@@ -19,32 +19,44 @@ package net.kautler.command.integ.test.javacord.restriction
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.javacord.NsfwChannelJavacord
-import net.kautler.command.integ.test.ManualTests
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.DiscordApi
 import org.javacord.api.entity.channel.ServerTextChannel
-import org.junit.experimental.categories.Category
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(NsfwChannelJavacord)
 class NsfwChannelJavacordIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if in non-nsfw server channel'(ServerTextChannel serverTextChannelAsUser) {
         given:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -52,6 +64,9 @@ class NsfwChannelJavacordIntegTest extends Specification {
     }
 
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in nsfw server channel'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
@@ -70,18 +85,20 @@ class NsfwChannelJavacordIntegTest extends Specification {
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             listenerManagers << serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -91,10 +108,18 @@ class NsfwChannelJavacordIntegTest extends Specification {
             listenerManagers*.remove()
     }
 
-    @Category(ManualTests)
+    @Tag('manual')
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if in private channel'(DiscordApi botDiscordApi) {
         given:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -102,12 +127,12 @@ class NsfwChannelJavacordIntegTest extends Specification {
             def owner = botDiscordApi.owner.join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addMessageCreateListener {
-                if (it.privateMessage && (it.message.content == '!ping')) {
+                if (it.privateMessage && (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)
                 }
             }
             owner
-                    .sendMessage("$owner.mentionTag please send `!ping` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -122,10 +147,30 @@ class NsfwChannelJavacordIntegTest extends Specification {
     @ApplicationScoped
     @RestrictedTo(NsfwChannelJavacord)
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

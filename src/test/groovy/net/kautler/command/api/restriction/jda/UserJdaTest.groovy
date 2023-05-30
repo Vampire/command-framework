@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package net.kautler.command.api.restriction.jda
 
-import java.util.regex.Pattern
-
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.kautler.command.api.CommandContext
@@ -26,6 +24,8 @@ import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
+
+import java.util.regex.Pattern
 
 @Subject(UserJda)
 class UserJdaTest extends Specification {
@@ -46,8 +46,11 @@ class UserJdaTest extends Specification {
             userJda.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserId, actualUserId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedUserId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualUserId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedUserId == actualUserId
             be = allowed ? 'be' : 'not be'
     }
@@ -63,8 +66,11 @@ class UserJdaTest extends Specification {
             userJda.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserName, actualUserName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedUserName == actualUserName
             be = allowed ? 'be' : 'not be'
     }
@@ -80,8 +86,11 @@ class UserJdaTest extends Specification {
             userJda.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserName, actualUserName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedUserName.equalsIgnoreCase(actualUserName)
             be = allowed ? 'be' : 'not be'
     }
@@ -97,15 +106,17 @@ class UserJdaTest extends Specification {
             userJda.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserPattern, actualUserName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedUserPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualUserName ==~ expectedUserPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [userId: #userId, userName: #userName, caseSensitive: #caseSensitive, userPattern: #userPattern] is checked'() {
         given:
             UserJda userJda = Spy(UserJda, useObjenesis: true)
@@ -150,11 +161,12 @@ class UserJdaTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                          | parameterType        || errorMessage
-            { it -> new TestUserJda(0) }               | 'long'               || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJda(null as String) }  | 'String'             || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJda(null, true) }      | 'String and boolean' || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJda(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
+            __
+            ; constructorCaller                    | parameterType        || errorMessage
+            ; { new TestUserJda(0) }               | 'long'               || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJda(null as String) }  | 'String'             || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJda(null, true) }      | 'String and boolean' || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJda(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
     }
 
     private static class TestUserJda extends UserJda {

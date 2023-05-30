@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package net.kautler.command.api.restriction.javacord.slash
 
-import java.util.regex.Pattern
-
 import net.kautler.command.api.CommandContext
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.user.User
@@ -26,6 +24,8 @@ import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
+
+import java.util.regex.Pattern
 
 @Subject(UserJavacordSlash)
 class UserJavacordSlashTest extends Specification {
@@ -37,87 +37,98 @@ class UserJavacordSlashTest extends Specification {
 
     def 'user with ID "#expectedUserId" should #be allowed for user with ID "#actualUserId"'() {
         given:
-            UserJavacordSlash userJavacord = Spy(constructorArgs: [expectedUserId])
+            UserJavacordSlash userJavacordSlash = Spy(constructorArgs: [expectedUserId])
 
         and:
             commandContext.message.user.id >> actualUserId
 
         expect:
-            userJavacord.allowCommand(commandContext) == allowed
+            userJavacordSlash.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserId, actualUserId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedUserId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualUserId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedUserId == actualUserId
             be = allowed ? 'be' : 'not be'
     }
 
     def 'user with name "#expectedUserName" should #be allowed case-sensitive for user with name "#actualUserName"'() {
         given:
-            UserJavacordSlash userJavacord = Spy(constructorArgs: [expectedUserName])
+            UserJavacordSlash userJavacordSlash = Spy(constructorArgs: [expectedUserName])
 
         and:
             commandContext.message.user.name >> actualUserName
 
         expect:
-            userJavacord.allowCommand(commandContext) == allowed
+            userJavacordSlash.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserName, actualUserName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedUserName == actualUserName
             be = allowed ? 'be' : 'not be'
     }
 
     def 'user with name "#expectedUserName" should #be allowed case-insensitive for user with name "#actualUserName"'() {
         given:
-            UserJavacordSlash userJavacord = Spy(constructorArgs: [expectedUserName, false])
+            UserJavacordSlash userJavacordSlash = Spy(constructorArgs: [expectedUserName, false])
 
         and:
             commandContext.message.user.name >> actualUserName
 
         expect:
-            userJavacord.allowCommand(commandContext) == allowed
+            userJavacordSlash.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserName, actualUserName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedUserName.equalsIgnoreCase(actualUserName)
             be = allowed ? 'be' : 'not be'
     }
 
     def 'user with pattern "#expectedUserPattern" should #be allowed for user with name "#actualUserName"'() {
         given:
-            UserJavacordSlash userJavacord = Spy(constructorArgs: [expectedUserPattern])
+            UserJavacordSlash userJavacordSlash = Spy(constructorArgs: [expectedUserPattern])
 
         and:
             commandContext.message.user.name >> actualUserName
 
         expect:
-            userJavacord.allowCommand(commandContext) == allowed
+            userJavacordSlash.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserPattern, actualUserName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedUserPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualUserName ==~ expectedUserPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [userId: #userId, userName: #userName, caseSensitive: #caseSensitive, userPattern: #userPattern] is checked'() {
         given:
-            UserJavacordSlash userJavacord = Spy(UserJavacordSlash, useObjenesis: true)
+            UserJavacordSlash userJavacordSlash = Spy(UserJavacordSlash, useObjenesis: true)
 
         and:
-            userJavacord.setFinalLongField('userId', userId)
-            userJavacord.setFinalField('userName', userName)
-            userJavacord.setFinalBooleanField('caseSensitive', caseSensitive)
-            userJavacord.setFinalField('userPattern', userPattern)
+            userJavacordSlash.setFinalLongField('userId', userId)
+            userJavacordSlash.setFinalField('userName', userName)
+            userJavacordSlash.setFinalBooleanField('caseSensitive', caseSensitive)
+            userJavacordSlash.setFinalField('userPattern', userPattern)
 
         when:
-            userJavacord.invokeMethod('ensureInvariants')
+            userJavacordSlash.invokeMethod('ensureInvariants')
 
         then:
             IllegalStateException ise = thrown()
@@ -150,11 +161,12 @@ class UserJavacordSlashTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                                    | parameterType        || errorMessage
-            { it -> new TestUserJavacordSlash(0) }               | 'long'               || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJavacordSlash(null as String) }  | 'String'             || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJavacordSlash(null, true) }      | 'String and boolean' || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJavacordSlash(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
+            __
+            ; constructorCaller                              | parameterType        || errorMessage
+            ; { new TestUserJavacordSlash(0) }               | 'long'               || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJavacordSlash(null as String) }  | 'String'             || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJavacordSlash(null, true) }      | 'String and boolean' || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJavacordSlash(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
     }
 
     private static class TestUserJavacordSlash extends UserJavacordSlash {

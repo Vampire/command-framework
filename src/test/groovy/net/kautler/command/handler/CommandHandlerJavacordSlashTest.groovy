@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 
 package net.kautler.command.handler
-
-import java.lang.reflect.Type
-import java.util.concurrent.ExecutorService
 
 import jakarta.annotation.PostConstruct
 import jakarta.enterprise.context.ApplicationScoped
@@ -45,23 +42,29 @@ import org.javacord.api.util.concurrent.ThreadPool
 import org.javacord.api.util.event.ListenerManager
 import org.javacord.core.DiscordApiImpl
 import org.jboss.weld.junit.MockBean
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 import spock.util.mop.Use
 
+import java.lang.reflect.Type
+import java.util.concurrent.ExecutorService
+
 import static java.lang.Thread.currentThread
 import static java.util.Arrays.asList
 import static java.util.concurrent.TimeUnit.DAYS
+import static net.kautler.test.spock.LogContextHandler.ITERATION_CONTEXT_KEY
 import static org.apache.logging.log4j.Level.ERROR
 import static org.apache.logging.log4j.Level.INFO
-import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
+import static org.apache.logging.log4j.core.test.appender.ListAppender.getListAppender
 import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
 import static org.powermock.reflect.Whitebox.newInstance
 
+@EnableWeld
 class CommandHandlerJavacordSlashTest extends Specification {
     ListenerManager<Object> listenerManager = Mock()
 
@@ -97,8 +100,8 @@ class CommandHandlerJavacordSlashTest extends Specification {
 
     TestEventReceiver testEventReceiverDelegate = Mock()
 
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(
                     CommandHandlerJavacordSlash,
                     LoggerProducer,
@@ -137,8 +140,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
+                            .qualifiers(Internal.Literal.INSTANCE)
                             .types(TestEventReceiver)
                             .creating(testEventReceiverDelegate)
                             .build()
@@ -281,7 +283,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'injected discord apis should be logged properly [discordApisUnsatisfied: #discordApisUnsatisfied, discordApiCollectionsUnsatisfied: #discordApiCollectionsUnsatisfied]'() {
+    def 'injected discord apis should be logged properly [discordApisUnsatisfied: #discordApisUnsatisfied, discordApiCollectionsUnsatisfied: #discordApiCollectionsUnsatisfied]'(iterationIdentifier) {
         given:
             commandHandlerJavacord.ci().with {
                 it.discordApis = Spy(discordApiInstance)
@@ -290,12 +292,6 @@ class CommandHandlerJavacordSlashTest extends Specification {
                 it.discordApiCollections = Spy(discordApiCollectionInstance)
                 it.discordApiCollections.unsatisfied >> discordApiCollectionsUnsatisfied
             }
-
-        and:
-            // clear the appender here additionally
-            // to get rid of log messages from container startup
-            def testAppender = getListAppender('Test Appender')
-            testAppender.clear()
 
         when:
             CommandHandlerJavacordSlash
@@ -307,9 +303,12 @@ class CommandHandlerJavacordSlashTest extends Specification {
                     }
 
         then:
-            testAppender
+            getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == INFO }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == INFO)
+                    }
                     .any { it.message.formattedMessage == expectedMessage }
 
         where:
@@ -540,7 +539,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             discordApi?.disconnect()
     }
 
-    def 'asynchronous command execution should not log an error if none happened'() {
+    def 'asynchronous command execution should not log an error if none happened'(iterationIdentifier) {
         given:
             def discordApi = new DiscordApiImpl(null, null, null, null, null, null, false)
             slashCommandInteraction.api >> discordApi
@@ -555,14 +554,17 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == ERROR }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == ERROR)
+                    }
                     .empty
 
         cleanup:
             discordApi?.disconnect()
     }
 
-    def 'exception during asynchronous command execution should be logged properly'() {
+    def 'exception during asynchronous command execution should be logged properly'(iterationIdentifier) {
         given:
             def discordApi = new DiscordApiImpl(null, null, null, null, null, null, false)
             slashCommandInteraction.api >> discordApi
@@ -580,7 +582,10 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == ERROR }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == ERROR)
+                    }
                     .any {
                         (it.message.formattedMessage == 'Exception while executing command asynchronously') &&
                                 ((it.thrown == exception) || (it.thrown.cause == exception))
@@ -598,21 +603,24 @@ class CommandHandlerJavacordSlashTest extends Specification {
             3 * listenerManager.remove()
     }
 
-    def 'shutting down the container without Javacord producer should not log an error'() {
+    def 'shutting down the container without Javacord producer should not log an error'(iterationIdentifier) {
         when:
-            WeldInitiator
+            def weld = WeldInitiator
                     .from(
                             CommandHandlerJavacordSlash,
                             LoggerProducer
                     )
                     .build()
-                    .apply({ }, null)
-                    .evaluate()
+            weld.initWeld(null)
+            weld.shutdownWeld()
 
         then:
             getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == ERROR }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == ERROR)
+                    }
                     .empty
     }
 
@@ -640,8 +648,8 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             toStringResult.contains("$field.name=")
             field.type == String ?
-            toStringResult.contains("'${field.get(commandHandlerJavacord.ci())}'") :
-            toStringResult.contains(String.valueOf(field.get(commandHandlerJavacord.ci())))
+                    toStringResult.contains("'${field.get(commandHandlerJavacord.ci())}'") :
+                    toStringResult.contains(String.valueOf(field.get(commandHandlerJavacord.ci())))
 
         where:
             field << getAllInstanceFields(newInstance(getField(getClass(), 'commandHandlerJavacord').type))

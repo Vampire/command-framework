@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,8 @@ ruleset {
     JavadocMissingExceptionDescription
     JavadocMissingParamDescription
     JavadocMissingThrowsDescription
+    SpaceAfterCommentDelimiter
+    SpaceBeforeCommentDelimiter
 
     // rulesets/concurrency.xml
     BusyWait
@@ -108,6 +110,7 @@ ruleset {
     InconsistentPropertyLocking
     InconsistentPropertySynchronization
     NestedSynchronization
+    NoScriptBindings
     StaticCalendarField
     StaticConnection
     StaticDateFormatField
@@ -168,6 +171,29 @@ ruleset {
     AbstractClassWithoutAbstractMethod
     AssignmentToStaticFieldFromInstanceMethod {
         doNotApplyToClassNames = [
+                'net.kautler.command.integ.test.javacord.event.CommandNotAllowedEventJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest$SlashCommandRegisterer',
+                'net.kautler.command.integ.test.javacord.PingSlashIntegTest$AsynchronousPingCommand',
+                'net.kautler.command.integ.test.javacord.PingSlashIntegTest$ParameterlessPingCommand',
+                'net.kautler.command.integ.test.javacord.PingSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.PingSlashIntegTest$PingFooBarCommand',
+                'net.kautler.command.integ.test.javacord.PingSlashIntegTest$PingFooCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.BotOwnerJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.ChannelJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.ChannelJavacordSlashIntegTest$PingCommandCaseInsensitive',
+                'net.kautler.command.integ.test.javacord.restriction.slash.NsfwChannelJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.PrivateMessageJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest$PingCommandCaseInsensitive',
+                'net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest$PingCommandInexact',
+                'net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest$PingCommandInexactCaseInsensitive',
+                'net.kautler.command.integ.test.javacord.restriction.slash.ServerJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.ServerJavacordSlashIntegTest$PingCommandCaseInsensitive',
+                'net.kautler.command.integ.test.javacord.restriction.slash.ServerManagerJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.ServerOwnerJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest$PingCommandCaseInsensitive',
                 'net.kautler.command.integ.test.javacord.spock.JavacordExtension',
                 'net.kautler.command.integ.test.jda.spock.JdaExtension'
         ].join(', ')
@@ -364,6 +390,15 @@ ruleset {
     JdbcResultSetReference
     JdbcStatementReference
 
+    // rulesets/jenkins.xml
+    //ClassNotSerializable
+    //ClosureInGString
+    //CpsCallFromNonCpsMethod
+    //ExpressionInCpsMethodNotSerializable
+    //ForbiddenCallInCpsMethod
+    //ObjectOverrideOnlyNonCpsMethods
+    //ParameterOrReturnTypeNotSerializable
+
     // rulesets/junit.xml
     //ChainedTest
     //CoupledTestCase
@@ -381,7 +416,8 @@ ruleset {
     //JUnitUnnecessarySetUp
     //JUnitUnnecessaryTearDown
     //JUnitUnnecessaryThrowsException
-    //SpockIgnoreRestUsed
+    SpockIgnoreRestUsed
+    SpockMissingAssert
     //UnnecessaryFail
     //UseAssertEqualsInsteadOfAssertTrue
     //UseAssertFalseInsteadOfNegation
@@ -433,6 +469,7 @@ ruleset {
 
     // rulesets/serialization.xml
     EnumCustomSerializationIgnored
+    NonSerializableFieldInSerializableClass
     SerialPersistentFields
     SerialVersionUID
     SerializableClassMustDefineSerialVersionUID
@@ -447,12 +484,7 @@ ruleset {
     NestedBlockDepth {
         maxNestedBlockDepth = 6
     }
-    ParameterCount {
-        doNotApplyToClassNames = [
-                'net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest',
-                'net.kautler.command.integ.test.jda.CommandContextTransformerIntegTest'
-        ].join(', ')
-    }
+    ParameterCount
 
     // rulesets/unnecessary.xml
     AddEmptyString
@@ -500,7 +532,6 @@ ruleset {
     UnnecessarySemicolon
     UnnecessarySetter
     UnnecessaryStringInstantiation
-    UnnecessarySubstring
     UnnecessaryTernaryExpression
     UnnecessaryToString
     UnnecessaryTransientModifier

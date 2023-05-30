@@ -35,7 +35,7 @@ class CommandEventTest extends Specification {
             testee.commandContext?.is(commandContext)
     }
 
-    def '#className toString should start with class name'() {
+    def '#className toString should start with class name'(testee) {
         expect:
             testee.toString().startsWith("$className[")
 

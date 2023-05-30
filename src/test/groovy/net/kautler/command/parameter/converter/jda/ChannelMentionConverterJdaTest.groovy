@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,17 @@ import net.kautler.command.Internal
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
 import net.kautler.command.api.parameter.InvalidParameterValueException
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Subject
-import spock.util.environment.Jvm
 
-import static org.junit.Assume.assumeFalse
-
+@EnableWeld
 class ChannelMentionConverterJdaTest extends Specification {
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(ChannelMentionConverterJda)
             .inject(this)
             .build()
@@ -44,15 +44,10 @@ class ChannelMentionConverterJdaTest extends Specification {
     @Subject
     ChannelMentionConverterJda testee
 
+    @IgnoreIf(value = {
+        jvm.java8 && (data.channelId == (((Long.MAX_VALUE as BigInteger) * 3) as String))
+    }, reason = 'Long.parseUnsignedLong has a bug in Java 8 where overflow is not properly checked')
     def '<##channelId> should throw InvalidParameterFormatException'() {
-        assumeFalse(
-                'Long.parseUnsignedLong has a bug in Java 8 where overflow is not properly checked',
-                Jvm.current.java8 &&
-                        (channelId in [
-                                ((Long.MAX_VALUE as BigInteger) * 3) as String,
-                                "!${(Long.MAX_VALUE as BigInteger) * 3}"
-                        ]))
-
         when:
             testee.convert("<#$channelId>", null, null)
 
@@ -67,7 +62,7 @@ class ChannelMentionConverterJdaTest extends Specification {
             '-1'                                                      || _
             (new BigInteger(Long.toUnsignedString(-1)) + 1) as String || _
             ((Long.MAX_VALUE as BigInteger) * 3) as String            || _
-     }
+    }
 
     def '<#1> should be converted to channel if channel is found'() {
         given:

@@ -16,40 +16,48 @@
 
 package net.kautler.command.integ.test.javacord
 
-import java.util.concurrent.CompletableFuture
-
+import jakarta.annotation.PreDestroy
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.context.Initialized
 import jakarta.enterprise.event.Observes
 import jakarta.enterprise.inject.Vetoed
 import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
-import net.kautler.command.api.annotation.Alias
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.Asynchronous
 import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.slash.javacord.SlashCommandJavacord
-import net.kautler.command.integ.test.ManualTests
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.DiscordApi
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.server.Server
+import org.javacord.api.interaction.SlashCommand
 import org.javacord.api.interaction.SlashCommandBuilder
 import org.javacord.api.interaction.SlashCommandInteraction
 import org.javacord.api.interaction.SlashCommandOption
 import org.javacord.api.util.logging.ExceptionLogger
-import org.junit.experimental.categories.Category
+import spock.lang.ResourceLock
 import spock.lang.Specification
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
-import static java.util.UUID.randomUUID
+import java.util.concurrent.CompletableFuture
 
-@Category(ManualTests)
+import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
+
+@Tag('manual')
 @AddBean(SlashCommandRegisterer)
 class PingSlashIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in server channel'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def random = randomUUID()
+            def random1 = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias} $random1"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -57,7 +65,7 @@ class PingSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommand.alias.replace('ping', 'pong')}: $random1")) {
                             responseReceived.set(true)
                         }
                     }
@@ -68,13 +76,13 @@ class PingSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random1")) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -83,12 +91,16 @@ class PingSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(AsynchronousPingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.AsynchronousPingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'asynchronous ping command should respond if in server channel'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${AsynchronousPingCommand.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -96,7 +108,7 @@ class PingSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${AsynchronousPingCommand.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -107,13 +119,13 @@ class PingSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == AsynchronousPingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -122,11 +134,16 @@ class PingSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            AsynchronousPingCommand.alias = null
     }
 
     @AddBean(ParameterlessPingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.ParameterlessPingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command without parameters should respond properly'(ServerTextChannel serverTextChannelAsBot) {
         given:
+            IgnoreOtherTestsTransformer.expectedContent = "/${ParameterlessPingCommand.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -134,7 +151,7 @@ class PingSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == 'pong:')) {
+                                (it.message.content == "${ParameterlessPingCommand.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -145,12 +162,13 @@ class PingSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping')) {
+                        (it.slashCommandInteraction.commandName == ParameterlessPingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -159,12 +177,16 @@ class PingSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            ParameterlessPingCommand.alias = null
     }
 
-    @AddBean(FooPingCommand)
+    @AddBean(PingFooCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.PingFooCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping subcommand should respond properly'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingFooCommand.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -172,7 +194,7 @@ class PingSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "foo pong: $random")) {
+                                (it.message.content == "${PingFooCommand.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -183,16 +205,16 @@ class PingSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'foo') &&
+                        (it.slashCommandInteraction.commandName == PingFooCommand.alias.split('/')[0]) &&
                         (it.slashCommandInteraction.getOptionByIndex(0).map {
-                            it.subcommandOrGroup && it.name == 'ping'
+                            it.subcommandOrGroup && it.name == PingFooCommand.alias.split('/')[1]
                         }.orElse(false)) &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/foo ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent.replaceAll('(?<!^)/', ' ')}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -201,12 +223,16 @@ class PingSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingFooCommand.alias = null
     }
 
-    @AddBean(FooBarPingCommand)
+    @AddBean(PingFooBarCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.PingFooBarCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping grouped subcommand should respond properly'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingFooBarCommand.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -214,7 +240,7 @@ class PingSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "foo bar pong: $random")) {
+                                (it.message.content == "${PingFooBarCommand.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -225,19 +251,19 @@ class PingSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'foo') &&
+                        (it.slashCommandInteraction.commandName == PingFooBarCommand.alias.split('/')[0]) &&
                         (it.slashCommandInteraction.getOptionByIndex(0).map {
-                            it.subcommandOrGroup && it.name == 'bar' &&
+                            it.subcommandOrGroup && it.name == PingFooBarCommand.alias.split('/')[1] &&
                                     (it.getOptionByIndex(0).map {
-                                        it.subcommandOrGroup && it.name == 'ping'
+                                        it.subcommandOrGroup && it.name == PingFooBarCommand.alias.split('/')[2]
                                     }.orElse(false))
                         }.orElse(false)) &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/foo bar ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent.replaceAll('(?<!^)/', ' ')}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -246,6 +272,7 @@ class PingSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingFooBarCommand.alias = null
     }
 
     @Vetoed
@@ -260,32 +287,47 @@ class PingSlashIntegTest extends Specification {
         @Inject
         List<SlashCommandBuilder> slashCommandBuilders
 
+        List<SlashCommand> slashCommands
+
         void registerSlashCommands(@Observes @Initialized(ApplicationScoped) Object _) {
-            CompletableFuture.allOf(
-                    discordApi.bulkOverwriteGlobalApplicationCommands([]),
-                    // work-around for https://github.com/discord/discord-api-docs/issues/4642
-                    discordApi.bulkOverwriteServerApplicationCommands(server, []).thenCompose {
-                        discordApi.bulkOverwriteServerApplicationCommands(server, slashCommandBuilders)
-                    }
-            ).join()
+            def slashCommandFutures = slashCommandBuilders*.createForServer(server)
+            CompletableFuture.allOf(*slashCommandFutures).join()
+            slashCommands = slashCommandFutures*.join()
+        }
+
+        @PreDestroy
+        void deleteSlashCommands() {
+            CompletableFuture.allOf(*slashCommands*.deleteForServer(server)).join()
         }
     }
 
     @Vetoed
-    @Alias('ping')
     @Description('Ping back')
     @ApplicationScoped
     static class ParameterlessPingCommand implements SlashCommandJavacord {
+        static volatile String alias
+
         @Override
-        void execute(CommandContext<? extends SlashCommandInteraction> commandContext) {
-            respond('pong', commandContext)
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
         }
 
-        void respond(String prefix, CommandContext<? extends SlashCommandInteraction> commandContext) {
+        @Override
+        void execute(CommandContext<? extends SlashCommandInteraction> commandContext) {
+            def pong = commandContext
+                    .alias
+                    .orElseThrow(AssertionError::new)
+                    .replaceFirst(/^ping/, 'pong')
             commandContext
                     .message
                     .createImmediateResponder()
-                    .setContent("$prefix: ${commandContext.parameterString.orElse('')}")
+                    .setContent("$pong: ${commandContext.parameterString.orElse('')}")
                     .respond()
                     .exceptionally(ExceptionLogger.get())
         }
@@ -295,6 +337,19 @@ class PingSlashIntegTest extends Specification {
     @ApplicationScoped
     @Description('Ping back an nonce')
     static class PingCommand extends ParameterlessPingCommand {
+        static volatile String alias
+
+        @Override
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
+        }
+
         @Override
         List<SlashCommandOption> getOptions() {
             [SlashCommandOption.createStringOption('nonce', 'The nonce to echo back with the pong', true)]
@@ -303,31 +358,70 @@ class PingSlashIntegTest extends Specification {
 
     @Vetoed
     @ApplicationScoped
-    @Alias('foo/ping')
-    @Description('Ping back an nonce')
-    static class FooPingCommand extends PingCommand {
+    @Description('Ping back')
+    static class PingFooCommand extends ParameterlessPingCommand {
+        static volatile String alias
+
         @Override
-        void execute(CommandContext<? extends SlashCommandInteraction> commandContext) {
-            respond('foo pong', commandContext)
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }/foo"""
+            }
+            [alias]
         }
     }
 
     @Vetoed
     @ApplicationScoped
-    @Alias('foo/bar/ping')
-    @Description('Ping back an nonce')
-    static class FooBarPingCommand extends PingCommand {
+    @Description('Ping back')
+    static class PingFooBarCommand extends ParameterlessPingCommand {
+        static volatile String alias
+
         @Override
-        void execute(CommandContext<? extends SlashCommandInteraction> commandContext) {
-            respond('foo bar pong', commandContext)
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }/foo/bar"""
+            }
+            [alias]
         }
     }
 
     @Vetoed
     @ApplicationScoped
     @Asynchronous
-    @Alias('ping')
-    @Description('Ping back an nonce')
-    static class AsynchronousPingCommand extends PingCommand {
+    @Description('Ping back')
+    static class AsynchronousPingCommand extends ParameterlessPingCommand {
+        static volatile String alias
+
+        @Override
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_COMMAND_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withCommand { }.build()
+        }
     }
 }

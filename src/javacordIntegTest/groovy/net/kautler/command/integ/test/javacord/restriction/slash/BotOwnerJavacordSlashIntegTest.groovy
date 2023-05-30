@@ -19,30 +19,38 @@ package net.kautler.command.integ.test.javacord.restriction.slash
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacordSlash
 import net.kautler.command.api.restriction.javacord.slash.BotOwnerJavacordSlash
-import net.kautler.command.integ.test.ManualTests
-import net.kautler.command.integ.test.javacord.PingSlashIntegTest
 import net.kautler.command.integ.test.javacord.PingSlashIntegTest.SlashCommandRegisterer
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
-import org.junit.experimental.categories.Category
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
+import static net.kautler.command.integ.test.javacord.PingSlashIntegTest.ParameterlessPingCommand
 
 @Subject(BotOwnerJavacordSlash)
-@Category(ManualTests)
+@Tag('manual')
 @AddBean(SlashCommandRegisterer)
 class BotOwnerJavacordSlashIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.BotOwnerJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.BotOwnerJavacordSlashIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.BotOwnerJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not bot owner'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -59,13 +67,13 @@ class BotOwnerJavacordSlashIntegTest extends Specification {
             def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.user != owner) &&
                         (it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please make someone else send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please make someone else send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -74,12 +82,16 @@ class BotOwnerJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.BotOwnerJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.BotOwnerJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if bot owner'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -87,7 +99,7 @@ class BotOwnerJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommand.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -98,13 +110,13 @@ class BotOwnerJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -113,17 +125,44 @@ class BotOwnerJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommand.alias = null
     }
 
     @Vetoed
     @ApplicationScoped
-    @Description('Ping back an optional nonce')
+    @Description('Ping back')
     @RestrictedTo(BotOwnerJavacordSlash)
-    static class PingCommand extends PingSlashIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+    static class PingCommand extends ParameterlessPingCommand {
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacordSlash commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_COMMAND_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withCommand { }.build()
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,11 @@ class ChannelJdaTest extends Specification {
             channelJda.allowCommand(commandContext) == allowed
 
         where:
-            [expectedChannelId, actualChannelId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedChannelId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualChannelId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedChannelId == actualChannelId
             be = allowed ? 'be' : 'not be'
     }
@@ -63,8 +66,11 @@ class ChannelJdaTest extends Specification {
             channelJda.allowCommand(commandContext) == allowed
 
         where:
-            [expectedChannelName, actualChannelName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedChannelName == actualChannelName
             be = allowed ? 'be' : 'not be'
     }
@@ -80,8 +86,11 @@ class ChannelJdaTest extends Specification {
             channelJda.allowCommand(commandContext) == allowed
 
         where:
-            [expectedChannelName, actualChannelName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedChannelName.equalsIgnoreCase(actualChannelName)
             be = allowed ? 'be' : 'not be'
     }
@@ -97,15 +106,17 @@ class ChannelJdaTest extends Specification {
             channelJda.allowCommand(commandContext) == allowed
 
         where:
-            [expectedChannelPattern, actualChannelName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedChannelPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualChannelName ==~ expectedChannelPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [channelId: #channelId, channelName: #channelName, caseSensitive: #caseSensitive, channelPattern: #channelPattern] is checked'() {
         given:
             ChannelJda channelJda = Spy(ChannelJda, useObjenesis: true)
@@ -150,11 +161,12 @@ class ChannelJdaTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                             | parameterType        || errorMessage
-            { it -> new TestChannelJda(0) }               | 'long'               || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJda(null as String) }  | 'String'             || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJda(null, true) }      | 'String and boolean' || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJda(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
+            __
+            ; constructorCaller                       | parameterType        || errorMessage
+            ; { new TestChannelJda(0) }               | 'long'               || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJda(null as String) }  | 'String'             || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJda(null, true) }      | 'String and boolean' || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJda(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
     }
 
     private static class TestChannelJda extends ChannelJda {

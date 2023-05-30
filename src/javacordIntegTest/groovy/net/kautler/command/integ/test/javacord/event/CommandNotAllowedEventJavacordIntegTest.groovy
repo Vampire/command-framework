@@ -20,6 +20,8 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
 import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
@@ -27,22 +29,35 @@ import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 
-@Subject([CommandHandler, CommandNotAllowedEventJavacord])
+import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
+
+@Subject(CommandHandler)
+@Subject(CommandNotAllowedEventJavacord)
 class CommandNotAllowedEventJavacordIntegTest extends Specification {
     @AddBean(False)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotAllowedEventJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotAllowedEventJavacordIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotAllowedEventJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'command not allowed event should be fired if restriction denied command'(ServerTextChannel serverTextChannelAsUser) {
         given:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -53,7 +68,13 @@ class CommandNotAllowedEventJavacordIntegTest extends Specification {
     @ApplicationScoped
     @RestrictedTo(False)
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -66,6 +87,20 @@ class CommandNotAllowedEventJavacordIntegTest extends Specification {
         @Override
         boolean allowCommand(CommandContext<?> commandContext) {
             false
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

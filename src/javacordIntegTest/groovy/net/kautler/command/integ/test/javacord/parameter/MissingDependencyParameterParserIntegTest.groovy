@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,40 +21,55 @@ import jakarta.enterprise.inject.Vetoed
 import jakarta.inject.Inject
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.integ.test.spock.AddBean
 import net.kautler.command.integ.test.spock.VetoBean
 import net.kautler.command.parameter.parser.UntypedParameterParser
 import net.kautler.command.parameter.parser.missingdependency.MissingDependencyParameterParser
 import org.javacord.api.entity.channel.ServerTextChannel
+import spock.lang.Isolated
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 import spock.util.concurrent.PollingConditions
 
+import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
+import static net.kautler.test.spock.LogContextHandler.ITERATION_CONTEXT_KEY
 import static org.apache.logging.log4j.Level.ERROR
-import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
+import static org.apache.logging.log4j.core.test.appender.ListAppender.getListAppender
 
+@Isolated('Due to the ERROR level context-less log message this has to be isolated')
 @Subject(MissingDependencyParameterParser)
 @VetoBean(UntypedParameterParser)
 class MissingDependencyParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.MissingDependencyParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.parameter.MissingDependencyParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'missing dependency parameter parser should throw UnsupportedOperationException'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
                 if ((it.message.userAuthor.orElse(null) == serverTextChannelAsUser.api.yourself) &&
-                        (it.message.content == '!ping')) {
+                        (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -65,7 +80,8 @@ class MissingDependencyParameterParserIntegTest extends Specification {
                 getListAppender('Test Appender')
                         .events
                         .any {
-                            (it.level == ERROR) &&
+                            !it.contextData.getValue(ITERATION_CONTEXT_KEY) &&
+                                    (it.level == ERROR) &&
                                     (it.thrown instanceof UnsupportedOperationException) &&
                                     (it.thrown.message == 'ANTLR runtime is missing')
                         }
@@ -76,7 +92,8 @@ class MissingDependencyParameterParserIntegTest extends Specification {
 
         and:
             getListAppender('Test Appender').@events.removeIf {
-                (it.level == ERROR) &&
+                !it.contextData.getValue(ITERATION_CONTEXT_KEY) &&
+                        (it.level == ERROR) &&
                         (it.thrown instanceof UnsupportedOperationException) &&
                         (it.thrown.message == 'ANTLR runtime is missing')
             }
@@ -85,12 +102,33 @@ class MissingDependencyParameterParserIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Object> {
+        static volatile String alias
+
         @Inject
         ParameterParser parameterParser
 
         @Override
+        List<String> getAliases() {
+            [alias]
+        }
+
+        @Override
         void execute(CommandContext<?> commandContext) {
             parameterParser.toString()
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

@@ -198,7 +198,7 @@ class ParameterParseExceptionTest extends Specification {
             be = result ? 'be' : 'not be'
     }
 
-    def '#className toString should start with class name'() {
+    def '#className toString should start with class name'(testee) {
         expect:
             testee.toString().startsWith("$className[")
 

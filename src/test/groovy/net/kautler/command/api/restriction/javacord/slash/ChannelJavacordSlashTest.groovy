@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord.slash
 
-import java.util.regex.Pattern
-
 import net.kautler.command.api.CommandContext
-import net.kautler.command.api.restriction.javacord.ChannelJavacord
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.channel.TextChannel
@@ -29,7 +26,9 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
 
-@Subject(ChannelJavacord)
+import java.util.regex.Pattern
+
+@Subject(ChannelJavacordSlash)
 class ChannelJavacordSlashTest extends Specification {
     CommandContext<SlashCommandInteraction> commandContext = Stub {
         it.message >> Stub(SlashCommandInteraction) {
@@ -51,90 +50,101 @@ class ChannelJavacordSlashTest extends Specification {
 
     def 'channel with ID "#expectedChannelId" should #be allowed in channel with ID "#actualChannelId"'() {
         given:
-            ChannelJavacordSlash channelJavacord = Spy(constructorArgs: [expectedChannelId])
+            ChannelJavacordSlash channelJavacordSlash = Spy(constructorArgs: [expectedChannelId])
 
         and:
             commandContext.message.channel.get().id >> actualChannelId
 
         expect:
-            channelJavacord.allowCommand(commandContext) == allowed
+            channelJavacordSlash.allowCommand(commandContext) == allowed
 
         where:
-            [expectedChannelId, actualChannelId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedChannelId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualChannelId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedChannelId == actualChannelId
             be = allowed ? 'be' : 'not be'
     }
 
     def 'channel with name "#expectedChannelName" should #be allowed case-sensitive in channel with name "#actualChannelName"'() {
         given:
-            ChannelJavacordSlash channelJavacord = Spy(constructorArgs: [expectedChannelName])
+            ChannelJavacordSlash channelJavacordSlash = Spy(constructorArgs: [expectedChannelName])
 
         and:
             serverCommandContext.message.channel.get().asServerChannel().get().name >> actualChannelName
 
         expect:
-            !channelJavacord.allowCommand(commandContext)
-            channelJavacord.allowCommand(serverCommandContext) == allowed
+            !channelJavacordSlash.allowCommand(commandContext)
+            channelJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedChannelName, actualChannelName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedChannelName == actualChannelName
             be = allowed ? 'be' : 'not be'
     }
 
     def 'channel with name "#expectedChannelName" should #be allowed case-insensitive in channel with name "#actualChannelName"'() {
         given:
-            ChannelJavacordSlash channelJavacord = Spy(constructorArgs: [expectedChannelName, false])
+            ChannelJavacordSlash channelJavacordSlash = Spy(constructorArgs: [expectedChannelName, false])
 
         and:
             serverCommandContext.message.channel.get().asServerChannel().get().name >> actualChannelName
 
         expect:
-            !channelJavacord.allowCommand(commandContext)
-            channelJavacord.allowCommand(serverCommandContext) == allowed
+            !channelJavacordSlash.allowCommand(commandContext)
+            channelJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedChannelName, actualChannelName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedChannelName.equalsIgnoreCase(actualChannelName)
             be = allowed ? 'be' : 'not be'
     }
 
     def 'channel with pattern "#expectedChannelPattern" should #be allowed in channel with name "#actualChannelName"'() {
         given:
-            ChannelJavacordSlash channelJavacord = Spy(constructorArgs: [expectedChannelPattern])
+            ChannelJavacordSlash channelJavacordSlash = Spy(constructorArgs: [expectedChannelPattern])
 
         and:
             serverCommandContext.message.channel.get().asServerChannel().get().name >> actualChannelName
 
         expect:
-            !channelJavacord.allowCommand(commandContext)
-            channelJavacord.allowCommand(serverCommandContext) == allowed
+            !channelJavacordSlash.allowCommand(commandContext)
+            channelJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedChannelPattern, actualChannelName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedChannelPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualChannelName ==~ expectedChannelPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [channelId: #channelId, channelName: #channelName, caseSensitive: #caseSensitive, channelPattern: #channelPattern] is checked'() {
         given:
-            ChannelJavacordSlash channelJavacord = Spy(ChannelJavacordSlash, useObjenesis: true)
+            ChannelJavacordSlash channelJavacordSlash = Spy(ChannelJavacordSlash, useObjenesis: true)
 
         and:
-            channelJavacord.setFinalLongField('channelId', channelId)
-            channelJavacord.setFinalField('channelName', channelName)
-            channelJavacord.setFinalBooleanField('caseSensitive', caseSensitive)
-            channelJavacord.setFinalField('channelPattern', channelPattern)
+            channelJavacordSlash.setFinalLongField('channelId', channelId)
+            channelJavacordSlash.setFinalField('channelName', channelName)
+            channelJavacordSlash.setFinalBooleanField('caseSensitive', caseSensitive)
+            channelJavacordSlash.setFinalField('channelPattern', channelPattern)
 
         when:
-            channelJavacord.invokeMethod('ensureInvariants')
+            channelJavacordSlash.invokeMethod('ensureInvariants')
 
         then:
             IllegalStateException ise = thrown()
@@ -167,11 +177,12 @@ class ChannelJavacordSlashTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                                       | parameterType        || errorMessage
-            { it -> new TestChannelJavacordSlash(0) }               | 'long'               || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJavacordSlash(null as String) }  | 'String'             || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJavacordSlash(null, true) }      | 'String and boolean' || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJavacordSlash(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
+            __
+            ; constructorCaller                                 | parameterType        || errorMessage
+            ; { new TestChannelJavacordSlash(0) }               | 'long'               || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJavacordSlash(null as String) }  | 'String'             || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJavacordSlash(null, true) }      | 'String and boolean' || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJavacordSlash(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
     }
 
     private static class TestChannelJavacordSlash extends ChannelJavacordSlash {

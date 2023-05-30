@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package net.kautler.command.api.restriction.javacord.slash
 
-import java.util.regex.Pattern
-
 import net.kautler.command.api.CommandContext
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.permission.Role
@@ -28,6 +26,8 @@ import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
+
+import java.util.regex.Pattern
 
 @Subject(RoleJavacordSlash)
 class RoleJavacordSlashTest extends Specification {
@@ -81,21 +81,22 @@ class RoleJavacordSlashTest extends Specification {
 
     def 'exact role with ID "#expectedRoleId" should #be allowed for roles #actualRoles'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(constructorArgs: [expectedRoleId])
+            RoleJavacordSlash roleJavacordSlash = Spy(constructorArgs: [expectedRoleId])
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
             server.getRoles(author) >> actualRoles
 
         expect:
-            !roleJavacord.allowCommand(commandContext)
-            roleJavacord.allowCommand(serverCommandContext) == allowed
+            !roleJavacordSlash.allowCommand(commandContext)
+            roleJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedRoleId, actualRoles] << [
-                    [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleId << [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleId == higherRoleId)) ||
                     (('lowerRole' in actualRoles) && (expectedRoleId == lowerRoleId))
             be = allowed ? 'be' : 'not be'
@@ -103,21 +104,22 @@ class RoleJavacordSlashTest extends Specification {
 
     def 'at least role with ID "#expectedRoleId" should #be allowed for roles #actualRoles'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(constructorArgs: [false, expectedRoleId])
+            RoleJavacordSlash roleJavacordSlash = Spy(constructorArgs: [false, expectedRoleId])
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
             server.getHighestRole(author) >> Optional.ofNullable([higherRole, lowerRole].find { it in actualRoles })
 
         expect:
-            !roleJavacord.allowCommand(commandContext)
-            roleJavacord.allowCommand(serverCommandContext) == allowed
+            !roleJavacordSlash.allowCommand(commandContext)
+            roleJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedRoleId, actualRoles] << [
-                    [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleId << [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleId in [higherRoleId, lowerRoleId])) ||
                     (('lowerRole' in actualRoles) && (expectedRoleId == lowerRoleId))
             be = allowed ? 'be' : 'not be'
@@ -125,22 +127,23 @@ class RoleJavacordSlashTest extends Specification {
 
     def 'exact role with name "#expectedRoleName" should #be allowed case-sensitive for roles #actualRoles'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(constructorArgs: [expectedRoleName])
+            RoleJavacordSlash roleJavacordSlash = Spy(constructorArgs: [expectedRoleName])
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
             server.getRoles(author) >> actualRoles
 
         expect:
-            !roleJavacord.allowCommand(commandContext)
-            roleJavacord.allowCommand(serverCommandContext) == allowed
+            !roleJavacordSlash.allowCommand(commandContext)
+            roleJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedRoleName, actualRoles] << [
-                    [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
-                     lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleName == higherRoleName)) ||
                     (('lowerRole' in actualRoles) && (expectedRoleName == lowerRoleName))
             be = allowed ? 'be' : 'not be'
@@ -148,22 +151,23 @@ class RoleJavacordSlashTest extends Specification {
 
     def 'at least role with name "#expectedRoleName" should #be allowed case-sensitive for roles #actualRoles'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(constructorArgs: [false, expectedRoleName])
+            RoleJavacordSlash roleJavacordSlash = Spy(constructorArgs: [false, expectedRoleName])
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
             server.getHighestRole(author) >> Optional.ofNullable([higherRole, lowerRole].find { it in actualRoles })
 
         expect:
-            !roleJavacord.allowCommand(commandContext)
-            roleJavacord.allowCommand(serverCommandContext) == allowed
+            !roleJavacordSlash.allowCommand(commandContext)
+            roleJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedRoleName, actualRoles] << [
-                    [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
-                     lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleName in [higherRoleName, lowerRoleName])) ||
                     (('lowerRole' in actualRoles) && (expectedRoleName == lowerRoleName))
             be = allowed ? 'be' : 'not be'
@@ -171,22 +175,23 @@ class RoleJavacordSlashTest extends Specification {
 
     def 'exact role with name "#expectedRoleName" should #be allowed case-insensitive for roles #actualRoles'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(constructorArgs: [expectedRoleName, false])
+            RoleJavacordSlash roleJavacordSlash = Spy(constructorArgs: [expectedRoleName, false])
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
             server.getRoles(author) >> actualRoles
 
         expect:
-            !roleJavacord.allowCommand(commandContext)
-            roleJavacord.allowCommand(serverCommandContext) == allowed
+            !roleJavacordSlash.allowCommand(commandContext)
+            roleJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedRoleName, actualRoles] << [
-                    [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
-                     lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(higherRoleName)) ||
                     (('lowerRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(lowerRoleName))
             be = allowed ? 'be' : 'not be'
@@ -194,22 +199,23 @@ class RoleJavacordSlashTest extends Specification {
 
     def 'at least role with name "#expectedRoleName" should #be allowed case-insensitive for roles #actualRoles'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(constructorArgs: [false, expectedRoleName, false])
+            RoleJavacordSlash roleJavacordSlash = Spy(constructorArgs: [false, expectedRoleName, false])
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
             server.getHighestRole(author) >> Optional.ofNullable([higherRole, lowerRole].find { it in actualRoles })
 
         expect:
-            !roleJavacord.allowCommand(commandContext)
-            roleJavacord.allowCommand(serverCommandContext) == allowed
+            !roleJavacordSlash.allowCommand(commandContext)
+            roleJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedRoleName, actualRoles] << [
-                    [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
-                     lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleName.toLowerCase() in [higherRoleName, lowerRoleName]*.toLowerCase())) ||
                     (('lowerRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(lowerRoleName))
             be = allowed ? 'be' : 'not be'
@@ -217,22 +223,23 @@ class RoleJavacordSlashTest extends Specification {
 
     def 'exact role with pattern "#expectedRolePattern" should #be allowed for roles #actualRoles'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(constructorArgs: [expectedRolePattern])
+            RoleJavacordSlash roleJavacordSlash = Spy(constructorArgs: [expectedRolePattern])
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
             server.getRoles(author) >> actualRoles
 
         expect:
-            !roleJavacord.allowCommand(commandContext)
-            roleJavacord.allowCommand(serverCommandContext) == allowed
+            !roleJavacordSlash.allowCommand(commandContext)
+            roleJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedRolePattern, actualRoles] << [
-                    [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
-                     ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRolePattern << [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
+                                    ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (higherRoleName ==~ expectedRolePattern)) ||
                     (('lowerRole' in actualRoles) && (lowerRoleName ==~ expectedRolePattern))
             be = allowed ? 'be' : 'not be'
@@ -240,7 +247,7 @@ class RoleJavacordSlashTest extends Specification {
 
     def 'at least role with pattern "#expectedRolePattern" should #be allowed for roles #actualRoles'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(constructorArgs: [false, expectedRolePattern])
+            RoleJavacordSlash roleJavacordSlash = Spy(constructorArgs: [false, expectedRolePattern])
             actualRoles = actualRoles.collect { this."$it" }
 
         and:
@@ -248,33 +255,35 @@ class RoleJavacordSlashTest extends Specification {
             server.getHighestRole(author) >> Optional.ofNullable([higherRole, lowerRole].find { it in actualRoles })
 
         expect:
-            !roleJavacord.allowCommand(commandContext)
-            roleJavacord.allowCommand(serverCommandContext) == allowed
+            !roleJavacordSlash.allowCommand(commandContext)
+            roleJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedRolePattern, actualRoles] << [
-                    [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
-                     ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRolePattern << [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
+                                    ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && [higherRoleName, lowerRoleName].any { it ==~ expectedRolePattern }) ||
                     (('lowerRole' in actualRoles) && (lowerRoleName ==~ expectedRolePattern))
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [roleId: #roleId, roleName: #roleName, caseSensitive: #caseSensitive, rolePattern: #rolePattern] is checked'() {
         given:
-            RoleJavacordSlash roleJavacord = Spy(RoleJavacordSlash, useObjenesis: true)
+            RoleJavacordSlash roleJavacordSlash = Spy(RoleJavacordSlash, useObjenesis: true)
 
         and:
-            roleJavacord.setFinalLongField('roleId', roleId)
-            roleJavacord.setFinalField('roleName', roleName)
-            roleJavacord.setFinalBooleanField('caseSensitive', caseSensitive)
-            roleJavacord.setFinalField('rolePattern', rolePattern)
+            roleJavacordSlash.setFinalLongField('roleId', roleId)
+            roleJavacordSlash.setFinalField('roleName', roleName)
+            roleJavacordSlash.setFinalBooleanField('caseSensitive', caseSensitive)
+            roleJavacordSlash.setFinalField('rolePattern', rolePattern)
 
         when:
-            roleJavacord.invokeMethod('ensureInvariants')
+            roleJavacordSlash.invokeMethod('ensureInvariants')
 
         then:
             IllegalStateException ise = thrown()
@@ -307,15 +316,16 @@ class RoleJavacordSlashTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                                          | parameterType                 || errorMessage
-            { it -> new TestRoleJavacordSlash(0) }                     | 'long'                        || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJavacordSlash(null as String) }        | 'String'                      || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJavacordSlash(null, true) }            | 'String and boolean'          || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJavacordSlash(null as Pattern) }       | 'Pattern'                     || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJavacordSlash(true, 0) }               | 'boolean and long'            || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJavacordSlash(true, null as String) }  | 'boolean and String'          || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJavacordSlash(true, null, true) }      | 'boolean, String and boolean' || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJavacordSlash(true, null as Pattern) } | 'boolean and Pattern'         || ~/One of roleId, roleName and rolePattern should be given/
+            __
+            ; constructorCaller                                    | parameterType                 || errorMessage
+            ; { new TestRoleJavacordSlash(0) }                     | 'long'                        || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJavacordSlash(null as String) }        | 'String'                      || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJavacordSlash(null, true) }            | 'String and boolean'          || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJavacordSlash(null as Pattern) }       | 'Pattern'                     || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJavacordSlash(true, 0) }               | 'boolean and long'            || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJavacordSlash(true, null as String) }  | 'boolean and String'          || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJavacordSlash(true, null, true) }      | 'boolean, String and boolean' || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJavacordSlash(true, null as Pattern) } | 'boolean and Pattern'         || ~/One of roleId, roleName and rolePattern should be given/
     }
 
     private static class TestRoleJavacordSlash extends RoleJavacordSlash {

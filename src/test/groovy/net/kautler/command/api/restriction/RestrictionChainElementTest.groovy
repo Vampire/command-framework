@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,11 @@ class RestrictionChainElementTest extends Specification {
             restrictionChainElement.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
-            [restriction1Allowed, restriction2Allowed] <<
-                    ([[true, false]] * 2).combinations()
+            restriction1Allowed << [true, false]
+        combined:
+            restriction2Allowed << [true, false]
+
+        and:
             allowed = restriction1Allowed
             be = allowed ? 'be' : 'not be'
     }
@@ -83,8 +86,11 @@ class RestrictionChainElementTest extends Specification {
             andCombination.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
-            [restriction1Allowed, restriction2Allowed] <<
-                    ([[true, false]] * 2).combinations()
+            restriction1Allowed << [true, false]
+        combined:
+            restriction2Allowed << [true, false]
+
+        and:
             allowed = restriction1Allowed && restriction2Allowed
             be = allowed ? 'be' : 'not be'
     }
@@ -101,8 +107,11 @@ class RestrictionChainElementTest extends Specification {
             andCombination.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
-            [restriction1Allowed, restriction2Allowed] <<
-                    ([[true, false]] * 2).combinations()
+            restriction1Allowed << [true, false]
+        combined:
+            restriction2Allowed << [true, false]
+
+        and:
             allowed = restriction1Allowed && restriction2Allowed
             be = allowed ? 'be' : 'not be'
     }
@@ -120,8 +129,11 @@ class RestrictionChainElementTest extends Specification {
             orCombination.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
-            [restriction1Allowed, restriction2Allowed] <<
-                    ([[true, false]] * 2).combinations()
+            restriction1Allowed << [true, false]
+        combined:
+            restriction2Allowed << [true, false]
+
+        and:
             allowed = restriction1Allowed || restriction2Allowed
             be = allowed ? 'be' : 'not be'
     }
@@ -138,8 +150,11 @@ class RestrictionChainElementTest extends Specification {
             orCombination.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
-            [restriction1Allowed, restriction2Allowed] <<
-                    ([[true, false]] * 2).combinations()
+            restriction1Allowed << [true, false]
+        combined:
+            restriction2Allowed << [true, false]
+
+        and:
             allowed = restriction1Allowed || restriction2Allowed
             be = allowed ? 'be' : 'not be'
     }
@@ -156,8 +171,11 @@ class RestrictionChainElementTest extends Specification {
             negated.isCommandAllowed(Stub(CommandContext), availableRestrictions) == allowed
 
         where:
-            [restriction1Allowed, restriction2Allowed] <<
-                    ([[true, false]] * 2).combinations()
+            restriction1Allowed << [true, false]
+        combined:
+            restriction2Allowed << [true, false]
+
+        and:
             allowed = !restriction1Allowed
             be = allowed ? 'be' : 'not be'
     }
@@ -171,23 +189,17 @@ class RestrictionChainElementTest extends Specification {
             (testee == other) == result
 
         where:
-            [testeeClassName, testeeCreator, testeeArgument, otherArgument] << [
+            testeeCreator << [
                     { new RestrictionChainElement(it) },
                     { new RestrictionChainElement(it).negate() }
-            ].collectMany { testeeCreator ->
-                ([[AnyOf, AllOf]] * 2)
-                        .combinations()
-                        .collect { testeeArgument, otherArgument ->
-                            [
-                                    testeeCreator.call(AnyOf).getClass().simpleName,
-                                    testeeCreator,
-                                    testeeArgument,
-                                    otherArgument
-                            ]
-                        }
-            }
+            ]
+        combined:
+            testeeArgument << [AnyOf, AllOf]
+        combined:
+            otherArgument << [AnyOf, AllOf]
 
         and:
+            testeeClassName = testeeCreator.call(AnyOf).getClass().simpleName
             result = testeeArgument == otherArgument
     }
 
@@ -200,27 +212,21 @@ class RestrictionChainElementTest extends Specification {
             (testee == other) == result
 
         where:
-            [testeeClassName, testeeCreator,
-             testeeLeftArgument, otherLeftArgument, testeeRightArgument, otherRightArgument] << [
+            testeeCreator << [
                     { left, right -> new RestrictionChainElement(left) & new RestrictionChainElement(right) },
                     { left, right -> new RestrictionChainElement(left) | new RestrictionChainElement(right) },
-            ].collectMany { testeeCreator ->
-                ([([[AnyOf, AllOf]] * 2).combinations()] * 2)
-                        .combinations()
-                        *.flatten()
-                        .collect { testeeLeftArgument, otherLeftArgument, testeeRightArgument, otherRightArgument ->
-                            [
-                                    testeeCreator.call(AnyOf, AnyOf).getClass().simpleName,
-                                    testeeCreator,
-                                    testeeLeftArgument,
-                                    otherLeftArgument,
-                                    testeeRightArgument,
-                                    otherRightArgument
-                            ]
-                        }
-            }
+            ]
+        combined:
+            testeeLeftArgument << [AnyOf, AllOf]
+        combined:
+            otherLeftArgument << [AnyOf, AllOf]
+        combined:
+            testeeRightArgument << [AnyOf, AllOf]
+        combined:
+            otherRightArgument << [AnyOf, AllOf]
 
         and:
+            testeeClassName = testeeCreator.call(AnyOf, AnyOf).getClass().simpleName
             result = (testeeLeftArgument == otherLeftArgument) && (testeeRightArgument == otherRightArgument)
     }
 
@@ -272,23 +278,17 @@ class RestrictionChainElementTest extends Specification {
             (testee.hashCode() == other.hashCode()) == result
 
         where:
-            [testeeClassName, testeeCreator, testeeArgument, otherArgument] << [
+            testeeCreator << [
                     { new RestrictionChainElement(it) },
                     { new RestrictionChainElement(it).negate() }
-            ].collectMany { testeeCreator ->
-                ([[AnyOf, AllOf]] * 2)
-                        .combinations()
-                        .collect { testeeArgument, otherArgument ->
-                            [
-                                    testeeCreator.call(AnyOf).getClass().simpleName,
-                                    testeeCreator,
-                                    testeeArgument,
-                                    otherArgument
-                            ]
-                        }
-            }
+            ]
+        combined:
+            testeeArgument << [AnyOf, AllOf]
+        combined:
+            otherArgument << [AnyOf, AllOf]
 
         and:
+            testeeClassName = testeeCreator.call(AnyOf).getClass().simpleName
             result = testeeArgument == otherArgument
             be = result ? 'be' : 'not be'
     }
@@ -302,27 +302,21 @@ class RestrictionChainElementTest extends Specification {
             (testee.hashCode() == other.hashCode()) == result
 
         where:
-            [testeeClassName, testeeCreator,
-             testeeLeftArgument, otherLeftArgument, testeeRightArgument, otherRightArgument] << [
+            testeeCreator << [
                     { left, right -> new RestrictionChainElement(left) & new RestrictionChainElement(right) },
                     { left, right -> new RestrictionChainElement(left) | new RestrictionChainElement(right) },
-            ].collectMany { testeeCreator ->
-                ([([[AnyOf, AllOf]] * 2).combinations()] * 2)
-                        .combinations()
-                        *.flatten()
-                        .collect { testeeLeftArgument, otherLeftArgument, testeeRightArgument, otherRightArgument ->
-                            [
-                                    testeeCreator.call(AnyOf, AnyOf).getClass().simpleName,
-                                    testeeCreator,
-                                    testeeLeftArgument,
-                                    otherLeftArgument,
-                                    testeeRightArgument,
-                                    otherRightArgument
-                            ]
-                        }
-            }
+            ]
+        combined:
+            testeeLeftArgument << [AnyOf, AllOf]
+        combined:
+            otherLeftArgument << [AnyOf, AllOf]
+        combined:
+            testeeRightArgument << [AnyOf, AllOf]
+        combined:
+            otherRightArgument << [AnyOf, AllOf]
 
         and:
+            testeeClassName = testeeCreator.call(AnyOf, AnyOf).getClass().simpleName
             result = (testeeLeftArgument == otherLeftArgument) && (testeeRightArgument == otherRightArgument)
             be = result ? 'be' : 'not be'
     }

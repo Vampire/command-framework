@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
-import net.kautler.command.api.annotation.Alias
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.Usage
 import net.kautler.command.api.parameter.ParameterParseException
 import net.kautler.command.api.parameter.ParameterParser
@@ -33,30 +34,40 @@ import net.kautler.command.integ.test.spock.AddBean
 import net.kautler.command.integ.test.spock.VetoBean
 import net.kautler.command.parameter.parser.UntypedParameterParser
 import net.kautler.command.parameter.parser.missingdependency.MissingDependencyParameterParser
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(UntypedParameterParser)
 @VetoBean(MissingDependencyParameterParser)
 class UntypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.parameter.UntypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.parameter.UntypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'untyped parameter parser should work properly with correct arguments'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
-            def random1 = randomUUID()
-            def random2 = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
 
         and:
+            def random1 = randomUUID()
+            def random2 = randomUUID()
+
+        and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == """
-                            pong:
+                            pong_$random:
                             foo: [$random1, $random2]
                         """.stripIndent().trim())) {
                     responseReceived.set(true)
@@ -66,7 +77,7 @@ class UntypedParameterParserIntegTest extends Specification {
 
         when:
             textChannelAsUser
-                    .sendMessage("!ping $random1 $random2")
+                    .sendMessage("${IgnoreOtherTestsTransformer.expectedStart} $random1 $random2")
                     .complete()
 
         then:
@@ -79,21 +90,27 @@ class UntypedParameterParserIntegTest extends Specification {
     }
 
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.parameter.UntypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.parameter.UntypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'untyped parameter parser should throw exception with wrong number of arguments [arguments: #arguments]'(
-            arguments, TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
+            TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == '''
-                            pong:
-                            Wrong arguments for command `!ping`
-                            Usage: `!ping <foo> <foo>`
-                        '''.stripIndent().trim())) {
+                        (it.message.contentRaw == """
+                            pong_$random:
+                            Wrong arguments for command `${IgnoreOtherTestsTransformer.expectedStart}`
+                            Usage: `${IgnoreOtherTestsTransformer.expectedStart} <foo> <foo>`
+                        """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
             }
@@ -101,7 +118,7 @@ class UntypedParameterParserIntegTest extends Specification {
 
         when:
             textChannelAsUser
-                    .sendMessage("!ping $arguments")
+                    .sendMessage("${IgnoreOtherTestsTransformer.expectedStart} $arguments")
                     .complete()
 
         then:
@@ -114,26 +131,28 @@ class UntypedParameterParserIntegTest extends Specification {
 
         where:
             arguments << ['', 'foo', 'foo bar baz']
-
-        and:
-            textChannelAsBot = null
-            textChannelAsUser = null
     }
 
     @AddBean(UsagelessPingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.parameter.UntypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.parameter.UntypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'untyped parameter parser should work properly without arguments'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == '''
-                            pong:
-                        '''.stripIndent().trim())) {
+                        (it.message.contentRaw == """
+                            pong_$random:
+                        """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
             }
@@ -141,7 +160,7 @@ class UntypedParameterParserIntegTest extends Specification {
 
         when:
             textChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedStart)
                     .complete()
 
         then:
@@ -154,20 +173,26 @@ class UntypedParameterParserIntegTest extends Specification {
     }
 
     @AddBean(UsagelessPingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.parameter.UntypedParameterParserIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.parameter.UntypedParameterParserIntegTest.IgnoreOtherTestsTransformer.expectedStart')
     def 'untyped parameter parser should throw exception with unexpected arguments'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedStart = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == '''
-                            pong:
-                            Command `!ping` does not expect arguments
-                '''.stripIndent().trim())) {
+                        (it.message.contentRaw == """
+                            pong_$random:
+                            Command `${IgnoreOtherTestsTransformer.expectedStart}` does not expect arguments
+                """.stripIndent().trim())) {
                     responseReceived.set(true)
                 }
             }
@@ -175,7 +200,7 @@ class UntypedParameterParserIntegTest extends Specification {
 
         when:
             textChannelAsUser
-                    .sendMessage('!ping foo')
+                    .sendMessage("${IgnoreOtherTestsTransformer.expectedStart} foo")
                     .complete()
 
         then:
@@ -187,7 +212,6 @@ class UntypedParameterParserIntegTest extends Specification {
             }
     }
 
-    @Alias('ping')
     @Vetoed
     @ApplicationScoped
     static class UsagelessPingCommand extends PingCommand {
@@ -197,8 +221,15 @@ class UntypedParameterParserIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
+        static volatile String alias
+
         @Inject
         ParameterParser parameterParser
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         @Override
         void execute(CommandContext<? extends Message> commandContext) {
@@ -214,11 +245,29 @@ class UntypedParameterParserIntegTest extends Specification {
                 parameters = ppe.message
             }
 
+            def pong = commandContext
+                    .alias
+                    .orElseThrow(AssertionError::new)
+                    .replaceFirst(/^ping/, 'pong')
             commandContext
                     .message
                     .channel
-                    .sendMessage("pong:\n$parameters")
+                    .sendMessage("$pong:\n$parameters")
                     .complete()
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedStart
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent =~ /^${expectedStart}(?: |$)/)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

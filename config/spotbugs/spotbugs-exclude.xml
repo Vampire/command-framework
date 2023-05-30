@@ -37,29 +37,51 @@
 
     <Match>
         <Or>
-            <Class name="net.kautler.command.api.restriction.javacord.ChannelJavacord"/>
-            <Class name="net.kautler.command.api.restriction.javacord.RoleJavacord"/>
-            <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord"/>
-            <Class name="net.kautler.command.api.restriction.javacord.UserJavacord"/>
-            <Class name="net.kautler.command.api.restriction.javacord.slash.ChannelJavacordSlash"/>
-            <Class name="net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlash"/>
-            <Class name="net.kautler.command.api.restriction.javacord.slash.ServerJavacordSlash"/>
-            <Class name="net.kautler.command.api.restriction.javacord.slash.UserJavacordSlash"/>
-            <Class name="net.kautler.command.api.restriction.jda.ChannelJda"/>
-            <Class name="net.kautler.command.api.restriction.jda.GuildJda"/>
-            <Class name="net.kautler.command.api.restriction.jda.RoleJda"/>
-            <Class name="net.kautler.command.api.restriction.jda.UserJda"/>
-        </Or>
-        <Or>
-            <Method name="ensureAtLeastOneConditionIsSet" params="" returns="void"/>
-            <Method name="ensureCaseSensitiveIfNameIsNotSet" params="" returns="void"/>
+            <!-- the static string should be clear enough in these cases -->
+            <And>
+                <Or>
+                    <Class name="net.kautler.command.api.restriction.javacord.ChannelJavacord"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.RoleJavacord"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.UserJavacord"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.slash.ChannelJavacordSlash"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlash"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.slash.ServerJavacordSlash"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.slash.UserJavacordSlash"/>
+                    <Class name="net.kautler.command.api.restriction.jda.ChannelJda"/>
+                    <Class name="net.kautler.command.api.restriction.jda.GuildJda"/>
+                    <Class name="net.kautler.command.api.restriction.jda.RoleJda"/>
+                    <Class name="net.kautler.command.api.restriction.jda.UserJda"/>
+                </Or>
+                <Or>
+                    <Method name="ensureAtLeastOneConditionIsSet" params="" returns="void"/>
+                    <Method name="ensureCaseSensitiveIfNameIsNotSet" params="" returns="void"/>
+                </Or>
+            </And>
+            <!-- the cause is enough context here -->
+            <And>
+                <Class name="net.kautler.test.pitest.SpockTestUnitFinder"/>
+                <Method name="findTestUnits" params="java.lang.Class, org.pitest.testapi.TestUnitExecutionListener" returns="java.util.List"/>
+            </And>
         </Or>
         <Bug pattern="WEM_WEAK_EXCEPTION_MESSAGING"/>
     </Match>
 
     <Match>
-        <Class name="net.kautler.command.util.lazy.LazyReference"/>
-        <Method name="get" params="java.util.function.Supplier" returns="java.lang.Object"/>
+        <Or>
+            <!-- acceptable risk for this double-checked locking code -->
+            <And>
+                <Class name="net.kautler.command.util.lazy.LazyReference"/>
+                <Method name="get" params="java.util.function.Supplier" returns="java.lang.Object"/>
+                <Method name="lock" params="" returns="void" role="METHOD_CALLED"/>
+            </And>
+            <!-- this is in tests infrastructure code and intentionally waiting forever -->
+            <And>
+                <Class name="net.kautler.test.pitest.SpockTestUnitFinder$TestIdentifierListener"/>
+                <Method name="lock" params="org.junit.platform.launcher.TestIdentifier" returns="void"/>
+                <Method name="lock" params="" returns="void" role="METHOD_CALLED"/>
+            </And>
+        </Or>
         <Bug pattern="MDM_WAIT_WITHOUT_TIMEOUT"/>
     </Match>
 
@@ -134,15 +156,6 @@
             </And>
         </Or>
         <Bug pattern="OI_OPTIONAL_ISSUES_USES_ORELSEGET_WITH_NULL"/>
-    </Match>
-
-    <Match>
-        <Class name="net.kautler.test.spock.EagerExceptionRenderer"/>
-        <Method name="~lambda\$(?:visitSpec|null)\$\d++" params="org.spockframework.runtime.extension.IMethodInvocation" returns="void"/>
-        <Or>
-            <Bug pattern="NPMC_NON_PRODUCTIVE_METHOD_CALL"/>
-            <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-        </Or>
     </Match>
 
     <!-- the field gets set in an @Inject setter, so should never be null at usage time -->

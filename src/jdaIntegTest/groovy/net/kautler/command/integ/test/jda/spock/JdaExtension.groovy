@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,16 @@ import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.GatewayIntent
 import org.spockframework.runtime.extension.IGlobalExtension
 import org.spockframework.runtime.model.SpecInfo
+import spock.config.RunnerConfiguration
 import spock.util.concurrent.BlockingVariable
 
-import static java.lang.System.arraycopy
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
 import static java.util.UUID.randomUUID
 import static net.dv8tion.jda.api.Permission.ADMINISTRATOR
 import static net.dv8tion.jda.api.Permission.ALL_PERMISSIONS
+import static org.spockframework.runtime.model.MethodInfo.MISSING_ARGUMENT
 
 @ApplicationScoped
 class JdaExtension implements IGlobalExtension {
@@ -46,6 +50,18 @@ class JdaExtension implements IGlobalExtension {
     private static JDA userJda
 
     private static Guild guildAsUser
+
+    private static ExecutorService threadPool
+
+    private final RunnerConfiguration runnerConfiguration
+
+    JdaExtension() {
+        this(null)
+    }
+
+    JdaExtension(RunnerConfiguration runnerConfiguration) {
+        this.runnerConfiguration = runnerConfiguration
+    }
 
     @Override
     void start() {
@@ -81,29 +97,37 @@ class JdaExtension implements IGlobalExtension {
         if (!userRoles.empty && (guildAsBot.selfMember.roles.first() <= userRoles.first())) {
             throw new IllegalArgumentException('Bot with testDiscordToken1 must have higher role than highest role of bot with testDiscordToken2')
         }
+
+        threadPool = Executors.newFixedThreadPool(runnerConfiguration.parallel.parallelExecutionConfiguration.parallelism)
     }
 
     @Override
     void visitSpec(SpecInfo spec) {
+        // work-around for https://github.com/junit-team/junit5/issues/3108
+        spec.allFeatures*.addIterationInterceptor {
+            threadPool.submit(it::proceed).get()
+        }
+
         (spec.setupSpecMethods + spec.cleanupSpecMethods)*.addInterceptor { invocation ->
-            def parameterTypes = invocation.method.reflection.parameterTypes
-            if (invocation.arguments.size() < parameterTypes.size()) {
-                def newArguments = new Object[parameterTypes.size()]
-                arraycopy(invocation.arguments, 0, newArguments, 0, invocation.arguments.size())
-                invocation.arguments = newArguments
-            }
+            invocation
+                    .method
+                    .reflection
+                    .parameterTypes
+                    .eachWithIndex { parameterType, i ->
+                        if (invocation.arguments[i] != MISSING_ARGUMENT) {
+                            return
+                        }
 
-            parameterTypes.eachWithIndex { parameterType, i ->
-                switch (parameterType) {
-                    case JDA:
-                        invocation.arguments[i] = botJda
-                        break
+                        switch (parameterType) {
+                            case JDA:
+                                invocation.arguments[i] = botJda
+                                break
 
-                    case Guild:
-                        invocation.arguments[i] = guildAsBot
-                        break
-                }
-            }
+                            case Guild:
+                                invocation.arguments[i] = guildAsBot
+                                break
+                        }
+                    }
 
             invocation.proceed()
         }
@@ -142,13 +166,11 @@ class JdaExtension implements IGlobalExtension {
                             .complete()
                 }
 
-                if (invocation.arguments.size() < parameterNames.size()) {
-                    def newArguments = new Object[parameterNames.size()]
-                    arraycopy(invocation.arguments, 0, newArguments, 0, invocation.arguments.size())
-                    invocation.arguments = newArguments
-                }
-
                 parameterNames.eachWithIndex { parameterName, i ->
+                    if (invocation.arguments[i] != MISSING_ARGUMENT) {
+                        return
+                    }
+
                     switch (parameterName) {
                         case { this.hasProperty("$parameterName") }:
                             invocation.arguments[i] = this."$parameterName"
@@ -190,5 +212,6 @@ class JdaExtension implements IGlobalExtension {
     void stop() {
         userJda?.shutdown()
         botJda?.shutdown()
+        threadPool?.shutdown()
     }
 }

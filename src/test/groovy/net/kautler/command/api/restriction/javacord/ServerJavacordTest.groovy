@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,11 @@ class ServerJavacordTest extends Specification {
             serverJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedServerId, actualServerId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedServerId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualServerId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedServerId == actualServerId
             be = allowed ? 'be' : 'not be'
     }
@@ -69,8 +72,11 @@ class ServerJavacordTest extends Specification {
             serverJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedServerName, actualServerName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedServerName == actualServerName
             be = allowed ? 'be' : 'not be'
     }
@@ -87,8 +93,11 @@ class ServerJavacordTest extends Specification {
             serverJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedServerName, actualServerName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedServerName.equalsIgnoreCase(actualServerName)
             be = allowed ? 'be' : 'not be'
     }
@@ -105,15 +114,17 @@ class ServerJavacordTest extends Specification {
             serverJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedServerPattern, actualServerName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedServerPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualServerName ==~ expectedServerPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [serverId: #serverId, serverName: #serverName, caseSensitive: #caseSensitive, serverPattern: #serverPattern] is checked'() {
         given:
             ServerJavacord serverJavacord = Spy(ServerJavacord, useObjenesis: true)
@@ -158,11 +169,12 @@ class ServerJavacordTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                                 | parameterType        || errorMessage
-            { it -> new TestServerJavacord(0) }               | 'long'               || ~/One of serverId, serverName and serverPattern should be given/
-            { it -> new TestServerJavacord(null as String) }  | 'String'             || ~/One of serverId, serverName and serverPattern should be given/
-            { it -> new TestServerJavacord(null, true) }      | 'String and boolean' || ~/One of serverId, serverName and serverPattern should be given/
-            { it -> new TestServerJavacord(null as Pattern) } | 'Pattern'            || ~/One of serverId, serverName and serverPattern should be given/
+            __
+            ; constructorCaller                           | parameterType        || errorMessage
+            ; { new TestServerJavacord(0) }               | 'long'               || ~/One of serverId, serverName and serverPattern should be given/
+            ; { new TestServerJavacord(null as String) }  | 'String'             || ~/One of serverId, serverName and serverPattern should be given/
+            ; { new TestServerJavacord(null, true) }      | 'String and boolean' || ~/One of serverId, serverName and serverPattern should be given/
+            ; { new TestServerJavacord(null as Pattern) } | 'Pattern'            || ~/One of serverId, serverName and serverPattern should be given/
     }
 
     private static class TestServerJavacord extends ServerJavacord {

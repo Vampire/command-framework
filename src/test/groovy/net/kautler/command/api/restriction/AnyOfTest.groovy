@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,11 @@ class AnyOfTest extends Specification {
             anyOf.allowCommand(Stub(CommandContext)) == allowed
 
         where:
-            [restriction1Allowed, restriction2Allowed] <<
-                    ([[true, false]] * 2).combinations()
+            restriction1Allowed << [true, false]
+        combined:
+            restriction2Allowed << [true, false]
+
+        and:
             allowed = restriction1Allowed || restriction2Allowed
             be = allowed ? 'be' : 'not be'
     }

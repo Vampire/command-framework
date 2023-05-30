@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,21 +20,23 @@ import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.user.User
 import org.javacord.api.interaction.SlashCommandInteraction
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
 
+@EnableWeld
 class BotOwnerJavacordSlashTest extends Specification {
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(BotOwnerJavacordSlash)
             .inject(this)
             .build()
 
     @Inject
     @Subject
-    BotOwnerJavacordSlash botOwnerJavacord
+    BotOwnerJavacordSlash botOwnerJavacordSlash
 
     CommandContext<SlashCommandInteraction> commandContext = Stub {
         it.message >> Stub(SlashCommandInteraction) {
@@ -47,7 +49,7 @@ class BotOwnerJavacordSlashTest extends Specification {
             commandContext.message.user.botOwner >> botOwner
 
         expect:
-            botOwnerJavacord.allowCommand(commandContext) == allowed
+            botOwnerJavacordSlash.allowCommand(commandContext) == allowed
 
         where:
             botOwner || allowed | be

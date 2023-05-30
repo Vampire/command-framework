@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ public class SpockTestPlugin implements TestPluginFactory {
                                                           ClassByteArraySource source,
                                                           Collection<String> excludedRunners,
                                                           Collection<String> includedTestMethods) {
-        return new SpockConfiguration(config, excludedRunners, includedTestMethods);
+        return new SpockConfiguration(config, includedTestMethods);
     }
 
     @Override

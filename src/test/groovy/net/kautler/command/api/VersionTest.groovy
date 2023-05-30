@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ package net.kautler.command.api
 import jakarta.inject.Inject
 import net.kautler.test.ContextualInstanceCategory
 import net.kautler.test.PrivateFinalFieldSetterCategory
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.environment.RestoreSystemProperties
@@ -32,10 +33,11 @@ import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
 import static org.powermock.reflect.Whitebox.newInstance
 
+@EnableWeld
 @RestoreSystemProperties
 class VersionTest extends Specification {
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(Version)
             .inject(this)
             .build()
@@ -193,7 +195,8 @@ class VersionTest extends Specification {
             testee.toString().startsWith("${testee.ci().getClass().simpleName}[")
     }
 
-    @Use([PrivateFinalFieldSetterCategory, ContextualInstanceCategory])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(ContextualInstanceCategory)
     def 'toString should contain field name and value for "#field.name"'() {
         given:
             def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')

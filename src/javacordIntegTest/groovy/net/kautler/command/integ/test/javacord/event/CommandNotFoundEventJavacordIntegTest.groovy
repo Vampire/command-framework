@@ -19,25 +19,39 @@ package net.kautler.command.integ.test.javacord.event
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 
-@Subject([CommandHandler, CommandNotFoundEventJavacord])
+import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
+
+@Subject(CommandHandler)
+@Subject(CommandNotFoundEventJavacord)
 class CommandNotFoundEventJavacordIntegTest extends Specification {
     @AddBean(EventReceiver)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordIntegTest.EventReceiver.commandNotFoundEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'command not found event should be fired if command was not found'(ServerTextChannel serverTextChannelAsUser) {
         given:
+            IgnoreOtherTestsTransformer.expectedContent = "!ping_${randomUUID()}"
+
+        and:
             def commandNotFoundEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventReceiver.commandNotFoundEventReceived = commandNotFoundEventReceived
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -47,10 +61,24 @@ class CommandNotFoundEventJavacordIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class EventReceiver {
-        static commandNotFoundEventReceived
+        static volatile commandNotFoundEventReceived
 
         void handleCommandNotFoundEvent(@ObservesAsync CommandNotFoundEventJavacord commandNotFoundEvent) {
             commandNotFoundEventReceived?.set(commandNotFoundEvent)
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

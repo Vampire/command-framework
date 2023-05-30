@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,9 @@ import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.api.restriction.RestrictionChainElement
 import net.kautler.test.ContextualInstanceCategory
 import org.jboss.weld.junit.MockBean
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
@@ -49,9 +50,11 @@ import spock.util.mop.Use
 import java.lang.reflect.Type
 
 import static java.util.Arrays.asList
+import static net.kautler.test.spock.LogContextHandler.ITERATION_CONTEXT_KEY
 import static org.apache.logging.log4j.Level.INFO
-import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
+import static org.apache.logging.log4j.core.test.appender.ListAppender.getListAppender
 
+@EnableWeld
 class CommandHandlerJdaTest extends Specification {
     JDA jda = Mock()
 
@@ -77,8 +80,8 @@ class CommandHandlerJdaTest extends Specification {
 
     TestEventReceiver testEventReceiverDelegate = Mock()
 
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(
                     CommandHandlerJda,
                     LoggerProducer,
@@ -117,8 +120,7 @@ class CommandHandlerJdaTest extends Specification {
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, Internal.Literal.INSTANCE)
+                            .qualifiers(Internal.Literal.INSTANCE)
                             .types(TestEventReceiver)
                             .creating(testEventReceiverDelegate)
                             .build()
@@ -261,7 +263,7 @@ class CommandHandlerJdaTest extends Specification {
     }
 
     @Use(ContextualInstanceCategory)
-    def 'injected jdas and shard managers should be logged properly [jdasUnsatisfied: #jdasUnsatisfied, jdaCollectionsUnsatisfied: #jdaCollectionsUnsatisfied, shardManagersUnsatisfied: #shardManagersUnsatisfied, shardManagerCollectionsUnsatisfied: #shardManagerCollectionsUnsatisfied]'() {
+    def 'injected jdas and shard managers should be logged properly [jdasUnsatisfied: #jdasUnsatisfied, jdaCollectionsUnsatisfied: #jdaCollectionsUnsatisfied, shardManagersUnsatisfied: #shardManagersUnsatisfied, shardManagerCollectionsUnsatisfied: #shardManagerCollectionsUnsatisfied]'(iterationIdentifier) {
         given:
             commandHandlerJda.ci().with { CommandHandlerJda it ->
                 it.jdas = Spy(jdaInstance)
@@ -277,12 +279,6 @@ class CommandHandlerJdaTest extends Specification {
                 it.shardManagerCollections.unsatisfied >> shardManagerCollectionsUnsatisfied
             }
 
-        and:
-            // clear the appender here additionally
-            // to get rid of log messages from container startup
-            def testAppender = getListAppender('Test Appender')
-            testAppender.clear()
-
         when:
             CommandHandlerJda
                     .declaredMethods
@@ -293,9 +289,12 @@ class CommandHandlerJdaTest extends Specification {
                     }
 
         then:
-            testAppender
+            getListAppender('Test Appender')
                     .events
-                    .findAll { it.level == INFO }
+                    .findAll {
+                        (it.contextData.getValue(ITERATION_CONTEXT_KEY) == iterationIdentifier) &&
+                                (it.level == INFO)
+                    }
                     .any { it.message.formattedMessage == expectedMessage }
 
         where:

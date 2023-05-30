@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,21 @@
 
 package net.kautler.command.integ.test.spock
 
-import org.spockframework.runtime.extension.AbstractGlobalExtension
+import org.spockframework.runtime.extension.IGlobalExtension
 import org.spockframework.runtime.extension.builtin.RetryExtension
 import org.spockframework.runtime.model.SpecInfo
 import spock.lang.Retry
 
+import static spock.lang.Retry.Mode.SETUP_FEATURE_CLEANUP
+
 /**
  * A global spock extension that enables retrying on all specifications as if {@link Retry @Retry} is applied
- * explicitly on them with default settings. If retrying is not wanted on a specific class or method,
+ * explicitly on them with mode {@code SETUP_FEATURE_CLEANUP}. If retrying is not wanted on a specific class or method,
  * it can easily be disabled by applying {@code @Retry(count = 0)} explicitly.
  *
  * @see Retry
  */
-class GlobalRetryExtension extends AbstractGlobalExtension {
+class GlobalRetryExtension implements IGlobalExtension {
     private final Retry retry = Retried.getAnnotation(Retry)
 
     private final RetryExtension extension = new RetryExtension()
@@ -40,7 +42,11 @@ class GlobalRetryExtension extends AbstractGlobalExtension {
         }
     }
 
-    @Retry
+    // The mode is necessary so that the CDI extension interceptor is wrapped too.
+    // Otherwise it could happen that the retry interceptor is within the CDI extension interceptor.
+    // If that happens the slash commands are not reregistered and thus do not get an alias set,
+    // which is nulled by the cleanup-block of the slash integ tests.
+    @Retry(mode = SETUP_FEATURE_CLEANUP)
     private static final class Retried {
     }
 }

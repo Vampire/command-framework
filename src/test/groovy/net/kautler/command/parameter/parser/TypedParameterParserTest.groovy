@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package net.kautler.command.parameter.parser
 
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.AmbiguousResolutionException
-import jakarta.enterprise.inject.Any
 import jakarta.enterprise.util.TypeLiteral
 import jakarta.inject.Inject
 import net.kautler.command.Internal
@@ -33,8 +32,9 @@ import net.kautler.command.parameter.ParametersImpl
 import net.kautler.command.usage.UsagePatternBuilder
 import net.kautler.test.ContextualInstanceCategory
 import org.jboss.weld.junit.MockBean
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
@@ -47,6 +47,7 @@ import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
 import static org.powermock.reflect.Whitebox.newInstance
 
+@EnableWeld
 class TypedParameterParserTest extends Specification {
     UsagePatternBuilder usagePatternBuilder = Stub()
 
@@ -66,8 +67,8 @@ class TypedParameterParserTest extends Specification {
 
     ParameterConverter<?, ?> customParameterConverter = Mock()
 
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(TypedParameterParser)
             .addBeans(
                     MockBean.builder()
@@ -88,16 +89,14 @@ class TypedParameterParserTest extends Specification {
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Exception, Object>>() { }.type)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new ParameterType.Literal('for exception'))
+                            .qualifiers(new ParameterType.Literal('for exception'))
                             .creating(customParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
                             .qualifiers(
-                                    // work-around for https://github.com/weld/weld-junit/issues/97
-                                    Any.Literal.INSTANCE, Internal.Literal.INSTANCE,
+                                    Internal.Literal.INSTANCE,
                                     new ParameterType.Literal('internal'))
                             .creating(internalParameterConverter)
                             .build(),
@@ -105,8 +104,7 @@ class TypedParameterParserTest extends Specification {
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
                             .qualifiers(
-                                    // work-around for https://github.com/weld/weld-junit/issues/97
-                                    Any.Literal.INSTANCE, Internal.Literal.INSTANCE,
+                                    Internal.Literal.INSTANCE,
                                     new ParameterType.Literal('internal twice'))
                             .creating(internalParameterConverter)
                             .build(),
@@ -114,69 +112,60 @@ class TypedParameterParserTest extends Specification {
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
                             .qualifiers(
-                                    // work-around for https://github.com/weld/weld-junit/issues/97
-                                    Any.Literal.INSTANCE, Internal.Literal.INSTANCE,
+                                    Internal.Literal.INSTANCE,
                                     new ParameterType.Literal('internal twice'))
                             .creating(internalParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new ParameterType.Literal('custom twice'))
+                            .qualifiers(new ParameterType.Literal('custom twice'))
                             .creating(customParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new ParameterType.Literal('custom twice'))
+                            .qualifiers(new ParameterType.Literal('custom twice'))
                             .creating(customParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new ParameterType.Literal('custom override twice'))
+                            .qualifiers(new ParameterType.Literal('custom override twice'))
                             .creating(customParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new ParameterType.Literal('custom override twice'))
+                            .qualifiers(new ParameterType.Literal('custom override twice'))
                             .creating(customParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
                             .qualifiers(
-                                    // work-around for https://github.com/weld/weld-junit/issues/97
-                                    Any.Literal.INSTANCE, Internal.Literal.INSTANCE,
+                                    Internal.Literal.INSTANCE,
                                     new ParameterType.Literal('custom override twice'))
                             .creating(internalParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new ParameterType.Literal('custom override'))
+                            .qualifiers(new ParameterType.Literal('custom override'))
                             .creating(customParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
                             .qualifiers(
-                                    // work-around for https://github.com/weld/weld-junit/issues/97
-                                    Any.Literal.INSTANCE, Internal.Literal.INSTANCE,
+                                    Internal.Literal.INSTANCE,
                                     new ParameterType.Literal('custom override'))
                             .creating(internalParameterConverter)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
                             .types(new TypeLiteral<ParameterConverter<Object, Object>>() { }.type)
-                            // work-around for https://github.com/weld/weld-junit/issues/97
-                            .qualifiers(Any.Literal.INSTANCE, new ParameterType.Literal('custom'))
+                            .qualifiers(new ParameterType.Literal('custom'))
                             .creating(customParameterConverter)
                             .build()
             )

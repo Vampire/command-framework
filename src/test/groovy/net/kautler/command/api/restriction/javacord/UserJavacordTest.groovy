@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,11 @@ class UserJavacordTest extends Specification {
             userJavacord.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserId, actualUserId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedUserId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualUserId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedUserId == actualUserId
             be = allowed ? 'be' : 'not be'
     }
@@ -63,8 +66,11 @@ class UserJavacordTest extends Specification {
             userJavacord.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserName, actualUserName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedUserName == actualUserName
             be = allowed ? 'be' : 'not be'
     }
@@ -80,8 +86,11 @@ class UserJavacordTest extends Specification {
             userJavacord.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserName, actualUserName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedUserName.equalsIgnoreCase(actualUserName)
             be = allowed ? 'be' : 'not be'
     }
@@ -97,15 +106,17 @@ class UserJavacordTest extends Specification {
             userJavacord.allowCommand(commandContext) == allowed
 
         where:
-            [expectedUserPattern, actualUserName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedUserPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualUserName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualUserName ==~ expectedUserPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [userId: #userId, userName: #userName, caseSensitive: #caseSensitive, userPattern: #userPattern] is checked'() {
         given:
             UserJavacord userJavacord = Spy(UserJavacord, useObjenesis: true)
@@ -150,11 +161,12 @@ class UserJavacordTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                               | parameterType        || errorMessage
-            { it -> new TestUserJavacord(0) }               | 'long'               || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJavacord(null as String) }  | 'String'             || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJavacord(null, true) }      | 'String and boolean' || ~/One of userId, userName and userPattern should be given/
-            { it -> new TestUserJavacord(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
+            __
+            ; constructorCaller                         | parameterType        || errorMessage
+            ; { new TestUserJavacord(0) }               | 'long'               || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJavacord(null as String) }  | 'String'             || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJavacord(null, true) }      | 'String and boolean' || ~/One of userId, userName and userPattern should be given/
+            ; { new TestUserJavacord(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
     }
 
     private static class TestUserJavacord extends UserJavacord {

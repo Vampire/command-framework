@@ -23,24 +23,28 @@ import jakarta.enterprise.inject.Vetoed
 import jakarta.inject.Inject
 import net.kautler.command.api.Version
 import net.kautler.command.integ.test.spock.AddBean
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 
 @Subject(Version)
 class VersionIntegTest extends Specification {
     @AddBean(VersionHolder)
+    @ResourceLock('net.kautler.command.integ.test.VersionIntegTest.VersionHolder.version')
     def 'version should be known'() {
         expect:
             VersionHolder.version.version != '<unknown>'
     }
 
     @AddBean(VersionHolder)
+    @ResourceLock('net.kautler.command.integ.test.VersionIntegTest.VersionHolder.version')
     def 'build timestamp should be known'() {
         expect:
             VersionHolder.version.buildTimestamp
     }
 
     @AddBean(VersionHolder)
+    @ResourceLock('net.kautler.command.integ.test.VersionIntegTest.VersionHolder.version')
     def 'display version should be equal to version if and only if the version is not a snapshot version'() {
         expect:
             with(VersionHolder.version) {

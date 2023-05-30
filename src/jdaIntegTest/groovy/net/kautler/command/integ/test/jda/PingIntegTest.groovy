@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,30 +26,37 @@ import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
-import net.kautler.command.api.annotation.Alias
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.Asynchronous
-import net.kautler.command.integ.test.ManualTests
 import net.kautler.command.integ.test.spock.AddBean
-import org.junit.experimental.categories.Category
+import spock.lang.ResourceLock
 import spock.lang.Specification
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 class PingIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.PingIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.PingIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in server channel'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong: $random")) {
+                        (it.message.contentRaw == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
@@ -57,7 +64,7 @@ class PingIntegTest extends Specification {
 
         when:
             textChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .complete()
 
         then:
@@ -69,21 +76,26 @@ class PingIntegTest extends Specification {
             }
     }
 
-    @Category(ManualTests)
+    @Tag('manual')
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.PingIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.PingIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in private channel'(JDA botJda) {
         given:
             def owner = botJda.retrieveApplicationInfo().complete().owner
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             List<EventListener> eventListeners = [
                     {
                         if ((it instanceof PrivateMessageReceivedEvent) &&
                                 (it.channel.user == owner) &&
                                 (it.message.author == botJda.selfUser) &&
-                                (it.message.contentRaw == "pong: $random")) {
+                                (it.message.contentRaw == "pong_$random:")) {
                             responseReceived.set(true)
                         }
                     } as EventListener
@@ -95,7 +107,7 @@ class PingIntegTest extends Specification {
             eventListeners << ({
                 if ((it instanceof PrivateMessageReceivedEvent) &&
                         (it.message.author == owner) &&
-                        (it.message.contentRaw == "!ping $random")) {
+                        (it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)
                 }
             } as EventListener)
@@ -103,7 +115,7 @@ class PingIntegTest extends Specification {
             owner
                     .openPrivateChannel()
                     .complete()
-                    .sendMessage("$owner.asMention please send `!ping $random` in this channel")
+                    .sendMessage("$owner.asMention please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .complete()
             commandReceived.get()
 
@@ -117,18 +129,23 @@ class PingIntegTest extends Specification {
     }
 
     @AddBean(AsynchronousPingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.PingIntegTest.AsynchronousPingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.PingIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'asynchronous ping command should respond if in server channel'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            AsynchronousPingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${AsynchronousPingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong: $random")) {
+                        (it.message.contentRaw == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
@@ -136,7 +153,7 @@ class PingIntegTest extends Specification {
 
         when:
             textChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .complete()
 
         then:
@@ -151,20 +168,50 @@ class PingIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
+        static volatile String alias
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
+
         @Override
         void execute(CommandContext<? extends Message> commandContext) {
+            def pong = commandContext
+                    .alias
+                    .orElseThrow(AssertionError::new)
+                    .replaceFirst(/^ping/, 'pong')
             commandContext
                     .message
                     .channel
-                    .sendMessage("pong: ${commandContext.parameterString.orElse('')}")
-                    .complete()
+                    .sendMessage("$pong: ${commandContext.parameterString.orElse('')}")
+                    .queue()
         }
     }
 
     @Asynchronous
-    @Alias('ping')
     @Vetoed
     @ApplicationScoped
     static class AsynchronousPingCommand extends PingCommand {
+        static volatile String alias
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
+        }
     }
 }

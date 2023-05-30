@@ -16,8 +16,6 @@
 
 package net.kautler.command.integ.test.javacord
 
-import java.util.concurrent.CompletableFuture
-
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
@@ -29,9 +27,13 @@ import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacord
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
+import spock.lang.Isolated
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
+
+import java.util.concurrent.CompletableFuture
 
 import static java.util.UUID.randomUUID
 import static java.util.concurrent.TimeUnit.SECONDS
@@ -41,15 +43,21 @@ import static net.kautler.command.api.CommandContextTransformer.Phase.AFTER_PREF
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
+import static net.kautler.test.spock.LogContextHandler.ITERATION_CONTEXT_KEY
 import static org.apache.logging.log4j.Level.WARN
-import static org.apache.logging.log4j.test.appender.ListAppender.getListAppender
+import static org.apache.logging.log4j.core.test.appender.ListAppender.getListAppender
 
-@Subject([CommandContextTransformer, CommandHandler])
+@Subject(CommandContextTransformer)
+@Subject(CommandHandler)
 class CommandContextTransformerIntegTest extends Specification {
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
     def 'ping command should respond if custom prefix is set in #phase phase'(
-            phase, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             MyTransformer.phaseActions = [(phase): {
                 it.withPrefix(':').build()
@@ -57,18 +65,20 @@ class CommandContextTransformerIntegTest extends Specification {
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            MyTransformer.expectedContent = ":${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage(":ping $random")
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -82,67 +92,24 @@ class CommandContextTransformerIntegTest extends Specification {
                     BEFORE_PREFIX_COMPUTATION,
                     AFTER_PREFIX_COMPUTATION
             ]
-
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
-    def 'ping command should respond if empty prefix is used in #phase phase'(
-            phase, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
-        given:
-            MyTransformer.phaseActions = [(phase): {
-                it.withPrefix('').build()
-            }]
-
-        and:
-            def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-
-        and:
-            def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
-                    responseReceived.set(true)
-                }
-            }
-
-        when:
-            serverTextChannelAsUser
-                    .sendMessage("ping $random")
-                    .join()
-
-        then:
-            responseReceived.get()
-
-        cleanup:
-            listenerManager?.remove()
-
-        and:
-            getListAppender('Test Appender').@events.removeIf {
-                (it.level == WARN) && it.message.formattedMessage.contains('The command prefix is empty')
-            }
-
-        where:
-            phase << [
-                    BEFORE_PREFIX_COMPUTATION,
-                    AFTER_PREFIX_COMPUTATION
-            ]
-
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
-    }
-
-    @AddBean(MyTransformer)
-    @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.commandNotFoundEventReceived')
     def 'command not found event should be fired if prefix is not set after #phase phase'(
-            phase, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsUser) {
         given:
             MyTransformer.phaseActions = [(phase): {
                 it.withPrefix(null).build()
             }]
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            MyTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotFoundEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -150,7 +117,7 @@ class CommandContextTransformerIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -161,21 +128,24 @@ class CommandContextTransformerIntegTest extends Specification {
                     AFTER_PREFIX_COMPUTATION,
                     BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION
             ]
-
-        and:
-            serverTextChannelAsUser = null
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
     def 'ping command should respond to wrong prefix and alias if fixed message content is set in #phase phase'(
-            phase, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            MyTransformer.expectedContent = ".foo_$random"
 
         and:
+            def random1 = randomUUID()
             MyTransformer.phaseActions = [(phase): {
-                it.withMessageContent("!ping $random").build()
+                it.withMessageContent("!${PingCommand.alias} $random1").build()
             }]
 
         and:
@@ -183,14 +153,14 @@ class CommandContextTransformerIntegTest extends Specification {
 
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random: $random1")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('.foo')
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -205,22 +175,24 @@ class CommandContextTransformerIntegTest extends Specification {
                     AFTER_PREFIX_COMPUTATION,
                     BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION
             ]
-
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
     def 'ping command should respond to wrong alias if custom alias and parameter string are set in #phase phase'(
-            phase, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            MyTransformer.expectedContent = "!foo_$random"
 
         and:
+            def random1 = randomUUID()
             MyTransformer.phaseActions = [(phase): {
-                it.withAlias('ping').withParameterString(random as String).build()
+                it.withAlias(PingCommand.alias).withParameterString(random1 as String).build()
             }]
 
         and:
@@ -228,14 +200,14 @@ class CommandContextTransformerIntegTest extends Specification {
 
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random: $random1")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!foo')
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -251,22 +223,24 @@ class CommandContextTransformerIntegTest extends Specification {
                     BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
                     AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION
             ]
-
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
     def 'ping command should respond with fixed parameter string if custom alias and parameter string are set in #phase phase'(
-            phase, ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            MyTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def random1 = randomUUID()
             MyTransformer.phaseActions = [(phase): {
-                it.withParameterString(random as String).withAlias('ping').build()
+                it.withParameterString(random1 as String).withAlias(PingCommand.alias).build()
             }]
 
         and:
@@ -274,14 +248,14 @@ class CommandContextTransformerIntegTest extends Specification {
 
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random: $random1")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping foo')
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -297,20 +271,24 @@ class CommandContextTransformerIntegTest extends Specification {
                     BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
                     AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION
             ]
-
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.commandNotFoundEventReceived')
     def 'command not found event should be fired if alias is not set after #phase phase'(
-            phase, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsUser) {
         given:
             MyTransformer.phaseActions = [(phase): {
                 it.withAlias(null).build()
             }]
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            MyTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotFoundEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -318,7 +296,7 @@ class CommandContextTransformerIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -329,19 +307,24 @@ class CommandContextTransformerIntegTest extends Specification {
                     AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
                     BEFORE_COMMAND_COMPUTATION
             ]
-
-        and:
-            serverTextChannelAsUser = null
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.commandNotFoundEventReceived')
     def 'command not found event should be fired if alias is set in #phase phase to a non-matching value'(
-            phase, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsUser) {
         given:
             MyTransformer.phaseActions = [(phase): {
                 it.withAlias('foo').build()
             }]
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            MyTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotFoundEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -349,7 +332,7 @@ class CommandContextTransformerIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -362,16 +345,20 @@ class CommandContextTransformerIntegTest extends Specification {
                     BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION,
                     AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION
             ]
-
-        and:
-            serverTextChannelAsUser = null
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
     def 'custom command should be called if set in #phase phase'(
-            phase, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsUser) {
         given:
+            PingCommand.alias = "ping_${randomUUID()}"
+            MyTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
             def commandCalled = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -381,7 +368,7 @@ class CommandContextTransformerIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -396,13 +383,14 @@ class CommandContextTransformerIntegTest extends Specification {
                     BEFORE_COMMAND_COMPUTATION,
                     AFTER_COMMAND_COMPUTATION
             ]
-
-        and:
-            serverTextChannelAsUser = null
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.commandNotFoundEventReceived')
     def 'command not found event should be fired if command is not set after AFTER_COMMAND_COMPUTATION phase'(
             ServerTextChannel serverTextChannelAsUser) {
         given:
@@ -411,12 +399,16 @@ class CommandContextTransformerIntegTest extends Specification {
             }]
 
         and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            MyTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
             def commandNotFoundEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotFoundEventReceived = commandNotFoundEventReceived
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
@@ -425,11 +417,18 @@ class CommandContextTransformerIntegTest extends Specification {
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
     def 'additional data should #be available in #phaseToCheck phase if set in #phaseToSet phase directly'(
-            phaseToSet, phaseToCheck, shouldBeSet, be,
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            MyTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
+            def random1 = randomUUID()
             def phaseToSetExecuted = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def additionalDataValue = new CompletableFuture<UUID>()
 
@@ -437,7 +436,7 @@ class CommandContextTransformerIntegTest extends Specification {
             MyTransformer.phaseActions = [
                     (phaseToSet): {
                         it.tap {
-                            setAdditionalData('foo', random)
+                            setAdditionalData('foo', random1)
                             phaseToSetExecuted.set(true)
                         }
                     },
@@ -453,7 +452,7 @@ class CommandContextTransformerIntegTest extends Specification {
 
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
@@ -463,36 +462,44 @@ class CommandContextTransformerIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
             responseReceived.get()
             phaseToSetExecuted.get()
-            additionalDataValue.get(testResponseTimeoutLong, SECONDS) == (shouldBeSet ? random : null)
+            additionalDataValue.get(testResponseTimeoutLong, SECONDS) == (shouldBeSet ? random1 : null)
 
         cleanup:
             listenerManager?.remove()
 
         where:
-            [phaseToSet, phaseToCheck] << ([Phase.values()] * 2)
-                    .combinations()
-                    .findAll { toSet, toCheck -> toSet != toCheck }
+            phaseToSet << Phase.values()
+        combined:
+            phaseToCheck << Phase.values()
+
+        and:
             shouldBeSet = phaseToCheck > phaseToSet
             be = shouldBeSet ? 'be' : 'not be'
 
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
+        filter:
+            phaseToSet != phaseToCheck
     }
 
     @AddBean(MyTransformer)
     @AddBean(PingCommand)
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+    @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
     def 'additional data should #be available in #phaseToCheck phase if set in #phaseToSet phase via builder'(
-            phaseToSet, phaseToCheck, shouldBeSet, be,
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random = randomUUID()
+            PingCommand.alias = "ping_$random"
+            MyTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
+            def random1 = randomUUID()
             def phaseToSetExecuted = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def additionalDataValue = new CompletableFuture<UUID>()
 
@@ -501,7 +508,7 @@ class CommandContextTransformerIntegTest extends Specification {
                     (phaseToSet): {
                         phaseToSetExecuted.set(true)
                         it.withPrefix(it.prefix.orElse(null))
-                                .withAdditionalData('foo', random)
+                                .withAdditionalData('foo', random1)
                                 .build()
                     },
                     (phaseToCheck): {
@@ -516,7 +523,7 @@ class CommandContextTransformerIntegTest extends Specification {
 
         and:
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
@@ -526,27 +533,83 @@ class CommandContextTransformerIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(MyTransformer.expectedContent)
                     .join()
 
         then:
             responseReceived.get()
             phaseToSetExecuted.get()
-            additionalDataValue.get(testResponseTimeoutLong, SECONDS) == (shouldBeSet ? random : null)
+            additionalDataValue.get(testResponseTimeoutLong, SECONDS) == (shouldBeSet ? random1 : null)
 
         cleanup:
             listenerManager?.remove()
 
         where:
-            [phaseToSet, phaseToCheck] << ([Phase.values()] * 2)
-                    .combinations()
-                    .findAll { toSet, toCheck -> toSet != toCheck }
+            phaseToSet << Phase.values()
+        combined:
+            phaseToCheck << Phase.values()
+
+        and:
             shouldBeSet = phaseToCheck > phaseToSet
             be = shouldBeSet ? 'be' : 'not be'
 
-        and:
-            serverTextChannelAsBot = null
-            serverTextChannelAsUser = null
+        filter:
+            phaseToSet != phaseToCheck
+    }
+
+    @Isolated('Due to the WARN level context-less log message this has to be isolated')
+    @Subject(CommandContextTransformer)
+    @Subject(CommandHandler)
+    static class IsolatedCommandContextTransformerIntegTest extends Specification {
+        @AddBean(MyTransformer)
+        @AddBean(PingCommand)
+        @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.expectedContent')
+        @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.MyTransformer.phaseActions')
+        @ResourceLock('net.kautler.command.integ.test.javacord.CommandContextTransformerIntegTest.PingCommand.alias')
+        def 'ping command should respond if empty prefix is used in #phase phase'(
+                ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
+            given:
+                MyTransformer.phaseActions = [(phase): {
+                    it.withPrefix('').build()
+                }]
+
+            and:
+                def random = randomUUID()
+                PingCommand.alias = "ping_$random"
+                MyTransformer.expectedContent = PingCommand.alias
+
+            and:
+                def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+                def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
+                    if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
+                        responseReceived.set(true)
+                    }
+                }
+
+            when:
+                serverTextChannelAsUser
+                        .sendMessage(MyTransformer.expectedContent)
+                        .join()
+
+            then:
+                responseReceived.get()
+
+            cleanup:
+                listenerManager?.remove()
+
+            and:
+                getListAppender('Test Appender').@events.removeIf {
+                    !it.contextData.getValue(ITERATION_CONTEXT_KEY) &&
+                            (it.level == WARN) &&
+                            it.message.formattedMessage.contains('The command prefix is empty')
+                }
+
+            where:
+                phase << [
+                        BEFORE_PREFIX_COMPUTATION,
+                        AFTER_PREFIX_COMPUTATION
+                ]
+        }
     }
 
     @Vetoed
@@ -558,18 +621,31 @@ class CommandContextTransformerIntegTest extends Specification {
     @InPhase(BEFORE_COMMAND_COMPUTATION)
     @InPhase(AFTER_COMMAND_COMPUTATION)
     static class MyTransformer implements CommandContextTransformer<Object> {
-        static phaseActions = [:]
+        static volatile expectedContent
+        static volatile phaseActions = [:]
 
         @Override
         <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
-            phaseActions[phase]?.call(commandContext) ?: commandContext
+            if (phase == BEFORE_PREFIX_COMPUTATION) {
+                (commandContext.messageContent == expectedContent)
+                        ? (phaseActions[phase]?.call(commandContext) ?: commandContext)
+                        : commandContext.withPrefix('<do not match>').build()
+            } else {
+                phaseActions[phase]?.call(commandContext) ?: commandContext
+            }
         }
     }
 
     @Vetoed
     @ApplicationScoped
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotFoundEventReceived
+        static volatile String alias
+        static volatile commandNotFoundEventReceived
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotFoundEvent(@ObservesAsync CommandNotFoundEventJavacord commandNotFoundEvent) {
             commandNotFoundEventReceived?.set(commandNotFoundEvent)

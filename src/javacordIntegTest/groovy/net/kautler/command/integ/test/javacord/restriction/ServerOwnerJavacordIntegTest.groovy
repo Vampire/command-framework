@@ -19,48 +19,65 @@ package net.kautler.command.integ.test.javacord.restriction
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.javacord.ServerOwnerJavacord
-import net.kautler.command.integ.test.ManualTests
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
-import org.junit.experimental.categories.Category
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(ServerOwnerJavacord)
 class ServerOwnerJavacordIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ServerOwnerJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ServerOwnerJavacordIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ServerOwnerJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not server owner'(ServerTextChannel serverTextChannelAsUser) {
         given:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
             commandNotAllowedEventReceived.get()
     }
 
-    @Category(ManualTests)
+    @Tag('manual')
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ServerOwnerJavacordIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.ServerOwnerJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if server owner'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
-                        if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                        if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -70,12 +87,12 @@ class ServerOwnerJavacordIntegTest extends Specification {
             def owner = serverTextChannelAsBot.server.owner.get()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addMessageCreateListener {
-                if ((it.channel == serverTextChannelAsBot) && (it.message.content == "!ping $random")) {
+                if ((it.channel == serverTextChannelAsBot) && (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `!ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -90,10 +107,30 @@ class ServerOwnerJavacordIntegTest extends Specification {
     @ApplicationScoped
     @RestrictedTo(ServerOwnerJavacord)
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

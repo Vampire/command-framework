@@ -31,10 +31,8 @@ pmd {
 }
 
 tasks.named<Pmd>("pmdMain") {
-    exclude("net/kautler/command/usage/UsageBaseListener.java")
     exclude("net/kautler/command/usage/UsageBaseVisitor.java")
     exclude("net/kautler/command/usage/UsageLexer.java")
-    exclude("net/kautler/command/usage/UsageListener.java")
     exclude("net/kautler/command/usage/UsageParser.java")
     exclude("net/kautler/command/usage/UsageVisitor.java")
 }

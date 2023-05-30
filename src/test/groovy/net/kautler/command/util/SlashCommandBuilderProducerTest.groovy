@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Björn Kautler
+ * Copyright 2022-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,9 @@ import net.kautler.command.api.slash.javacord.SlashCommandJavacord
 import net.kautler.test.ContextualInstanceCategory
 import org.javacord.api.interaction.SlashCommandBuilder
 import org.jboss.weld.junit.MockBean
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
@@ -33,6 +34,7 @@ import static org.javacord.api.interaction.SlashCommandOption.createStringOption
 import static org.javacord.api.interaction.SlashCommandOptionType.SUB_COMMAND
 import static org.javacord.api.interaction.SlashCommandOptionType.SUB_COMMAND_GROUP
 
+@EnableWeld
 @Subject(SlashCommandBuilderProducer)
 class SlashCommandBuilderProducerTest extends Specification {
     SlashCommandJavacord command1 = Mock()
@@ -49,8 +51,8 @@ class SlashCommandBuilderProducerTest extends Specification {
 
     SlashCommandJavacord command7 = Mock()
 
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(SlashCommandBuilderProducer)
             .addBeans(
                     MockBean.builder()

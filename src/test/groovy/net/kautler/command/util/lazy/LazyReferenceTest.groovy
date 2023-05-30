@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,8 @@ class LazyReferenceTest extends Specification {
         }
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'value should be initialized only once'() {
         given:
             def random1 = randomUUID()
@@ -78,7 +79,8 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'get should throw exception if value producer returns null'() {
         given:
             prepareLocks()
@@ -95,7 +97,8 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'value should not get changed once assigned even if outer check succeeds'() {
         given:
             def random1 = randomUUID()
@@ -115,7 +118,8 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'write lock should not be requested if value is already set'() {
         given:
             def random1 = randomUUID()
@@ -144,7 +148,8 @@ class LazyReferenceTest extends Specification {
             !testee.set
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'isSet should return true if value was already initialized'() {
         given:
             prepareLocks()
@@ -165,7 +170,8 @@ class LazyReferenceTest extends Specification {
             testee == new LazyReference<Object>()
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'equals should return false if one reference is already initialized and one is not yet initialized'() {
         given:
             prepareLocks()
@@ -181,7 +187,8 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'equals should return false if both references are already initialized but to different values'() {
         given:
             def random1 = randomUUID()
@@ -203,7 +210,8 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'equals should return true if both references are initialized to the same value'() {
         given:
             def random = randomUUID()
@@ -244,7 +252,8 @@ class LazyReferenceTest extends Specification {
             testee.hashCode() == new LazyReference<Object>().hashCode()
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'hash code should not be the same if one reference is already initialized and one is not yet initialized'() {
         given:
             prepareLocks()
@@ -260,7 +269,8 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'hash code should not be the same if both references are already initialized but to different values'() {
         given:
             def random1 = randomUUID()
@@ -282,7 +292,8 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'hash code should be the same if both references are initialized to the same value'() {
         given:
             def random = randomUUID()
@@ -303,7 +314,7 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    def '#className toString should start with class name'() {
+    def '#className toString should start with class name'(testee) {
         expect:
             testee.toString().startsWith("$className[")
 
@@ -318,7 +329,8 @@ class LazyReferenceTest extends Specification {
             className = clazz.simpleName ?: clazz.typeName[(clazz.package.name.length() + 1)..-1]
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'toString should contain field name and value for "#field.name"'() {
         given:
             prepareLocks()

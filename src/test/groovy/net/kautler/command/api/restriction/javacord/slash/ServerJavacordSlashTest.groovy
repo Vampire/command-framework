@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,7 @@
 
 package net.kautler.command.api.restriction.javacord.slash
 
-import java.util.regex.Pattern
-
 import net.kautler.command.api.CommandContext
-import net.kautler.command.api.restriction.javacord.ServerJavacord
 import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.server.Server
 import org.javacord.api.interaction.SlashCommandInteraction
@@ -28,7 +25,9 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
 
-@Subject(ServerJavacord)
+import java.util.regex.Pattern
+
+@Subject(ServerJavacordSlash)
 class ServerJavacordSlashTest extends Specification {
     CommandContext<SlashCommandInteraction> commandContext = Stub {
         it.message >> Stub(SlashCommandInteraction)
@@ -42,91 +41,102 @@ class ServerJavacordSlashTest extends Specification {
 
     def 'server with ID "#expectedServerId" should #be allowed in server with ID "#actualServerId"'() {
         given:
-            ServerJavacordSlash serverJavacord = Spy(constructorArgs: [expectedServerId])
+            ServerJavacordSlash serverJavacordSlash = Spy(constructorArgs: [expectedServerId])
 
         and:
             serverCommandContext.message.server.get().id >> actualServerId
 
         expect:
-            !serverJavacord.allowCommand(commandContext)
-            serverJavacord.allowCommand(serverCommandContext) == allowed
+            !serverJavacordSlash.allowCommand(commandContext)
+            serverJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedServerId, actualServerId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedServerId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualServerId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedServerId == actualServerId
             be = allowed ? 'be' : 'not be'
     }
 
     def 'server with name "#expectedServerName" should #be allowed case-sensitive in server with name "#actualServerName"'() {
         given:
-            ServerJavacordSlash serverJavacord = Spy(constructorArgs: [expectedServerName])
+            ServerJavacordSlash serverJavacordSlash = Spy(constructorArgs: [expectedServerName])
 
         and:
             serverCommandContext.message.server.get().name >> actualServerName
 
         expect:
-            !serverJavacord.allowCommand(commandContext)
-            serverJavacord.allowCommand(serverCommandContext) == allowed
+            !serverJavacordSlash.allowCommand(commandContext)
+            serverJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedServerName, actualServerName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedServerName == actualServerName
             be = allowed ? 'be' : 'not be'
     }
 
     def 'server with name "#expectedServerName" should #be allowed case-insensitive in server with name "#actualServerName"'() {
         given:
-            ServerJavacordSlash serverJavacord = Spy(constructorArgs: [expectedServerName, false])
+            ServerJavacordSlash serverJavacordSlash = Spy(constructorArgs: [expectedServerName, false])
 
         and:
             serverCommandContext.message.server.get().name >> actualServerName
 
         expect:
-            !serverJavacord.allowCommand(commandContext)
-            serverJavacord.allowCommand(serverCommandContext) == allowed
+            !serverJavacordSlash.allowCommand(commandContext)
+            serverJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedServerName, actualServerName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedServerName.equalsIgnoreCase(actualServerName)
             be = allowed ? 'be' : 'not be'
     }
 
     def 'server with pattern "#expectedServerPattern" should #be allowed in server with name "#actualServerName"'() {
         given:
-            ServerJavacordSlash serverJavacord = Spy(constructorArgs: [expectedServerPattern])
+            ServerJavacordSlash serverJavacordSlash = Spy(constructorArgs: [expectedServerPattern])
 
         and:
             serverCommandContext.message.server.get().name >> actualServerName
 
         expect:
-            !serverJavacord.allowCommand(commandContext)
-            serverJavacord.allowCommand(serverCommandContext) == allowed
+            !serverJavacordSlash.allowCommand(commandContext)
+            serverJavacordSlash.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedServerPattern, actualServerName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedServerPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualServerName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualServerName ==~ expectedServerPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [serverId: #serverId, serverName: #serverName, caseSensitive: #caseSensitive, serverPattern: #serverPattern] is checked'() {
         given:
-            ServerJavacordSlash serverJavacord = Spy(ServerJavacordSlash, useObjenesis: true)
+            ServerJavacordSlash serverJavacordSlash = Spy(ServerJavacordSlash, useObjenesis: true)
 
         and:
-            serverJavacord.setFinalLongField('serverId', serverId)
-            serverJavacord.setFinalField('serverName', serverName)
-            serverJavacord.setFinalBooleanField('caseSensitive', caseSensitive)
-            serverJavacord.setFinalField('serverPattern', serverPattern)
+            serverJavacordSlash.setFinalLongField('serverId', serverId)
+            serverJavacordSlash.setFinalField('serverName', serverName)
+            serverJavacordSlash.setFinalBooleanField('caseSensitive', caseSensitive)
+            serverJavacordSlash.setFinalField('serverPattern', serverPattern)
 
         when:
-            serverJavacord.invokeMethod('ensureInvariants')
+            serverJavacordSlash.invokeMethod('ensureInvariants')
 
         then:
             IllegalStateException ise = thrown()
@@ -159,11 +169,12 @@ class ServerJavacordSlashTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                                      | parameterType        || errorMessage
-            { it -> new TestServerJavacordSlash(0) }               | 'long'               || ~/One of serverId, serverName and serverPattern should be given/
-            { it -> new TestServerJavacordSlash(null as String) }  | 'String'             || ~/One of serverId, serverName and serverPattern should be given/
-            { it -> new TestServerJavacordSlash(null, true) }      | 'String and boolean' || ~/One of serverId, serverName and serverPattern should be given/
-            { it -> new TestServerJavacordSlash(null as Pattern) } | 'Pattern'            || ~/One of serverId, serverName and serverPattern should be given/
+            __
+            ; constructorCaller                                | parameterType        || errorMessage
+            ; { new TestServerJavacordSlash(0) }               | 'long'               || ~/One of serverId, serverName and serverPattern should be given/
+            ; { new TestServerJavacordSlash(null as String) }  | 'String'             || ~/One of serverId, serverName and serverPattern should be given/
+            ; { new TestServerJavacordSlash(null, true) }      | 'String and boolean' || ~/One of serverId, serverName and serverPattern should be given/
+            ; { new TestServerJavacordSlash(null as Pattern) } | 'Pattern'            || ~/One of serverId, serverName and serverPattern should be given/
     }
 
     private static class TestServerJavacordSlash extends ServerJavacordSlash {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,10 +97,11 @@ class RoleJdaTest extends Specification {
             roleJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedRoleId, actualRoles] << [
-                    [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleId << [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleId == higherRoleId)) ||
                     (('lowerRole' in actualRoles) && (expectedRoleId == lowerRoleId))
             be = allowed ? 'be' : 'not be'
@@ -119,10 +120,11 @@ class RoleJdaTest extends Specification {
             roleJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedRoleId, actualRoles] << [
-                    [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleId << [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleId in [higherRoleId, lowerRoleId])) ||
                     (('lowerRole' in actualRoles) && (expectedRoleId == lowerRoleId))
             be = allowed ? 'be' : 'not be'
@@ -141,11 +143,12 @@ class RoleJdaTest extends Specification {
             roleJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedRoleName, actualRoles] << [
-                    [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
-                     lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleName == higherRoleName)) ||
                     (('lowerRole' in actualRoles) && (expectedRoleName == lowerRoleName))
             be = allowed ? 'be' : 'not be'
@@ -164,11 +167,12 @@ class RoleJdaTest extends Specification {
             roleJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedRoleName, actualRoles] << [
-                    [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
-                     lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleName in [higherRoleName, lowerRoleName])) ||
                     (('lowerRole' in actualRoles) && (expectedRoleName == lowerRoleName))
             be = allowed ? 'be' : 'not be'
@@ -187,11 +191,12 @@ class RoleJdaTest extends Specification {
             roleJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedRoleName, actualRoles] << [
-                    [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
-                     lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(higherRoleName)) ||
                     (('lowerRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(lowerRoleName))
             be = allowed ? 'be' : 'not be'
@@ -210,11 +215,12 @@ class RoleJdaTest extends Specification {
             roleJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedRoleName, actualRoles] << [
-                    [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
-                     lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (expectedRoleName.toLowerCase() in [higherRoleName, lowerRoleName]*.toLowerCase())) ||
                     (('lowerRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(lowerRoleName))
             be = allowed ? 'be' : 'not be'
@@ -233,11 +239,12 @@ class RoleJdaTest extends Specification {
             roleJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedRolePattern, actualRoles] << [
-                    [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
-                     ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRolePattern << [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
+                                    ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && (higherRoleName ==~ expectedRolePattern)) ||
                     (('lowerRole' in actualRoles) && (lowerRoleName ==~ expectedRolePattern))
             be = allowed ? 'be' : 'not be'
@@ -256,17 +263,19 @@ class RoleJdaTest extends Specification {
             roleJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedRolePattern, actualRoles] << [
-                    [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
-                     ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
-            ].combinations()
+            expectedRolePattern << [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
+                                    ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
             allowed = (('higherRole' in actualRoles) && [higherRoleName, lowerRoleName].any { it ==~ expectedRolePattern }) ||
                     (('lowerRole' in actualRoles) && (lowerRoleName ==~ expectedRolePattern))
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [roleId: #roleId, roleName: #roleName, caseSensitive: #caseSensitive, rolePattern: #rolePattern] is checked'() {
         given:
             RoleJda roleJda = Spy(RoleJda, useObjenesis: true)
@@ -311,15 +320,16 @@ class RoleJdaTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                                | parameterType                 || errorMessage
-            { it -> new TestRoleJda(0) }                     | 'long'                        || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJda(null as String) }        | 'String'                      || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJda(null, true) }            | 'String and boolean'          || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJda(null as Pattern) }       | 'Pattern'                     || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJda(true, 0) }               | 'boolean and long'            || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJda(true, null as String) }  | 'boolean and String'          || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJda(true, null, true) }      | 'boolean, String and boolean' || ~/One of roleId, roleName and rolePattern should be given/
-            { it -> new TestRoleJda(true, null as Pattern) } | 'boolean and Pattern'         || ~/One of roleId, roleName and rolePattern should be given/
+            __
+            ; constructorCaller                          | parameterType                 || errorMessage
+            ; { new TestRoleJda(0) }                     | 'long'                        || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJda(null as String) }        | 'String'                      || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJda(null, true) }            | 'String and boolean'          || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJda(null as Pattern) }       | 'Pattern'                     || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJda(true, 0) }               | 'boolean and long'            || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJda(true, null as String) }  | 'boolean and String'          || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJda(true, null, true) }      | 'boolean, String and boolean' || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJda(true, null as Pattern) } | 'boolean and Pattern'         || ~/One of roleId, roleName and rolePattern should be given/
     }
 
     private static class TestRoleJda extends RoleJda {

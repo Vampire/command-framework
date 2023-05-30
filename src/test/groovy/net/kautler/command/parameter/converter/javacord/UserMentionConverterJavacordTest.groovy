@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,22 +29,23 @@ import org.javacord.api.entity.user.User
 import org.javacord.api.exception.NotFoundException
 import org.javacord.api.util.rest.RestRequestResponseInformation
 import org.jboss.weld.junit.MockBean
-import org.jboss.weld.junit4.WeldInitiator
-import org.junit.Rule
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Subject
-import spock.util.environment.Jvm
 
 import java.util.concurrent.CompletableFuture
 
 import static java.util.concurrent.CompletableFuture.completedFuture
-import static org.junit.Assume.assumeFalse
 
+@EnableWeld
 class UserMentionConverterJavacordTest extends Specification {
     ExceptionUtil exceptionUtil = Spy(useObjenesis: true)
 
-    @Rule
-    WeldInitiator weld = WeldInitiator
+    @WeldSetup
+    def weld = WeldInitiator
             .from(UserMentionConverterJavacord)
             .addBeans(
                     MockBean.builder()
@@ -61,15 +62,14 @@ class UserMentionConverterJavacordTest extends Specification {
     @Subject
     UserMentionConverterJavacord testee
 
+    @IgnoreIf(value = {
+        jvm.java8 &&
+                (data.userId in [
+                        ((Long.MAX_VALUE as BigInteger) * 3) as String,
+                        "!${(Long.MAX_VALUE as BigInteger) * 3}"
+                ])
+    }, reason = 'Long.parseUnsignedLong has a bug in Java 8 where overflow is not properly checked')
     def '<@#userId> should throw InvalidParameterFormatException'() {
-        assumeFalse(
-                'Long.parseUnsignedLong has a bug in Java 8 where overflow is not properly checked',
-                Jvm.current.java8 &&
-                        (userId in [
-                                ((Long.MAX_VALUE as BigInteger) * 3) as String,
-                                "!${(Long.MAX_VALUE as BigInteger) * 3}"
-                        ]))
-
         when:
             testee.convert("<@$userId>", null, null)
 

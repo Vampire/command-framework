@@ -19,13 +19,13 @@ package net.kautler.command.integ.test.javacord.restriction.slash
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
-import net.kautler.command.api.annotation.Alias
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacordSlash
 import net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlash
-import net.kautler.command.integ.test.ManualTests
-import net.kautler.command.integ.test.javacord.PingSlashIntegTest
 import net.kautler.command.integ.test.javacord.PingSlashIntegTest.SlashCommandRegisterer
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
@@ -34,18 +34,26 @@ import org.javacord.api.entity.permission.PermissionsBuilder
 import org.javacord.api.entity.permission.Role
 import org.javacord.api.entity.server.Server
 import org.javacord.api.entity.user.User
-import org.junit.experimental.categories.Category
+import spock.lang.Isolated
+import spock.lang.ResourceLock
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
-import static org.junit.Assert.fail
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
+import static net.kautler.command.integ.test.javacord.PingSlashIntegTest.ParameterlessPingCommand
 
 @Subject(RoleJavacordSlash)
-@Category(ManualTests)
+@Tag('manual')
 @AddBean(SlashCommandRegisterer)
+@Isolated('''
+    The Javacord extension removes all roles before each test,
+    so run these tests in isolation as they depend on the role setup
+    they do and any other test could interrupt by clearing all roles.
+''')
 class RoleJavacordSlashIntegTest extends Specification {
     @Shared
     Role higherRole
@@ -143,12 +151,17 @@ class RoleJavacordSlashIntegTest extends Specification {
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in any role by id'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleRestriction.criterion = middleRole.id
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -157,13 +170,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -172,17 +185,23 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in correct role by id'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleRestriction.criterion = middleRole.id
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), higherRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -191,13 +210,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -206,17 +225,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct role by id'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleRestriction.criterion = middleRole.id
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -224,7 +248,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommand.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -235,13 +259,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -250,16 +274,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in any role by name'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleRestriction.criterion = middleRole.name
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -268,13 +298,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -283,24 +313,28 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in correct role by name'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def roleName = middleRole.name.toUpperCase()
             if (roleName == middleRole.name) {
                 roleName = middleRole.name.toLowerCase()
-                if (roleName == middleRole.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert roleName != middleRole.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             RoleRestriction.criterion = roleName
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -309,13 +343,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -324,17 +358,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct role by name'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleRestriction.criterion = middleRole.name
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -342,7 +381,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommand.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -353,13 +392,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -368,23 +407,27 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleCaseInsensitive)
     @AddBean(PingCommandCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleCaseInsensitive.roleName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandCaseInsensitive.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in any role by name case-insensitively'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def roleName = middleRole.name.toUpperCase()
             if (roleName == middleRole.name) {
                 roleName = middleRole.name.toLowerCase()
-                if (roleName == middleRole.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert roleName != middleRole.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             RoleCaseInsensitive.roleName = roleName
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandCaseInsensitive.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandCaseInsensitive.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -393,13 +436,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandCaseInsensitive.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -408,24 +451,28 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandCaseInsensitive.alias = null
     }
 
     @AddBean(RoleCaseInsensitive)
     @AddBean(PingCommandCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleCaseInsensitive.roleName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandCaseInsensitive.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in correct role by name case-insensitively'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def roleName = middleRole.name.toUpperCase()
             if (roleName == middleRole.name) {
                 roleName = middleRole.name.toLowerCase()
-                if (roleName == middleRole.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert roleName != middleRole.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             RoleCaseInsensitive.roleName = roleName
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), higherRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandCaseInsensitive.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandCaseInsensitive.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -434,13 +481,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandCaseInsensitive.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -449,24 +496,27 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandCaseInsensitive.alias = null
     }
 
     @AddBean(RoleCaseInsensitive)
     @AddBean(PingCommandCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleCaseInsensitive.roleName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct role by name case-insensitively'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def roleName = middleRole.name.toUpperCase()
             if (roleName == middleRole.name) {
                 roleName = middleRole.name.toLowerCase()
-                if (roleName == middleRole.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert roleName != middleRole.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             RoleCaseInsensitive.roleName = roleName
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandCaseInsensitive.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -474,7 +524,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandCaseInsensitive.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -485,13 +535,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandCaseInsensitive.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -500,16 +550,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandCaseInsensitive.alias = null
     }
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in any role by pattern'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleRestriction.criterion = ~/^$middleRole.name$/
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -518,13 +574,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -533,17 +589,23 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in correct role by pattern'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleRestriction.criterion = ~/[^\w\W]/
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), higherRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -552,13 +614,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -567,17 +629,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleRestriction)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleRestriction.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct role by pattern'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleRestriction.criterion = ~/^$middleRole.name$/
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -585,7 +652,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommand.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -596,13 +663,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommand.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -611,16 +678,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommand.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in any role by id or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = middleRole.id
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandInexact.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -629,13 +702,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -644,17 +717,23 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if in lower role by id or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = middleRole.id
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), lowerRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandInexact.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -663,13 +742,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -678,17 +757,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct role by id or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = middleRole.id
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -696,7 +780,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandInexact.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -707,13 +791,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -722,17 +806,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in higher role by id or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = middleRole.id
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), higherRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -740,7 +829,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandInexact.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -751,13 +840,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -766,16 +855,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in any role by name or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = middleRole.name
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandInexact.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -784,13 +879,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -799,17 +894,23 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if in lower role by name or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = middleRole.name
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), lowerRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandInexact.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -818,13 +919,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -833,17 +934,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct role by name or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = middleRole.name
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -851,7 +957,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandInexact.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -862,13 +968,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -877,17 +983,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in higher role by name or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = middleRole.name
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), higherRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -895,7 +1006,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandInexact.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -906,13 +1017,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -921,23 +1032,27 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigherCaseInsensitive)
     @AddBean(PingCommandInexactCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigherCaseInsensitive.roleName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexactCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexactCaseInsensitive.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in any role by name case-insensitively or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def roleName = middleRole.name.toUpperCase()
             if (roleName == middleRole.name) {
                 roleName = middleRole.name.toLowerCase()
-                if (roleName == middleRole.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert roleName != middleRole.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             RoleOrHigherCaseInsensitive.roleName = roleName
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexactCaseInsensitive.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandInexactCaseInsensitive.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -946,13 +1061,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexactCaseInsensitive.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -961,24 +1076,28 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandInexactCaseInsensitive.alias = null
     }
 
     @AddBean(RoleOrHigherCaseInsensitive)
     @AddBean(PingCommandInexactCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigherCaseInsensitive.roleName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexactCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexactCaseInsensitive.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if in lower role by name case-insensitively or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def roleName = middleRole.name.toUpperCase()
             if (roleName == middleRole.name) {
                 roleName = middleRole.name.toLowerCase()
-                if (roleName == middleRole.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert roleName != middleRole.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             RoleOrHigherCaseInsensitive.roleName = roleName
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), lowerRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexactCaseInsensitive.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandInexactCaseInsensitive.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -987,13 +1106,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexactCaseInsensitive.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -1002,24 +1121,27 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandInexactCaseInsensitive.alias = null
     }
 
     @AddBean(RoleOrHigherCaseInsensitive)
     @AddBean(PingCommandInexactCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigherCaseInsensitive.roleName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexactCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct role by name case-insensitively or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def roleName = middleRole.name.toUpperCase()
             if (roleName == middleRole.name) {
                 roleName = middleRole.name.toLowerCase()
-                if (roleName == middleRole.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert roleName != middleRole.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             RoleOrHigherCaseInsensitive.roleName = roleName
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexactCaseInsensitive.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -1027,7 +1149,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandInexactCaseInsensitive.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -1038,13 +1160,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexactCaseInsensitive.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -1053,24 +1175,27 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandInexactCaseInsensitive.alias = null
     }
 
     @AddBean(RoleOrHigherCaseInsensitive)
     @AddBean(PingCommandInexactCaseInsensitive)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigherCaseInsensitive.roleName')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexactCaseInsensitive.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in higher role by name case-insensitively or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             def roleName = middleRole.name.toUpperCase()
             if (roleName == middleRole.name) {
                 roleName = middleRole.name.toLowerCase()
-                if (roleName == middleRole.name) {
-                    fail('Could not determine a name that is unequal normally but equal case-insensitively')
-                }
+                assert roleName != middleRole.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             RoleOrHigherCaseInsensitive.roleName = roleName
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), higherRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexactCaseInsensitive.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -1078,7 +1203,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandInexactCaseInsensitive.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -1089,13 +1214,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexactCaseInsensitive.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -1104,16 +1229,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandInexactCaseInsensitive.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not in any role by pattern or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = ~/^$middleRole.name$/
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandInexact.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -1122,13 +1253,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -1137,17 +1268,23 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if in lower role by pattern or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = ~/^$middleRole.name$/
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), lowerRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandInexact.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
@@ -1156,13 +1293,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -1171,17 +1308,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in correct role by pattern or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = ~/^$middleRole.name$/
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), middleRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -1189,7 +1331,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandInexact.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -1200,13 +1342,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -1215,17 +1357,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandInexact.alias = null
     }
 
     @AddBean(RoleOrHigher)
     @AddBean(PingCommandInexact)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.RoleOrHigher.criterion')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.PingCommandInexact.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.RoleJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in higher role by pattern or higher'(ServerTextChannel serverTextChannelAsBot) {
         given:
             RoleOrHigher.criterion = ~/^$middleRole.name$/
             addRoleToUser(serverTextChannelAsBot.api.owner.join(), higherRole)
 
         and:
-            def random = randomUUID()
+            IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandInexact.alias}"
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
@@ -1233,7 +1380,7 @@ class RoleJavacordSlashIntegTest extends Specification {
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
                                 (it.message.author.id == it.api.yourself.id) &&
-                                (it.message.content == "pong: $random")) {
+                                (it.message.content == "${PingCommandInexact.alias.replace('ping', 'pong')}:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -1244,13 +1391,13 @@ class RoleJavacordSlashIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == PingCommandInexact.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -1259,14 +1406,27 @@ class RoleJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManagers*.remove()
+            PingCommandInexact.alias = null
     }
 
     @Vetoed
     @ApplicationScoped
-    @Description('Ping back an optional nonce')
+    @Description('Ping back')
     @RestrictedTo(RoleRestriction)
-    static class PingCommand extends PingSlashIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+    static class PingCommand extends ParameterlessPingCommand {
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacordSlash commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -1276,7 +1436,7 @@ class RoleJavacordSlashIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class RoleRestriction extends RoleJavacordSlash {
-        static criterion
+        static volatile criterion
 
         RoleRestriction() {
             super(criterion)
@@ -1285,11 +1445,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
     @Vetoed
     @ApplicationScoped
-    @Alias('ping')
-    @Description('Ping back an optional nonce')
+    @Description('Ping back')
     @RestrictedTo(RoleCaseInsensitive)
-    static class PingCommandCaseInsensitive extends PingSlashIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+    static class PingCommandCaseInsensitive extends ParameterlessPingCommand {
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacordSlash commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -1299,7 +1470,7 @@ class RoleJavacordSlashIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class RoleCaseInsensitive extends RoleJavacordSlash {
-        static roleName
+        static volatile roleName
 
         RoleCaseInsensitive() {
             super(roleName, false)
@@ -1308,11 +1479,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
     @Vetoed
     @ApplicationScoped
-    @Alias('ping')
-    @Description('Ping back an optional nonce')
+    @Description('Ping back')
     @RestrictedTo(RoleOrHigher)
-    static class PingCommandInexact extends PingSlashIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+    static class PingCommandInexact extends ParameterlessPingCommand {
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacordSlash commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -1322,7 +1504,7 @@ class RoleJavacordSlashIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class RoleOrHigher extends RoleJavacordSlash {
-        static criterion
+        static volatile criterion
 
         RoleOrHigher() {
             super(false, criterion)
@@ -1331,11 +1513,22 @@ class RoleJavacordSlashIntegTest extends Specification {
 
     @Vetoed
     @ApplicationScoped
-    @Alias('ping')
-    @Description('Ping back an optional nonce')
+    @Description('Ping back')
     @RestrictedTo(RoleOrHigherCaseInsensitive)
-    static class PingCommandInexactCaseInsensitive extends PingSlashIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+    static class PingCommandInexactCaseInsensitive extends ParameterlessPingCommand {
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacordSlash commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -1345,10 +1538,24 @@ class RoleJavacordSlashIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class RoleOrHigherCaseInsensitive extends RoleJavacordSlash {
-        static roleName
+        static volatile roleName
 
         RoleOrHigherCaseInsensitive() {
             super(false, roleName, false)
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_COMMAND_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withCommand { }.build()
         }
     }
 }

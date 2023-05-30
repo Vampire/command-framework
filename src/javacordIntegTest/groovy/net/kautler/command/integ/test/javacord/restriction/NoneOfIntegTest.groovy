@@ -21,6 +21,8 @@ import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
 import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.NoneOf
@@ -28,11 +30,13 @@ import net.kautler.command.api.restriction.Restriction
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(NoneOf)
 class NoneOfIntegTest extends Specification {
@@ -40,11 +44,21 @@ class NoneOfIntegTest extends Specification {
     @AddBean(Boolean2)
     @AddBean(Neither)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.Boolean1.allow')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.Boolean2.allow')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if either condition holds [boolean1: #boolean1, boolean2: #boolean2]'(
-            boolean1, boolean2, ServerTextChannel serverTextChannelAsUser) {
+            ServerTextChannel serverTextChannelAsUser) {
         given:
             Boolean1.allow = boolean1
             Boolean2.allow = boolean2
+
+        and:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
@@ -52,26 +66,30 @@ class NoneOfIntegTest extends Specification {
 
         when:
             serverTextChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
             commandNotAllowedEventReceived.get()
 
         where:
-            boolean1 | boolean2
-            true     | true
-            true     | false
-            false    | true
+            boolean1 << [true, false]
+        combined:
+            boolean2 << [true, false]
 
-        and:
-            serverTextChannelAsUser = null
+        filter:
+            boolean1 || boolean2
     }
 
     @AddBean(Boolean1)
     @AddBean(Boolean2)
     @AddBean(Neither)
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.Boolean1.allow')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.Boolean2.allow')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NoneOfIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if both conditions do not hold'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
@@ -80,18 +98,20 @@ class NoneOfIntegTest extends Specification {
 
         and:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -105,7 +125,13 @@ class NoneOfIntegTest extends Specification {
     @ApplicationScoped
     @RestrictedTo(Neither)
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJavacord commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
@@ -115,7 +141,7 @@ class NoneOfIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class Boolean1 implements Restriction<Object> {
-        static allow
+        static volatile allow
 
         @Override
         boolean allowCommand(CommandContext<?> commandContext) {
@@ -126,7 +152,7 @@ class NoneOfIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class Boolean2 implements Restriction<Object> {
-        static allow
+        static volatile allow
 
         @Override
         boolean allowCommand(CommandContext<?> commandContext) {
@@ -145,6 +171,20 @@ class NoneOfIntegTest extends Specification {
         @Inject
         Neither(Boolean1 boolean1, Boolean2 boolean2) {
             super(boolean1, boolean2)
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

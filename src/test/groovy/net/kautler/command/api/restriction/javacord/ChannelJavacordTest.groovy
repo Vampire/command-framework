@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,8 +59,11 @@ class ChannelJavacordTest extends Specification {
             channelJavacord.allowCommand(commandContext) == allowed
 
         where:
-            [expectedChannelId, actualChannelId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedChannelId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualChannelId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedChannelId == actualChannelId
             be = allowed ? 'be' : 'not be'
     }
@@ -77,8 +80,11 @@ class ChannelJavacordTest extends Specification {
             channelJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedChannelName, actualChannelName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedChannelName == actualChannelName
             be = allowed ? 'be' : 'not be'
     }
@@ -95,8 +101,11 @@ class ChannelJavacordTest extends Specification {
             channelJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedChannelName, actualChannelName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedChannelName.equalsIgnoreCase(actualChannelName)
             be = allowed ? 'be' : 'not be'
     }
@@ -113,15 +122,17 @@ class ChannelJavacordTest extends Specification {
             channelJavacord.allowCommand(serverCommandContext) == allowed
 
         where:
-            [expectedChannelPattern, actualChannelName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedChannelPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualChannelName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualChannelName ==~ expectedChannelPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [channelId: #channelId, channelName: #channelName, caseSensitive: #caseSensitive, channelPattern: #channelPattern] is checked'() {
         given:
             ChannelJavacord channelJavacord = Spy(ChannelJavacord, useObjenesis: true)
@@ -166,11 +177,12 @@ class ChannelJavacordTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                                  | parameterType        || errorMessage
-            { it -> new TestChannelJavacord(0) }               | 'long'               || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJavacord(null as String) }  | 'String'             || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJavacord(null, true) }      | 'String and boolean' || ~/One of channelId, channelName and channelPattern should be given/
-            { it -> new TestChannelJavacord(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
+            __
+            ; constructorCaller                            | parameterType        || errorMessage
+            ; { new TestChannelJavacord(0) }               | 'long'               || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJavacord(null as String) }  | 'String'             || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJavacord(null, true) }      | 'String and boolean' || ~/One of channelId, channelName and channelPattern should be given/
+            ; { new TestChannelJavacord(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
     }
 
     private static class TestChannelJavacord extends ChannelJavacord {

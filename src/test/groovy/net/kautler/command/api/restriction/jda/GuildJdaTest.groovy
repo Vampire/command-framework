@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,11 @@ class GuildJdaTest extends Specification {
             guildJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedGuildId, actualGuildId] <<
-                    ([[Long.MIN_VALUE, 123, Long.MAX_VALUE]] * 2).combinations()
+            expectedGuildId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+        combined:
+            actualGuildId << [Long.MIN_VALUE, 123, Long.MAX_VALUE]
+
+        and:
             allowed = expectedGuildId == actualGuildId
             be = allowed ? 'be' : 'not be'
     }
@@ -76,8 +79,11 @@ class GuildJdaTest extends Specification {
             guildJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedGuildName, actualGuildName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedGuildName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualGuildName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedGuildName == actualGuildName
             be = allowed ? 'be' : 'not be'
     }
@@ -94,8 +100,11 @@ class GuildJdaTest extends Specification {
             guildJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedGuildName, actualGuildName] <<
-                    ([['Foo', 'foo', 'bar', 'foo ', ' bar']] * 2).combinations()
+            expectedGuildName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+        combined:
+            actualGuildName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = expectedGuildName.equalsIgnoreCase(actualGuildName)
             be = allowed ? 'be' : 'not be'
     }
@@ -112,15 +121,17 @@ class GuildJdaTest extends Specification {
             guildJda.allowCommand(guildCommandContext) == allowed
 
         where:
-            [expectedGuildPattern, actualGuildName] << [
-                    [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/],
-                    ['Foo', 'foo', 'bar', 'foo ', ' bar']
-            ].combinations()
+            expectedGuildPattern << [~/F.*/, ~/F\w*/, ~/(?i)F\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualGuildName << ['Foo', 'foo', 'bar', 'foo ', ' bar']
+
+        and:
             allowed = actualGuildName ==~ expectedGuildPattern
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use([PrivateFinalFieldSetterCategory, Whitebox])
+    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'invariant violation [guildId: #guildId, guildName: #guildName, caseSensitive: #caseSensitive, guildPattern: #guildPattern] is checked'() {
         given:
             GuildJda guildJda = Spy(GuildJda, useObjenesis: true)
@@ -165,11 +176,12 @@ class GuildJdaTest extends Specification {
             ise.message ==~ errorMessage
 
         where:
-            constructorCaller                           | parameterType        || errorMessage
-            { it -> new TestGuildJda(0) }               | 'long'               || ~/One of guildId, guildName and guildPattern should be given/
-            { it -> new TestGuildJda(null as String) }  | 'String'             || ~/One of guildId, guildName and guildPattern should be given/
-            { it -> new TestGuildJda(null, true) }      | 'String and boolean' || ~/One of guildId, guildName and guildPattern should be given/
-            { it -> new TestGuildJda(null as Pattern) } | 'Pattern'            || ~/One of guildId, guildName and guildPattern should be given/
+            __
+            ; constructorCaller                     | parameterType        || errorMessage
+            ; { new TestGuildJda(0) }               | 'long'               || ~/One of guildId, guildName and guildPattern should be given/
+            ; { new TestGuildJda(null as String) }  | 'String'             || ~/One of guildId, guildName and guildPattern should be given/
+            ; { new TestGuildJda(null, true) }      | 'String and boolean' || ~/One of guildId, guildName and guildPattern should be given/
+            ; { new TestGuildJda(null as Pattern) } | 'Pattern'            || ~/One of guildId, guildName and guildPattern should be given/
     }
 
     private static class TestGuildJda extends GuildJda {

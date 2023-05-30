@@ -22,11 +22,16 @@ import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
 import net.kautler.command.api.restriction.jda.ServerManagerJda
 import net.kautler.command.integ.test.jda.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
+import spock.lang.Isolated
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.concurrent.BlockingVariable
@@ -34,108 +39,155 @@ import spock.util.concurrent.BlockingVariable
 import static java.util.UUID.randomUUID
 import static net.dv8tion.jda.api.Permission.ADMINISTRATOR
 import static net.dv8tion.jda.api.Permission.MANAGE_SERVER
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 import static net.kautler.command.integ.test.jda.restriction.RoleJdaIntegTest.addRoleToUser
 import static net.kautler.command.integ.test.jda.restriction.RoleJdaIntegTest.createRole
 
 @Subject(ServerManagerJda)
 class ServerManagerJdaIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.ServerManagerJdaIntegTest.PingCommand.commandNotAllowedEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.ServerManagerJdaIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.ServerManagerJdaIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not server manager'(TextChannel textChannelAsUser) {
         given:
+            PingCommand.alias = "ping_${randomUUID()}"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
+
+        and:
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
             textChannelAsUser
-                    .sendMessage('!ping')
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .complete()
 
         then:
             commandNotAllowedEventReceived.get()
     }
 
-    @AddBean(PingCommand)
-    def 'ping command should respond if server manager'(
-            TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
-        given:
-            def serverManagerRole = createRole(textChannelAsBot.guild, 'server manager', MANAGE_SERVER)
-            addRoleToUser(textChannelAsUser.JDA.selfUser, serverManagerRole)
+    @Subject(ServerManagerJda)
+    @Isolated('''
+        The JDA extension removes all roles before each test,
+        so run these tests in isolation as they depend on the role setup
+        they do and any other test could interrupt by clearing all roles.
+    ''')
+    static class IsolatedServerManagerJdaIntegTest extends Specification {
+        @AddBean(PingCommand)
+        @AddBean(IgnoreOtherTestsTransformer)
+        @ResourceLock('net.kautler.command.integ.test.jda.restriction.ServerManagerJdaIntegTest.PingCommand.alias')
+        @ResourceLock('net.kautler.command.integ.test.jda.restriction.ServerManagerJdaIntegTest.IgnoreOtherTestsTransformer.expectedContent')
+        def 'ping command should respond if server manager'(
+                TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
+            given:
+                def serverManagerRole = createRole(textChannelAsBot.guild, 'server manager', MANAGE_SERVER)
+                addRoleToUser(textChannelAsUser.JDA.selfUser, serverManagerRole)
 
-        and:
-            def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            and:
+                def random = randomUUID()
+                PingCommand.alias = "ping_$random"
+                IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
-        and:
-            EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong: $random")) {
-                    responseReceived.set(true)
+            and:
+                def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+                EventListener eventListener = {
+                    if ((it instanceof GuildMessageReceivedEvent) &&
+                            (it.channel == textChannelAsBot) &&
+                            (it.message.author == textChannelAsBot.JDA.selfUser) &&
+                            (it.message.contentRaw == "pong_$random:")) {
+                        responseReceived.set(true)
+                    }
                 }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+                textChannelAsBot.JDA.addEventListener(eventListener)
 
-        when:
-            textChannelAsUser
-                    .sendMessage("!ping $random")
-                    .complete()
+            when:
+                textChannelAsUser
+                        .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
+                        .complete()
 
-        then:
-            responseReceived.get()
+            then:
+                responseReceived.get()
 
-        cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
-            serverManagerRole?.delete()?.complete()
-    }
-
-    @AddBean(PingCommand)
-    def 'ping command should respond if administrator'(
-            TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
-        given:
-            def serverManagerRole = createRole(textChannelAsBot.guild, 'administrator', ADMINISTRATOR)
-            addRoleToUser(textChannelAsUser.JDA.selfUser, serverManagerRole)
-
-        and:
-            def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-
-        and:
-            EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong: $random")) {
-                    responseReceived.set(true)
+            cleanup:
+                if (eventListener) {
+                    textChannelAsBot.JDA.removeEventListener(eventListener)
                 }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+                serverManagerRole?.delete()?.complete()
+        }
 
-        when:
-            textChannelAsUser
-                    .sendMessage("!ping $random")
-                    .complete()
+        @AddBean(PingCommand)
+        @AddBean(IgnoreOtherTestsTransformer)
+        @ResourceLock('net.kautler.command.integ.test.jda.restriction.ServerManagerJdaIntegTest.PingCommand.alias')
+        @ResourceLock('net.kautler.command.integ.test.jda.restriction.ServerManagerJdaIntegTest.IgnoreOtherTestsTransformer.expectedContent')
+        def 'ping command should respond if administrator'(
+                TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
+            given:
+                def administratorRole = createRole(textChannelAsBot.guild, 'administrator', ADMINISTRATOR)
+                addRoleToUser(textChannelAsUser.JDA.selfUser, administratorRole)
 
-        then:
-            responseReceived.get()
+            and:
+                def random = randomUUID()
+                PingCommand.alias = "ping_$random"
+                IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
-        cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
-            serverManagerRole?.delete()?.complete()
+            and:
+                def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+                EventListener eventListener = {
+                    if ((it instanceof GuildMessageReceivedEvent) &&
+                            (it.channel == textChannelAsBot) &&
+                            (it.message.author == textChannelAsBot.JDA.selfUser) &&
+                            (it.message.contentRaw == "pong_$random:")) {
+                        responseReceived.set(true)
+                    }
+                }
+                textChannelAsBot.JDA.addEventListener(eventListener)
+
+            when:
+                textChannelAsUser
+                        .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
+                        .complete()
+
+            then:
+                responseReceived.get()
+
+            cleanup:
+                if (eventListener) {
+                    textChannelAsBot.JDA.removeEventListener(eventListener)
+                }
+                administratorRole?.delete()?.complete()
+        }
     }
 
     @Vetoed
     @ApplicationScoped
     @RestrictedTo(ServerManagerJda)
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+        static volatile String alias
+        static volatile commandNotAllowedEventReceived
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
 
         void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJda commandNotAllowedEvent) {
             commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

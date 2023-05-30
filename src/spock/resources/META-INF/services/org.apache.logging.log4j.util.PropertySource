@@ -1,4 +1,4 @@
-# Copyright 2019 Björn Kautler
+# Copyright 2023 Björn Kautler
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-net.kautler.test.spock.AnonymousClassTransform
+net.kautler.test.spock.Log4jPropertySource

@@ -50,10 +50,8 @@ dependencies {
 
 tasks.named<SpotBugsTask>("spotbugsMain") {
     val excludedClasses = listOf(
-            "UsageBaseListener",
             "UsageBaseVisitor",
             "UsageLexer",
-            "UsageListener",
             "UsageParser",
             "UsageVisitor"
     )

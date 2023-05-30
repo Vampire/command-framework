@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,54 +16,64 @@
 
 package net.kautler.command.integ.test.javacord.event
 
-import java.util.concurrent.CompletableFuture
-
+import jakarta.annotation.PreDestroy
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.context.Initialized
 import jakarta.enterprise.event.Observes
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
 import jakarta.inject.Inject
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.CommandHandler
+import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacordSlash
-import net.kautler.command.integ.test.ManualTests
-import net.kautler.command.integ.test.javacord.PingSlashIntegTest.PingCommand
+import net.kautler.command.integ.test.javacord.PingSlashIntegTest.ParameterlessPingCommand
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.DiscordApi
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.server.Server
+import org.javacord.api.interaction.SlashCommand
 import org.javacord.api.interaction.SlashCommandBuilder
-import org.junit.experimental.categories.Category
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
-import static java.util.UUID.randomUUID
+import java.util.concurrent.CompletableFuture
 
-@Subject([CommandHandler, CommandNotFoundEventJavacordSlash])
-@Category(ManualTests)
-@AddBean(SlashCommandRegisterer)
+import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
+
+@Subject(CommandHandler)
+@Subject(CommandNotFoundEventJavacordSlash)
+@Tag('manual')
 class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
     @AddBean(PingCommand)
-    @AddBean(EventReceiver)
+    @AddBean(SlashCommandRegisterer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest.PingCommand.commandNotFoundEventReceived')
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest.SlashCommandRegisterer.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'command not found event should be fired if command was not found'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def random = randomUUID()
             def commandNotFoundEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventReceiver.commandNotFoundEventReceived = commandNotFoundEventReceived
+            PingCommand.commandNotFoundEventReceived = commandNotFoundEventReceived
 
         when:
             def owner = serverTextChannelAsBot.api.owner.join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
-                        (it.slashCommandInteraction.commandName == 'not-ping') &&
-                        (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random")) {
+                        (it.slashCommandInteraction.commandName == SlashCommandRegisterer.alias) &&
+                        !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
             serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/not-ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `/${SlashCommandRegisterer.alias}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -72,12 +82,27 @@ class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
 
         cleanup:
             listenerManager?.remove()
+            SlashCommandRegisterer.alias = null
+            PingCommand.alias = null
     }
 
     @Vetoed
     @ApplicationScoped
-    static class EventReceiver {
-        static commandNotFoundEventReceived
+    @Description('Ping back')
+    static class PingCommand extends ParameterlessPingCommand {
+        static volatile String alias
+        static volatile commandNotFoundEventReceived
+
+        @Override
+        List<String> getAliases() {
+            if (alias == null) {
+                alias = """ping_${
+                    new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                            .toString(Character.MAX_RADIX)
+                }"""
+            }
+            [alias]
+        }
 
         void handleCommandNotFoundEvent(@ObservesAsync CommandNotFoundEventJavacordSlash commandNotFoundEvent) {
             commandNotFoundEventReceived?.set(commandNotFoundEvent)
@@ -87,6 +112,8 @@ class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class SlashCommandRegisterer {
+        static volatile String alias
+
         @Inject
         DiscordApi discordApi
 
@@ -96,13 +123,39 @@ class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
         @Inject
         List<SlashCommandBuilder> slashCommandBuilders
 
+        List<SlashCommand> slashCommands
+
         void registerSlashCommands(@Observes @Initialized(ApplicationScoped) Object _) {
-            CompletableFuture.allOf(
-                    discordApi.bulkOverwriteGlobalApplicationCommands([]),
-                    discordApi.bulkOverwriteServerApplicationCommands(server, slashCommandBuilders.tap {
-                        it.forEach { it.name = "not-${it.delegate.name}" }
-                    })
-            ).join()
+            def slashCommandFutures = slashCommandBuilders
+                    .each {
+                        alias = """ping_${
+                            new BigInteger("${randomUUID()}".replace('-', ''), 16)
+                                    .toString(Character.MAX_RADIX)
+                        }"""
+                        it.name = alias
+                    }
+                    *.createForServer(server)
+            CompletableFuture.allOf(*slashCommandFutures).join()
+            slashCommands = slashCommandFutures*.join()
+        }
+
+        @PreDestroy
+        void deleteSlashCommands() {
+            CompletableFuture.allOf(*slashCommands*.deleteForServer(server)).join()
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_COMMAND_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withCommand { }.build()
         }
     }
 }

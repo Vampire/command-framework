@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2019-2022 Björn Kautler
+  ~ Copyright 2019-2023 Björn Kautler
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -25,14 +25,14 @@
         <List name="Test Appender"/>
     </Appenders>
     <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="Console Appender"/>
+        </Root>
         <Logger name="net.kautler" level="ALL">
             <AppenderRef ref="Test Appender"/>
         </Logger>
         <Logger name="org.jboss.weld">
             <AppenderRef ref="Test Appender" level="ERROR"/>
         </Logger>
-        <Root level="INFO">
-            <AppenderRef ref="Console Appender"/>
-        </Root>
     </Loggers>
 </Configuration>

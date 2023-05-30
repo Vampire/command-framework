@@ -17,39 +17,46 @@
 package net.kautler.command.integ.test.jda.restriction
 
 import jakarta.enterprise.context.ApplicationScoped
-import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.kautler.command.api.CommandContext
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
-import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
 import net.kautler.command.api.restriction.Everyone
-import net.kautler.command.integ.test.ManualTests
 import net.kautler.command.integ.test.jda.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
-import org.junit.experimental.categories.Category
+import spock.lang.ResourceLock
 import spock.lang.Specification
 import spock.lang.Subject
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(Everyone)
 class EveryoneIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.EveryoneIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.EveryoneIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if bot'(
             TextChannel textChannelAsBot, TextChannel textChannelAsUser) {
         given:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong: $random")) {
+                        (it.message.contentRaw == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
@@ -57,7 +64,7 @@ class EveryoneIntegTest extends Specification {
 
         when:
             textChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .complete()
 
         then:
@@ -70,10 +77,14 @@ class EveryoneIntegTest extends Specification {
     }
 
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.EveryoneIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.EveryoneIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if webhook'(TextChannel textChannelAsBot) {
         given:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
             def webhook = textChannelAsBot
@@ -81,18 +92,19 @@ class EveryoneIntegTest extends Specification {
                     .complete()
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong: $random")) {
+                        (it.message.contentRaw == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
             textChannelAsBot.JDA.addEventListener(eventListener)
 
         when:
-            WebhookSenderHelper.send(webhook, "!ping $random")
+            WebhookSenderHelper.send(webhook, IgnoreOtherTestsTransformer.expectedContent)
 
         then:
             responseReceived.get()
@@ -103,20 +115,25 @@ class EveryoneIntegTest extends Specification {
             }
     }
 
-    @Category(ManualTests)
+    @Tag('manual')
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.EveryoneIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.jda.restriction.EveryoneIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if regular user'(TextChannel textChannelAsBot) {
         given:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             List<EventListener> eventListeners = [
                     {
                         if ((it instanceof GuildMessageReceivedEvent) &&
                                 (it.channel == textChannelAsBot) &&
                                 (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                                (it.message.contentRaw == "pong: $random")) {
+                                (it.message.contentRaw == "pong_$random:")) {
                             responseReceived.set(true)
                         }
                     } as EventListener
@@ -130,13 +147,13 @@ class EveryoneIntegTest extends Specification {
                 if ((it instanceof GuildMessageReceivedEvent) &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == owner) &&
-                        (it.message.contentRaw == "!ping $random")) {
+                        (it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)
                 }
             } as EventListener)
             textChannelAsBot.JDA.addEventListener(eventListeners.last())
             textChannelAsBot
-                    .sendMessage("$owner.asMention please send `!ping $random` in this channel")
+                    .sendMessage("$owner.asMention please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .complete()
             commandReceived.get()
 
@@ -153,10 +170,25 @@ class EveryoneIntegTest extends Specification {
     @ApplicationScoped
     @RestrictedTo(Everyone)
     static class PingCommand extends PingIntegTest.PingCommand {
-        static commandNotAllowedEventReceived
+        static volatile String alias
 
-        void handleCommandNotAllowedEvent(@ObservesAsync CommandNotAllowedEventJda commandNotAllowedEvent) {
-            commandNotAllowedEventReceived?.set(commandNotAllowedEvent)
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,38 +20,45 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Vetoed
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
-import net.kautler.command.api.annotation.Alias
+import net.kautler.command.api.CommandContextTransformer
+import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.Asynchronous
-import net.kautler.command.integ.test.ManualTests
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.DiscordApi
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.message.Message
 import org.javacord.api.util.logging.ExceptionLogger
-import org.junit.experimental.categories.Category
+import spock.lang.ResourceLock
 import spock.lang.Specification
+import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 class PingIntegTest extends Specification {
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in server channel'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -61,18 +68,23 @@ class PingIntegTest extends Specification {
             listenerManager?.remove()
     }
 
-    @Category(ManualTests)
+    @Tag('manual')
     @AddBean(PingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingIntegTest.PingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in private channel'(DiscordApi botDiscordApi) {
         given:
             def owner = botDiscordApi.owner.join()
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            PingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     owner.openPrivateChannel().join().addMessageCreateListener {
-                        if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                        if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                             responseReceived.set(true)
                         }
                     }
@@ -81,12 +93,12 @@ class PingIntegTest extends Specification {
         when:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addMessageCreateListener {
-                if (it.privateMessage && (it.message.content == "!ping $random")) {
+                if (it.privateMessage && (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)
                 }
             }
             owner
-                    .sendMessage("$owner.mentionTag please send `!ping $random` in this channel")
+                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .join()
             commandReceived.get()
 
@@ -98,22 +110,27 @@ class PingIntegTest extends Specification {
     }
 
     @AddBean(AsynchronousPingCommand)
+    @AddBean(IgnoreOtherTestsTransformer)
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingIntegTest.AsynchronousPingCommand.alias')
+    @ResourceLock('net.kautler.command.integ.test.javacord.PingIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'asynchronous ping command should respond if in server channel'(
             ServerTextChannel serverTextChannelAsBot, ServerTextChannel serverTextChannelAsUser) {
         given:
             def random = randomUUID()
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            AsynchronousPingCommand.alias = "ping_$random"
+            IgnoreOtherTestsTransformer.expectedContent = "!${AsynchronousPingCommand.alias}"
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManager = serverTextChannelAsBot.addMessageCreateListener {
-                if (it.message.author.yourself && (it.message.content == "pong: $random")) {
+                if (it.message.author.yourself && (it.message.content == "pong_$random:")) {
                     responseReceived.set(true)
                 }
             }
 
         when:
             serverTextChannelAsUser
-                    .sendMessage("!ping $random")
+                    .sendMessage(IgnoreOtherTestsTransformer.expectedContent)
                     .join()
 
         then:
@@ -126,20 +143,50 @@ class PingIntegTest extends Specification {
     @Vetoed
     @ApplicationScoped
     static class PingCommand implements Command<Message> {
+        static volatile String alias
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
+
         @Override
         void execute(CommandContext<? extends Message> commandContext) {
+            def pong = commandContext
+                    .alias
+                    .orElseThrow(AssertionError::new)
+                    .replaceFirst(/^ping/, 'pong')
             commandContext
                     .message
                     .channel
-                    .sendMessage("pong: ${commandContext.parameterString.orElse('')}")
+                    .sendMessage("$pong: ${commandContext.parameterString.orElse('')}")
                     .exceptionally(ExceptionLogger.get())
         }
     }
 
     @Asynchronous
-    @Alias('ping')
     @Vetoed
     @ApplicationScoped
     static class AsynchronousPingCommand extends PingCommand {
+        static volatile String alias
+
+        @Override
+        List<String> getAliases() {
+            [alias]
+        }
+    }
+
+    @Vetoed
+    @ApplicationScoped
+    @InPhase(BEFORE_PREFIX_COMPUTATION)
+    static class IgnoreOtherTestsTransformer implements CommandContextTransformer<Object> {
+        static volatile expectedContent
+
+        @Override
+        <T> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {
+            (commandContext.messageContent == expectedContent)
+                    ? commandContext
+                    : commandContext.withPrefix('<do not match>').build()
+        }
     }
 }
