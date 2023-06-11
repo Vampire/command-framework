@@ -46,7 +46,7 @@ repositories {
 dependencies {
     implementation(gradlePlugin("com.github.ben-manes.versions:0.27.0"))
     implementation(gradlePlugin("org.ajoberstar.grgit:3.1.1"))
-    implementation(gradlePlugin("com.github.spotbugs:2.0.0"))
+    implementation(gradlePlugin("com.github.spotbugs:4.8.0"))
     implementation(gradlePlugin("biz.aQute.bnd.builder:4.2.0"))
     implementation(gradlePlugin("de.marcphilipp.nexus-publish:0.4.0"))
     implementation(gradlePlugin("io.codearte.nexus-staging:0.21.1"))

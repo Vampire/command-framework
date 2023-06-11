@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Bjoern Kautler
+ * Copyright 2019-2025 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package net.kautler
 
-import com.github.spotbugs.SpotBugsTask
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.SpotBugsTask
 import net.kautler.Property.Companion.string
 import net.sf.saxon.TransformerFactoryImpl
 import org.gradle.api.tasks.PathSensitivity.NONE
@@ -32,10 +33,9 @@ plugins {
 val versions: Map<String, String> by project
 
 spotbugs {
-    toolVersion = versions.safeGet("spotbugs")
-    reportLevel = string(project, "spotbugs.reportLevel", "low").getValue()
-    @Suppress("UnstableApiUsage")
-    excludeFilterConfig = resources.text.fromFile("config/spotbugs/spotbugs-exclude.xml")
+    toolVersion(versions.safeGet("spotbugs"))
+    reportLevel(Confidence.valueOf(string(project, "spotbugs.reportLevel", "low").getValue().toUpperCase()))
+    excludeFilter(file("config/spotbugs/spotbugs-exclude.xml"))
 }
 
 //TODO: change to shipped version with 4.0.0 by using setStylesheet(String)
@@ -65,41 +65,48 @@ tasks.named<SpotBugsTask>("spotbugsMain") {
 }
 
 tasks.named<SpotBugsTask>("spotbugsTest") {
-    maxHeapSize = "1G"
+    maxHeapSize("1G")
 }
 
-//TODO: replace the HTML report task after the task supports multiple output formats natively
+//TODO: replace the HTML report task after upgrading Spotbugs to 4.5.0+ which supports multiple output formats natively
 //      and change "all" to "configureEach"
 tasks.withType<SpotBugsTask>().all {
     //TODO: Remove this after upgrading Spotbugs to 4.0.0+ which supports Java 13
     enabled = JavaVersion.current().ordinal < 12
 
+    // work-around for https://github.com/spotbugs/spotbugs-gradle-plugin/pull/1311
+    inputs.files(configurations.spotbugsPlugins).withPropertyName("spotbugsPlugins")
+
     val sourceSetName = name.removePrefix("spotbugs").decapitalize()
-    classpath += sourceSets[sourceSetName].let {
-        it.compileClasspath + project.configurations[it.compileOnlyConfigurationName]
-    }
+    auxClassPaths += sourceSets[sourceSetName].runtimeClasspath
 
     reports {
-        xml.isWithMessages = true
-//        html.let { it as SpotBugsHtmlReportImpl }.setStylesheet("fancy-hist.xsl")
-        html.let { it as CustomizableHtmlReport }.stylesheet = resources.text.fromArchiveEntry(spotbugsStylesheets, "fancy-hist.xsl")
+        create("xml")
+        //create("html") {
+        //    setStylesheet(resources.text.fromArchiveEntry(spotbugsStylesheets, "fancy-hist.xsl"))
+        //}
     }
 
-    finalizedBy(tasks.register("${name}HtmlReport") {
-        val stylesheet = reports.html.let { it as CustomizableHtmlReport }.stylesheet!!
-        // work-around for https://github.com/gradle/gradle/issues/9648
-        //inputs.file(stylesheet.asFile()).withPropertyName("spotbugsStylesheet").withPathSensitivity(NONE)
-        inputs.property("spotbugsStylesheet", stylesheet.asString())
-        val input = reports.xml.destination
-        inputs.files(fileTree(input)).withPropertyName("input").withPathSensitivity(NONE).skipWhenEmpty()
-        val output = file(input.absolutePath.replaceFirst(Regex("\\.xml$"), ".html"))
-        outputs.file(output).withPropertyName("output")
+    finalizedBy(
+        tasks.register("${name}HtmlReport") {
+            val stylesheet = resources.text.fromArchiveEntry(spotbugsStylesheets, "fancy-hist.xsl")
+            // work-around for https://github.com/gradle/gradle/issues/9648
+            //inputs.file(stylesheet.asFile()).withPropertyName("spotbugsStylesheet").withPathSensitivity(NONE)
+            inputs.property("spotbugsStylesheet", stylesheet.asString())
+            val input = reports["XML"].destination
+            inputs.files(fileTree(input)).withPropertyName("input").withPathSensitivity(NONE).skipWhenEmpty()
+            val output = file(input.absolutePath.replaceFirst(Regex("\\.xml$"), ".html"))
+            outputs.file(output).withPropertyName("output")
 
-        @Suppress("UnstableApiUsage")
-        doLast("generate spotbugs html report") {
-            TransformerFactory.newInstance("net.sf.saxon.TransformerFactoryImpl", TransformerFactoryImpl::class.java.classLoader)
-                    .newTransformer(StreamSource(stylesheet.asFile()))
-                    .transform(StreamSource(input), StreamResult(output))
+            doLast("generate spotbugs html report") {
+                TransformerFactory.newInstance("net.sf.saxon.TransformerFactoryImpl", TransformerFactoryImpl::class.java.classLoader)
+                        .newTransformer(StreamSource(stylesheet.asFile()))
+                        .transform(StreamSource(input), StreamResult(output))
+            }
         }
-    })
+    )
+}
+
+val spotbugs by tasks.registering {
+    dependsOn(tasks.withType<SpotBugsTask>())
 }
