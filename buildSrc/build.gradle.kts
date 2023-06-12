@@ -33,8 +33,6 @@ buildscript {
 }
 
 repositories {
-    mavenCentral()
-    @Suppress("UnstableApiUsage")
     gradlePluginPortal()
     maven("https://artifactory.appodeal.com/appodeal-public/") {
         content {
@@ -47,7 +45,7 @@ dependencies {
     implementation(gradlePlugin("com.github.ben-manes.versions:0.27.0"))
     implementation(gradlePlugin("org.ajoberstar.grgit:3.1.1"))
     implementation(gradlePlugin("com.github.spotbugs:4.8.0"))
-    implementation(gradlePlugin("biz.aQute.bnd.builder:4.2.0"))
+    implementation(gradlePlugin("biz.aQute.bnd.builder:5.3.0"))
     implementation(gradlePlugin("de.marcphilipp.nexus-publish:0.4.0"))
     implementation(gradlePlugin("io.codearte.nexus-staging:0.21.1"))
     implementation(gradlePlugin("net.researchgate.release:2.8.1"))

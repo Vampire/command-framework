@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,3 @@
  */
 
 rootProject.name = "command-framework"
-
-// work-around for https://github.com/bndtools/bnd/issues/3174
-// can hopefully removed with 4.3.0 release
-pluginManagement {
-    repositories {
-        mavenCentral()
-        @Suppress("UnstableApiUsage")
-        gradlePluginPortal()
-    }
-}
