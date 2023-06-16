@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    id("com.github.ben-manes.versions") version "0.27.0"
+    id("com.github.ben-manes.versions") version "0.42.0"
 }
 
 buildscript {
@@ -37,7 +37,7 @@ repositories {
 }
 
 dependencies {
-    implementation(gradlePlugin("com.github.ben-manes.versions:0.27.0"))
+    implementation(gradlePlugin("com.github.ben-manes.versions:0.42.0"))
     implementation(gradlePlugin("org.ajoberstar.grgit:4.1.1"))
     implementation(gradlePlugin("com.github.spotbugs:4.8.0"))
     implementation(gradlePlugin("biz.aQute.bnd.builder:5.3.0"))

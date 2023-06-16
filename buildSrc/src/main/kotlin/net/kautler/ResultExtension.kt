@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package net.kautler
 import com.github.benmanes.gradle.versions.reporter.result.Result
 
 fun Result.updateCounts() {
-    val dependencyGroups = listOf(current, outdated, exceeded, unresolved)
+    val dependencyGroups = listOf(current, outdated, exceeded, undeclared, unresolved)
     dependencyGroups.forEach {
         it.count = it.dependencies.size
     }

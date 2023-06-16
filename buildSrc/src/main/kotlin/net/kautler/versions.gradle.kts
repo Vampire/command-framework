@@ -155,6 +155,7 @@ tasks.dependencyUpdates {
             current.dependencies.addAll(buildSrcResult.current.dependencies)
             outdated.dependencies.addAll(buildSrcResult.outdated.dependencies)
             exceeded.dependencies.addAll(buildSrcResult.exceeded.dependencies)
+            undeclared.dependencies.addAll(buildSrcResult.undeclared.dependencies)
             unresolved.dependencies.addAll(buildSrcResult.unresolved.dependencies)
         }
 
