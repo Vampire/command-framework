@@ -44,7 +44,7 @@ dependencies {
     implementation(gradlePlugin("de.marcphilipp.nexus-publish:0.4.0"))
     implementation(gradlePlugin("io.codearte.nexus-staging:0.21.1"))
     implementation(gradlePlugin("net.researchgate.release:2.8.1"))
-    implementation(gradlePlugin("net.wooga.github:1.4.0"))
+    implementation(gradlePlugin("net.wooga.github:3.0.1"))
     implementation(gradlePlugin("info.solidsoft.pitest:1.6.0"))
     implementation("org.ajoberstar.grgit:grgit-core:4.1.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.10.0")

@@ -23,7 +23,7 @@ import net.kautler.Property.Companion.optionalString
 import net.researchgate.release.ReleasePlugin
 import org.ajoberstar.grgit.Grgit
 import org.kohsuke.github.GHIssueState.OPEN
-import org.kohsuke.github.GitHub
+import wooga.gradle.github.base.tasks.Github
 import wooga.gradle.github.publish.PublishMethod.update
 import wooga.gradle.github.publish.tasks.GithubPublish
 import java.awt.GraphicsEnvironment.isHeadless
@@ -70,7 +70,6 @@ if (useGpgAgent) {
     extra["signing.password"] = optionalString(project, "signing.password").getValue()
     extra["signing.keyId"] = optionalString(project, "signing.keyId").getValue()
 }
-extra["github.token"] = optionalString(project, "github.token").getValue()
 
 tasks.withType<PublishToMavenRepository>().configureEach {
     doFirst("verify username and password are set") {
@@ -194,100 +193,91 @@ release {
     }
 }
 
-val githubRepositoryName by lazy(NONE) {
-    grgit
-        .remote
-        .list()
-        .find { it.name == "origin" }
-        ?.let { remote ->
-            Regex(
-                """(?x)
-                    (?:
-                        ://([^@]++@)?+github\.com(?::\d++)?+/ |
-                        ([^@]++@)?+github\.com:
-                    )
-                    (?<repositoryName>.*)
-                    \.git
-                """
-            )
-                .find(remote.url)
-                ?.let { it.groups["repositoryName"]!!.value }
-        } ?: "Vampire/command-framework"
-}
-
 val releaseTagName by lazy(NONE) {
     plugins.findPlugin(ReleasePlugin::class)!!.tagName()!!
 }
 
-val github by lazy(NONE) {
-    GitHub.connectUsingOAuth(extra["github.token"] as String)!!
-}
+val gitHubToken by optionalString("github.token", project)
 
-val releaseBody by lazy(NONE) {
-    val releaseBody = grgit.log {
-        github.getRepository(githubRepositoryName).latestRelease?.apply { excludes.add(tagName) }
-    }.filter { commit ->
-        !commit.shortMessage.startsWith("[Gradle Release Plugin] ")
-    }.asReversed().joinToString("\n") { commit ->
-        "- ${commit.shortMessage} [${commit.id}]"
-    }
-
-    if (isHeadless()) {
-        return@lazy releaseBody
-    }
-
-    val result = CompletableFuture<String>()
-
-    SwingUtilities.invokeLater {
-        val initialReleaseBody = """
-            # Highlights
-            - 
-
-            # Details
-
-        """.trimIndent() + releaseBody
-
-        val textArea = JTextArea(initialReleaseBody)
-
-        val parentFrame = JFrame().apply {
-            isUndecorated = true
-            setLocationRelativeTo(null)
-            isVisible = true
-        }
-
-        val resetButton = JButton("Reset").apply {
-            addActionListener {
-                textArea.text = initialReleaseBody
-            }
-        }
-
-        result.complete(try {
-            when (showOptionDialog(
-                    parentFrame, JScrollPane(textArea), "Release Body",
-                    DEFAULT_OPTION, QUESTION_MESSAGE, null,
-                    arrayOf("OK", resetButton), null
-            )) {
-                OK_OPTION -> textArea.text!!
-                else -> releaseBody
-            }
-        } finally {
-            parentFrame.dispose()
-        })
-    }
-
-    result.join()!!
+github {
+    token.set(provider { gitHubToken })
 }
 
 tasks.withType<GithubPublish>().configureEach {
     enabled = releaseVersion
-    repositoryName(githubRepositoryName)
-    tagName(Callable { releaseTagName })
-    releaseName(Callable { releaseTagName })
+    tagName.set(provider { releaseTagName })
+    releaseName.set(provider { releaseTagName })
 }
 
 tasks.githubPublish {
-    body { releaseBody }
-    draft(true)
+    body.set(provider {
+        val releaseBody = grgit
+            .log {
+                github
+                    .clientProvider
+                    .get()
+                    .getRepository(github.repositoryName.get())
+                    .latestRelease
+                    ?.apply {
+                        excludes.add(tagName)
+                    }
+            }
+            .filter { commit ->
+                !commit.shortMessage.startsWith("[Gradle Release Plugin] ")
+            }
+            .asReversed()
+            .joinToString("\n") { commit ->
+                "- ${commit.shortMessage} [${commit.id}]"
+            }
+
+        if (isHeadless()) {
+            return@provider releaseBody
+        }
+
+        val result = CompletableFuture<String>()
+
+        SwingUtilities.invokeLater {
+            val initialReleaseBody = """
+                # Highlights
+                - 
+
+                # Details
+
+            """.trimIndent() + releaseBody
+
+            val textArea = JTextArea(initialReleaseBody)
+
+            val parentFrame = JFrame().apply {
+                isUndecorated = true
+                setLocationRelativeTo(null)
+                isVisible = true
+            }
+
+            val resetButton = JButton("Reset").apply {
+                addActionListener {
+                    textArea.text = initialReleaseBody
+                }
+            }
+
+            result.complete(
+                try {
+                    when (showOptionDialog(
+                        parentFrame, JScrollPane(textArea), "Release Body",
+                        DEFAULT_OPTION, QUESTION_MESSAGE, null,
+                        arrayOf("OK", resetButton), null
+                    )) {
+                        OK_OPTION -> textArea.text!!
+                        else -> releaseBody
+                    }
+                } finally {
+                    parentFrame.dispose()
+                }
+            )
+        }
+
+        return@provider result.join()!!
+    })
+    draft.set(true)
     val archives by configurations.archives
     from(archives.artifacts.files)
 }
@@ -297,7 +287,7 @@ val configureUndraftGithubRelease by tasks.registering
 val undraftGithubRelease by tasks.registering(GithubPublish::class) {
     dependsOn(configureUndraftGithubRelease)
 
-    publishMethod = update
+    publishMethod.set(update)
 }
 
 configureUndraftGithubRelease {
@@ -308,18 +298,18 @@ configureUndraftGithubRelease {
     }
 }
 
-val finishMilestone by tasks.registering {
+val finishMilestone by tasks.registering(Github::class) {
     enabled = releaseVersion
 
     @Suppress("UnstableApiUsage")
     doLast("finish milestone") {
-        github.getRepository(githubRepositoryName)!!.run {
+        repository.apply {
             listMilestones(OPEN)
-                    .find { it.title == "Next Version" }!!
-                    .run {
-                        setTitle(releaseTagName)
-                        close()
-                    }
+                .find { it.title == "Next Version" }!!
+                .apply {
+                    title = releaseTagName
+                    close()
+                }
 
             createMilestone("Next Version", null)
         }
