@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Bjoern Kautler
+ * Copyright 2019-2023 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ plugins {
     id("de.marcphilipp.nexus-publish")
     id("io.codearte.nexus-staging")
     id("net.researchgate.release")
+    id("org.ajoberstar.grgit")
     id("net.wooga.github")
 }
 
@@ -193,25 +194,25 @@ release {
     }
 }
 
-val grgit: Grgit? by project
-
 val githubRepositoryName by lazy(NONE) {
-    grgit?.let {
-        it.remote.list()
-                .find { it.name == "origin" }
-                ?.let {
-                    Regex("""(?x)
-                        (?:
-                            ://([^@]++@)?+github\.com(?::\d++)?+/ |
-                            ([^@]++@)?+github\.com:
-                        )
-                        (?<repositoryName>.*)
-                        \.git
-                    """)
-                            .find(it.url)
-                            ?.let { it.groups["repositoryName"]!!.value }
-                }
-    } ?: "Vampire/command-framework"
+    grgit
+        .remote
+        .list()
+        .find { it.name == "origin" }
+        ?.let { remote ->
+            Regex(
+                """(?x)
+                    (?:
+                        ://([^@]++@)?+github\.com(?::\d++)?+/ |
+                        ([^@]++@)?+github\.com:
+                    )
+                    (?<repositoryName>.*)
+                    \.git
+                """
+            )
+                .find(remote.url)
+                ?.let { it.groups["repositoryName"]!!.value }
+        } ?: "Vampire/command-framework"
 }
 
 val releaseTagName by lazy(NONE) {
@@ -223,15 +224,13 @@ val github by lazy(NONE) {
 }
 
 val releaseBody by lazy(NONE) {
-    val releaseBody = grgit?.let {
-        it.log {
-            github.getRepository(githubRepositoryName).latestRelease?.apply { excludes.add(tagName) }
-        }.filter { commit ->
-            !commit.shortMessage.startsWith("[Gradle Release Plugin] ")
-        }.joinToString("\n") { commit ->
-            "- ${commit.shortMessage} [${commit.id}]"
-        }
-    } ?: ""
+    val releaseBody = grgit.log {
+        github.getRepository(githubRepositoryName).latestRelease?.apply { excludes.add(tagName) }
+    }.filter { commit ->
+        !commit.shortMessage.startsWith("[Gradle Release Plugin] ")
+    }.asReversed().joinToString("\n") { commit ->
+        "- ${commit.shortMessage} [${commit.id}]"
+    }
 
     if (isHeadless()) {
         return@lazy releaseBody

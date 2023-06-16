@@ -103,11 +103,10 @@ configurations.configureEach {
 
 val buildVcsNumber get() = project.findProperty("build.vcs.number") as String?
 val commitId by lazy(NONE) {
-    val grgit: Grgit? by project
-    when {
-        !buildVcsNumber.isNullOrBlank() -> buildVcsNumber
-        grgit != null -> grgit!!.head().id + (if (grgit!!.status().isClean) "" else "-dirty")
-        else -> "<unknown>"
+    if (buildVcsNumber.isNullOrBlank()) {
+        grgit.head().id + (if (grgit.status().isClean) "" else "-dirty")
+    } else {
+        buildVcsNumber
     }
 }
 

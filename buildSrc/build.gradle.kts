@@ -34,16 +34,11 @@ buildscript {
 
 repositories {
     gradlePluginPortal()
-    maven("https://artifactory.appodeal.com/appodeal-public/") {
-        content {
-            includeModule("org.ajoberstar.grgit", "grgit-core")
-        }
-    }
 }
 
 dependencies {
     implementation(gradlePlugin("com.github.ben-manes.versions:0.27.0"))
-    implementation(gradlePlugin("org.ajoberstar.grgit:3.1.1"))
+    implementation(gradlePlugin("org.ajoberstar.grgit:4.1.1"))
     implementation(gradlePlugin("com.github.spotbugs:4.8.0"))
     implementation(gradlePlugin("biz.aQute.bnd.builder:5.3.0"))
     implementation(gradlePlugin("de.marcphilipp.nexus-publish:0.4.0"))
@@ -51,7 +46,7 @@ dependencies {
     implementation(gradlePlugin("net.researchgate.release:2.8.1"))
     implementation(gradlePlugin("net.wooga.github:1.4.0"))
     implementation(gradlePlugin("info.solidsoft.pitest:1.6.0"))
-    implementation("org.ajoberstar.grgit:grgit-core:3.1.1")
+    implementation("org.ajoberstar.grgit:grgit-core:4.1.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.10.0")
     implementation("com.github.javaparser:javaparser-core:3.15.1")
     implementation("org.kohsuke:github-api:1.99")
