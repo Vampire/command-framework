@@ -14,4 +14,25 @@
  * limitations under the License.
  */
 
+import org.gradle.api.initialization.resolve.RepositoriesMode.FAIL_ON_PROJECT_REPOS
+
+pluginManagement {
+    includeBuild("gradle/build-logic")
+}
+
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.10.0"
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven("https://m2.dv8tion.net/releases")
+    }
+    repositoriesMode = FAIL_ON_PROJECT_REPOS
+}
+
 rootProject.name = "command-framework"
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+enableFeaturePreview("STABLE_CONFIGURATION_CACHE")

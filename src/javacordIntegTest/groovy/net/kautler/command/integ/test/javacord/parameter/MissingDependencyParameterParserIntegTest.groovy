@@ -44,6 +44,7 @@ import static org.apache.logging.log4j.core.test.appender.ListAppender.getListAp
 
 @Isolated('Due to the ERROR level context-less log message this has to be isolated')
 @Subject(MissingDependencyParameterParser)
+@AddBean(MissingDependencyParameterParser)
 @VetoBean(UntypedParameterParser)
 class MissingDependencyParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)

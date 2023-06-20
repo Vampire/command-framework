@@ -1,0 +1,35 @@
+# Copyright 2023 Björn Kautler
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[versions]
+java = "8"
+cdi = "3.0.0"
+jakarta-inject = "2.0.1"
+weld-se = "4.0.3.Final"
+jandex = "2.1.1.Final"
+javacord = "3.4.0"
+log4j = "2.20.0"
+jansi = "1.18"
+
+[libraries]
+commandFramework = { module = "net.kautler:command-framework" }
+cdi-api = { module = "jakarta.enterprise:jakarta.enterprise.cdi-api", version.ref = "cdi" }
+inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject" }
+weld-se-core = { module = "org.jboss.weld.se:weld-se-core", version.ref = "weld-se" }
+jandex = { module = "org.jboss:jandex", version.ref = "jandex" }
+javacord = { module = "org.javacord:javacord", version.ref = "javacord" }
+log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4j" }
+log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core" }
+jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }

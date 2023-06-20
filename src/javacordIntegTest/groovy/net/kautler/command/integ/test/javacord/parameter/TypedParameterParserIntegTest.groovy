@@ -33,9 +33,7 @@ import net.kautler.command.api.parameter.ParameterParser
 import net.kautler.command.api.parameter.ParameterParser.Typed
 import net.kautler.command.api.parameter.ParameterType
 import net.kautler.command.integ.test.spock.AddBean
-import net.kautler.command.integ.test.spock.VetoBean
 import net.kautler.command.parameter.parser.TypedParameterParser
-import net.kautler.command.parameter.parser.missingdependency.MissingDependencyParameterParser
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.message.Message
 import org.javacord.api.util.logging.ExceptionLogger
@@ -48,7 +46,6 @@ import static java.util.UUID.randomUUID
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(TypedParameterParser)
-@VetoBean(MissingDependencyParameterParser)
 class TypedParameterParserIntegTest extends Specification {
     @AddBean(PingCommand)
     @AddBean(CustomStringsConverter)

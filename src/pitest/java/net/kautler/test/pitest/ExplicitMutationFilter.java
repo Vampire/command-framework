@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.groupingBy;
@@ -38,12 +37,6 @@ import static org.pitest.mutationtest.build.InterceptorType.FILTER;
  * A mutation interceptor that filters mutations by their properties.
  */
 public class ExplicitMutationFilter implements MutationInterceptor {
-    /**
-     * The major version of the currently running JRE
-     */
-    private static final int CURRENT_JAVA_MAJOR_VERSION =
-            parseInt(System.getProperty("java.version").split("\\.")[0]);
-
     /**
      * The mutation details that are used to filter the unwanted mutations.
      */
@@ -107,7 +100,7 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             // giving a 3 instead of 2 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
-                    CURRENT_JAVA_MAJOR_VERSION >= 9 ? "lambda$doSetCommands" : "lambda$null",
+                    "lambda$null",
                     "(Lnet/kautler/command/api/Command;Lnet/kautler/command/api/Command;)Lnet/kautler/command/api/Command;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
@@ -199,7 +192,7 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             // giving a 3 instead of 2 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.parameter.parser.TypedParameterParser",
-                    CURRENT_JAVA_MAJOR_VERSION >= 9 ? "lambda$parse" : "lambda$null",
+                    "lambda$null",
                     "(Ljava/lang/String;Ljava/util/Map;Ljava/util/Collection;Lnet/kautler/command/api/CommandContext;Ljava/lang/String;)V",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3",
@@ -236,14 +229,14 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             // giving a 4 instead of 3 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.handler.CommandHandlerJavacordSlash",
-                    CURRENT_JAVA_MAJOR_VERSION >= 9 ? "lambda$handleSlashCommandCreateEvent" : "lambda$null",
+                    "lambda$null",
                     "(Ljava/lang/String;Ljava/lang/String;Lorg/javacord/api/interaction/SlashCommandInteractionOption;)Ljava/lang/String;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 3 with 4"),
             // giving a 3 instead of 2 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.handler.CommandHandlerJavacordSlash",
-                    CURRENT_JAVA_MAJOR_VERSION >= 9 ? "lambda$handleSlashCommandCreateEvent" : "lambda$null",
+                    "lambda$null",
                     "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),

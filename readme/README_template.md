@@ -17,7 +17,7 @@ Command Framework
 A generic CDI-based command framework. This library requires Java 8 or newer but is fully Java 9+ compatible and can run
 as a proper Java module on the module path. Any arbitrary underlying message framework like a Discord library, an IRC
 library, or a Skype library can be used by providing an according [`CommandHandler`][CommandHandler JavaDoc]
-implementation. You are also welcome to contribute such implementations back to the main project for all users benefit.
+implementation. You are also welcome to contribute such implementations back to the main project for all users' benefit.
 
 
 
@@ -95,18 +95,48 @@ Setup
 
 ### Gradle
 
-```gradle
-repositories { mavenCentral() }
-dependencies { implementation 'net.kautler:command-framework:$version' }
+```kotlin
+repositories {
+    mavenCentral()
+}
+dependencies {
+    implementation("net.kautler:command-framework:$version")
+}
 ```
+
+There are also feature variants published that Gradle consumers can conveniently depend on.
+One such variant per message framework support and one for the parameter parser.
+The code artifact is the same for all variants currently, but you will benefit from automatically getting
+the necessary transitive dependencies that are only mentioned as `optional` in the POM.
+
+For example to use the Javacord support and the parameter parser,
+you can request the according feature variants like this:
+
+```kotlin
+dependencies {
+    implementation("net.kautler:command-framework:$version") {
+        capabilities {
+            requireFeature("javacord-support")
+        }
+    }
+    implementation("net.kautler:command-framework") {
+        capabilities {
+            requireFeature("parameter-parser")
+        }
+    }
+}
+```
+
+_**Published Feature Variants:**_
+$publishedFeatureVariants
 
 ### Maven
 
 ```xml
 <dependency>
-  <groupId>net.kautler</groupId>
-  <artifactId>command-framework</artifactId>
-  <version>$version</version>
+    <groupId>net.kautler</groupId>
+    <artifactId>command-framework</artifactId>
+    <version>$version</version>
 </dependency>
 ```
 
@@ -773,7 +803,7 @@ constraints of semantic versioning. All other classes are considered internal an
 License
 -------
 
-```
+```plain
 Copyright 2019-2023 Björn Kautler
 
 Licensed under the Apache License, Version 2.0 (the "License");

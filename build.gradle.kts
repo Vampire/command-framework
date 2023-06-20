@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,17 @@
  */
 
 plugins {
-    net.kautler.idea
-    net.kautler.versions
-    net.kautler.java
-    net.kautler.jars
-    net.kautler.antlr
-    net.kautler.osgi
-    net.kautler.tests
-    net.kautler.codenarc
-    net.kautler.pmd
-    net.kautler.spotbugs
-    net.kautler.java9
-    net.kautler.javadoc
-    net.kautler.readme
-    net.kautler.publishing
+    alias(libs.plugins.convention.idea)
+    alias(libs.plugins.convention.versions)
+    alias(libs.plugins.convention.java)
+    alias(libs.plugins.convention.antlr)
+    alias(libs.plugins.convention.osgi)
+    alias(libs.plugins.convention.tests)
+    alias(libs.plugins.convention.codenarc)
+    alias(libs.plugins.convention.pmd)
+    alias(libs.plugins.convention.spotbugs)
+    alias(libs.plugins.convention.java9)
+    alias(libs.plugins.convention.javadoc)
+    alias(libs.plugins.convention.readme)
+    alias(libs.plugins.convention.publishing)
 }
-
-defaultTasks("build")
-tasks.register("generate")

@@ -1,0 +1,130 @@
+# Copyright 2023-2025 Björn Kautler
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[versions]
+antlr = "4.7.2"
+cdi = "3.0.0"
+jakarta-annotation = "2.0.0"
+jakarta-inject = "2.0.1"
+java = "8"
+javacord = "3.4.0"
+jda = "4.4.0_352"
+log4j = "2.20.0"
+
+build-codenarc = "3.7.0"
+build-gradle-plugin-bndBuilder = "5.3.0"
+# fix or remove component metadata rule in gradle/build-logic/settings.gradle.kts on update
+build-gradle-plugin-github = "3.0.1"
+build-gradle-plugin-nexus-publish = "0.4.0"
+build-gradle-plugin-nexus-staging = "0.21.1"
+build-gradle-plugin-pitest = "1.6.0"
+build-gradle-plugin-release = "2.8.1"
+build-gradle-plugin-spotbugs = "4.8.0"
+build-gradle-plugin-versions = "0.42.0"
+build-grgit = "4.1.1"
+build-jackson = "2.10.0"
+build-jacoco = "0.8.5"
+build-javadoc = "21"
+build-javaparser = "3.15.1"
+build-litho-annotations = "0.47.0"
+build-pmd = "6.18.0"
+build-saxon = "9.9.1-5"
+build-spotbugs = "3.1.12"
+build-spotbugs-stylesheet = "4.0.0-beta4"
+build-spotbugs-plugin-findsecbugs = "1.9.0"
+build-spotbugs-plugin-sbContrib = "7.4.7"
+
+test-byteBuddy = "1.10.1"
+test-discordWebhooks = "0.8.4"
+test-groovy = "3.0.25"
+test-jansi = "1.18"
+test-junit-platform = "1.9.0"
+test-objenesis = "3.1"
+test-pitest = "1.17.4"
+test-pitest-plugin-rv = "0.1"
+test-powermock = "2.0.2"
+test-spock = "2.4-groovy-3.0"
+test-weld-se = "4.0.3.Final"
+test-weld-spock = "3.1.0.Final"
+
+[libraries]
+annotation-api = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
+antlr-runtime = { module = "org.antlr:antlr4-runtime", version.ref = "antlr" }
+build-antlr = { module = "org.antlr:antlr4", version.ref = "antlr" }
+build-codenarc = { module = "org.codenarc:CodeNarc", version.ref = "build-codenarc" }
+build-grgit-core = { module = "org.ajoberstar.grgit:grgit-core", version.ref = "build-grgit" }
+build-github-api = { module = "org.kohsuke:github-api" }
+build-jacoco = { module = "org.jacoco:jacoco", version.ref = "build-jacoco" }
+build-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "build-jackson" }
+build-javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "build-javaparser" }
+build-litho-annotations = { module = "com.facebook.litho:litho-annotations", version.ref = "build-litho-annotations" }
+build-pmd = { module = "net.sourceforge.pmd:pmd", version.ref = "build-pmd" }
+build-saxon = { module = "net.sf.saxon:Saxon-HE", version.ref = "build-saxon" }
+build-spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "build-spotbugs" }
+build-spotbugs-stylesheet = { module = "com.github.spotbugs:spotbugs", version.ref = "build-spotbugs-stylesheet" }
+build-spotbugs-plugin-findsecbugs = { module = "com.h3xstream.findsecbugs:findsecbugs-plugin", version.ref = "build-spotbugs-plugin-findsecbugs" }
+build-spotbugs-plugin-sbContrib = { module = "com.mebigfatguy.sb-contrib:sb-contrib", version.ref = "build-spotbugs-plugin-sbContrib" }
+cdi-api = { module = "jakarta.enterprise:jakarta.enterprise.cdi-api", version.ref = "cdi" }
+inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject" }
+javacord-api = { module = "org.javacord:javacord-api", version.ref = "javacord" }
+jda = { module = "net.dv8tion:JDA", version.ref = "jda" }
+jsr305 = { module = "com.google.code.findbugs:jsr305" }
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
+opus-java = { module = "club.minnced:opus-java" }
+spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "build-spotbugs" }
+test-byteBuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "test-byteBuddy" }
+test-discordWebhooks = { module = "club.minnced:discord-webhooks", version.ref = "test-discordWebhooks" }
+test-groovy = { module = "org.codehaus.groovy:groovy", version.ref = "test-groovy" }
+test-jansi = { module = "org.fusesource.jansi:jansi", version.ref = "test-jansi" }
+test-javacord = { module = "org.javacord:javacord", version.ref = "javacord" }
+test-javacord-core = { module = "org.javacord:javacord-core", version.ref = "javacord" }
+test-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "test-junit-platform" }
+test-log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4j" }
+test-log4j-core = { module = "org.apache.logging.log4j:log4j-core" }
+test-log4j-core-test = { module = "org.apache.logging.log4j:log4j-core-test" }
+test-log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
+test-objenesis = { module = "org.objenesis:objenesis", version.ref = "test-objenesis" }
+test-pitest = { module = "org.pitest:pitest", version.ref = "test-pitest" }
+test-pitest-entry = { module = "org.pitest:pitest-entry", version.ref = "test-pitest" }
+test-pitest-plugin-rv = { module = "org.pitest:pitest-rv-plugin", version.ref = "test-pitest-plugin-rv" }
+test-powermock-reflect = { module = "org.powermock:powermock-reflect", version.ref = "test-powermock" }
+test-spock-core = { module = "org.spockframework:spock-core", version.ref = "test-spock" }
+test-weld-junit-common = { module = "org.jboss.weld:weld-junit-common", version.ref = "test-weld-spock" }
+test-weld-se-core = { module = "org.jboss.weld.se:weld-se-core", version.ref = "test-weld-se" }
+test-weld-spock = { module = "org.jboss.weld:weld-spock", version.ref = "test-weld-spock" }
+
+[plugins]
+convention-idea = { id = "net.kautler.idea" }
+convention-versions = { id = "net.kautler.versions" }
+convention-java = { id = "net.kautler.java" }
+convention-antlr = { id = "net.kautler.antlr" }
+convention-osgi = { id = "net.kautler.osgi" }
+convention-tests = { id = "net.kautler.tests" }
+convention-codenarc = { id = "net.kautler.codenarc" }
+convention-pmd = { id = "net.kautler.pmd" }
+convention-spotbugs = { id = "net.kautler.spotbugs" }
+convention-java9 = { id = "net.kautler.java9" }
+convention-javadoc = { id = "net.kautler.javadoc" }
+convention-readme = { id = "net.kautler.readme" }
+convention-publishing = { id = "net.kautler.publishing" }
+
+bndBuilder = { id = "biz.aQute.bnd.builder", version.ref = "build-gradle-plugin-bndBuilder" }
+github = { id = "net.wooga.github", version.ref = "build-gradle-plugin-github" }
+grgit = { id = "org.ajoberstar.grgit", version.ref = "build-grgit" }
+nexus-publish = { id = "de.marcphilipp.nexus-publish", version.ref = "build-gradle-plugin-nexus-publish" }
+nexus-staging = { id = "io.codearte.nexus-staging", version.ref = "build-gradle-plugin-nexus-staging" }
+pitest = { id = "info.solidsoft.pitest", version.ref = "build-gradle-plugin-pitest" }
+release = { id = "net.researchgate.release", version.ref = "build-gradle-plugin-release" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "build-gradle-plugin-spotbugs" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "build-gradle-plugin-versions" }
