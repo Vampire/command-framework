@@ -23,6 +23,28 @@
         <Source name="~.*\.groovy"/>
     </Match>
 
+    <!-- work-around for https://github.com/spotbugs/spotbugs/issues/1385 -->
+    <Match>
+        <Or>
+            <Class name="net.kautler.command.usage.UsageBaseVisitor"/>
+            <Class name="net.kautler.command.usage.UsageErrorListener"/>
+            <Class name="net.kautler.command.usage.UsageLexer"/>
+            <Class name="net.kautler.command.usage.UsageParser"/>
+            <Class name="net.kautler.command.usage.UsageParser$AlternativesContext"/>
+            <Class name="net.kautler.command.usage.UsageParser$AlternativesSubExpressionContext"/>
+            <Class name="net.kautler.command.usage.UsageParser$ExpressionContext"/>
+            <Class name="net.kautler.command.usage.UsageParser$LiteralContext"/>
+            <Class name="net.kautler.command.usage.UsageParser$OptionalContext"/>
+            <Class name="net.kautler.command.usage.UsageParser$OptionalSubExpressionContext"/>
+            <Class name="net.kautler.command.usage.UsageParser$PlaceholderContext"/>
+            <Class name="net.kautler.command.usage.UsageParser$PlaceholderWithWhitespaceContext"/>
+            <Class name="net.kautler.command.usage.UsageParser$UsageContext"/>
+            <Class name="net.kautler.command.usage.UsageParserRuleContext"/>
+            <Class name="net.kautler.command.usage.UsagePatternBuilder"/>
+            <Class name="net.kautler.command.usage.UsageVisitor"/>
+        </Or>
+    </Match>
+
     <Match>
         <Class name="net.kautler.command.api.CommandHandler"/>
         <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>

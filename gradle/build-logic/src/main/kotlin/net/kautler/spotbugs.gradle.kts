@@ -34,6 +34,7 @@ plugins {
 val libs = the<LibrariesForLibs>()
 
 spotbugs {
+    useJavaToolchains = true
     toolVersion = libs.versions.build.spotbugs.asProvider()
     reportLevel = Confidence.valueOf(string("spotbugs.reportLevel", "low").getValue().uppercase())
     excludeFilter = file("config/spotbugs/spotbugs-exclude.xml")
@@ -51,23 +52,10 @@ dependencies {
     spotbugsStylesheetsDependency(libs.build.spotbugs.stylesheet)
     spotbugsPlugins(libs.build.spotbugs.plugin.findsecbugs)
     spotbugsPlugins(libs.build.spotbugs.plugin.sbContrib)
-}
 
-// work-around for https://github.com/spotbugs/spotbugs/issues/1385
-val spotbugsMain by tasks.existing(SpotBugsTask::class) {
-    val excludedClasses = listOf(
-        "UsageBaseVisitor",
-        "UsageLexer",
-        "UsageParser",
-        "UsageVisitor"
-    )
-    classes = classes.filter { classFile ->
-        excludedClasses.none { excludedClass ->
-            classFile.nameWithoutExtension.let {
-                (it == excludedClass) || it.startsWith("$excludedClass$")
-            }
-        }
-    }
+    // needed for using the SpotBugs 4 fancy-hist stylesheet with SpotBugs 3
+    spotbugs(libs.build.spotbugs)
+    spotbugs(libs.build.saxon)
 }
 
 val spotbugsTest by tasks.existing(SpotBugsTask::class) {
@@ -96,7 +84,7 @@ tasks.withType<SpotBugsTask>().all {
             // work-around for https://github.com/gradle/gradle/issues/9648
             //inputs.file(stylesheet.asFile()).withPropertyName("spotbugsStylesheet").withPathSensitivity(NONE)
             inputs.property("spotbugsStylesheet", stylesheet.asString())
-            val input = reports["XML"].destination
+            val input = reports["xml"].outputLocation.get().asFile
             inputs.files(fileTree(input)).withPropertyName("input").withPathSensitivity(NONE).skipWhenEmpty()
             val output = file(input.absolutePath.replaceFirst(Regex("\\.xml$"), ".html"))
             outputs.file(output).withPropertyName("output")
