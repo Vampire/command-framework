@@ -39,9 +39,7 @@ build-javadoc = "21"
 build-javaparser = "3.15.1"
 build-litho-annotations = "0.47.0"
 build-pmd = "6.18.0"
-build-saxon = "9.9.1-5"
-build-spotbugs = "3.1.12"
-build-spotbugs-stylesheet = "4.0.0-beta4"
+build-spotbugs = "4.9.8"
 build-spotbugs-plugin-findsecbugs = "1.14.0"
 build-spotbugs-plugin-sbContrib = "7.6.9"
 
@@ -70,9 +68,7 @@ build-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind
 build-javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "build-javaparser" }
 build-litho-annotations = { module = "com.facebook.litho:litho-annotations", version.ref = "build-litho-annotations" }
 build-pmd = { module = "net.sourceforge.pmd:pmd", version.ref = "build-pmd" }
-build-saxon = { module = "net.sf.saxon:Saxon-HE", version.ref = "build-saxon" }
 build-spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "build-spotbugs" }
-build-spotbugs-stylesheet = { module = "com.github.spotbugs:spotbugs", version.ref = "build-spotbugs-stylesheet" }
 build-spotbugs-plugin-findsecbugs = { module = "com.h3xstream.findsecbugs:findsecbugs-plugin", version.ref = "build-spotbugs-plugin-findsecbugs" }
 build-spotbugs-plugin-sbContrib = { module = "com.mebigfatguy.sb-contrib:sb-contrib", version.ref = "build-spotbugs-plugin-sbContrib" }
 cdi-api = { module = "jakarta.enterprise:jakarta.enterprise.cdi-api", version.ref = "cdi" }

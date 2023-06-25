@@ -114,8 +114,7 @@ tasks.dependencyUpdates {
             })[.\d-]*"""
         )
         preliminaryReleaseRegex.containsMatchIn(candidate.version) &&
-                (!preliminaryReleaseRegex.containsMatchIn(currentVersion) ||
-                        ((candidate.group == "com.github.spotbugs") && (candidate.module == "spotbugs")))
+                !preliminaryReleaseRegex.containsMatchIn(currentVersion)
     }
 
     outputFormatter = closureOf<Result> {

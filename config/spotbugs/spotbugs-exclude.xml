@@ -16,37 +16,22 @@
   -->
 
 <FindBugsFilter
-        xmlns="https://github.com/spotbugs/filter/3.0.0"
+        xmlns="https://github.com/spotbugs/filter/4.8.4"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.11/spotbugs/etc/findbugsfilter.xsd">
+        xsi:schemaLocation="https://github.com/spotbugs/filter/4.8.4 https://raw.githubusercontent.com/spotbugs/spotbugs/4.9.8/spotbugs/etc/findbugsfilter.xsd">
+    <!-- no groovy files -->
     <Match>
         <Source name="~.*\.groovy"/>
     </Match>
 
-    <!-- work-around for https://github.com/spotbugs/spotbugs/issues/1385 -->
+    <!-- no generated files if we care for a class retention annotation being present that can be checked -->
     <Match>
-        <Or>
-            <Class name="net.kautler.command.usage.UsageBaseVisitor"/>
-            <Class name="net.kautler.command.usage.UsageErrorListener"/>
-            <Class name="net.kautler.command.usage.UsageLexer"/>
-            <Class name="net.kautler.command.usage.UsageParser"/>
-            <Class name="net.kautler.command.usage.UsageParser$AlternativesContext"/>
-            <Class name="net.kautler.command.usage.UsageParser$AlternativesSubExpressionContext"/>
-            <Class name="net.kautler.command.usage.UsageParser$ExpressionContext"/>
-            <Class name="net.kautler.command.usage.UsageParser$LiteralContext"/>
-            <Class name="net.kautler.command.usage.UsageParser$OptionalContext"/>
-            <Class name="net.kautler.command.usage.UsageParser$OptionalSubExpressionContext"/>
-            <Class name="net.kautler.command.usage.UsageParser$PlaceholderContext"/>
-            <Class name="net.kautler.command.usage.UsageParser$PlaceholderWithWhitespaceContext"/>
-            <Class name="net.kautler.command.usage.UsageParser$UsageContext"/>
-            <Class name="net.kautler.command.usage.UsageParserRuleContext"/>
-            <Class name="net.kautler.command.usage.UsagePatternBuilder"/>
-            <Class name="net.kautler.command.usage.UsageVisitor"/>
-        </Or>
+        <Annotation name="com.facebook.litho.annotations.Generated"/>
     </Match>
 
     <Match>
         <Or>
+            <!-- just ensures bean initialization at startup for subclasses -->
             <And>
                 <Class name="net.kautler.command.api.CommandHandler"/>
                 <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
@@ -57,9 +42,11 @@
         <Bug pattern="ACEM_ABSTRACT_CLASS_EMPTY_METHODS"/>
     </Match>
 
+    <!-- we really need a newline character there -->
     <Match>
         <Class name="net.kautler.command.parameter.parser.BaseParameterParser"/>
         <Method name="parse" params="net.kautler.command.api.CommandContext, java.util.function.BiFunction" returns="net.kautler.command.api.parameter.Parameters"/>
+        <Method name="format" params="java.lang.String, java.lang.Object[]" returns="java.lang.String" role="METHOD_CALLED"/>
         <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
     </Match>
 
@@ -115,10 +102,12 @@
 
     <Match>
         <Or>
+            <!-- false positive, work-around for https://github.com/mebigfatguy/fb-contrib/issues/468 -->
             <And>
                 <Class name="net.kautler.command.util.lazy.LazyReference"/>
                 <Method name="equals" params="java.lang.Object" returns="boolean"/>
             </And>
+            <!-- false positive, these are for downstream consumers -->
             <And>
                 <Class name="net.kautler.command.api.CommandContext"/>
                 <Or>
@@ -130,12 +119,13 @@
         <Bug pattern="OPM_OVERLY_PERMISSIVE_METHOD"/>
     </Match>
 
+    <!-- false-positive, the found state is just an internal performance cache -->
     <Match>
         <Class name="net.kautler.command.api.restriction.jda.BotOwnerJda"/>
         <Bug pattern="IMC_IMMATURE_CLASS_NO_TOSTRING"/>
     </Match>
 
-    <!-- false positives -->
+    <!-- false positive -->
     <Match>
         <Class name="net.kautler.command.handler.CommandHandlerJda"/>
         <Method name="addListener" params="" returns="void"/>
@@ -208,5 +198,36 @@
             </And>
         </Or>
         <Bug pattern="IMPROPER_UNICODE"/>
+    </Match>
+
+    <!-- false-positive as TestIdentifier is effectively immutable -->
+    <Match>
+        <Class name="net.kautler.test.pitest.SpockTestUnit"/>
+        <Method name="&lt;init&gt;" params="java.lang.Class, org.junit.platform.launcher.TestIdentifier" returns="void"/>
+        <Field name="testIdentifier"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- the command context is meant to be altered to transport state, so this is perfectly fine here -->
+    <Match>
+        <Class name="net.kautler.command.api.event.CommandEvent"/>
+        <Method name="getCommandContext" params="" returns="net.kautler.command.api.CommandContext"/>
+        <Field name="commandContext"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+
+    <!-- the method is allowed to throw any exception, the caller will rethrow all cases as a runtime exception -->
+    <Match>
+        <Or>
+            <And>
+                <Class name="net.kautler.command.api.parameter.ParameterConverter"/>
+                <Method name="convert" params="java.lang.String, java.lang.String, net.kautler.command.api.CommandContext" returns="java.lang.Object"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.parameter.converter.javacord.UserMentionConverterJavacord"/>
+                <Method name="convert" params="java.lang.String, java.lang.String, net.kautler.command.api.CommandContext" returns="org.javacord.api.entity.user.User"/>
+            </And>
+        </Or>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
     </Match>
 </FindBugsFilter>

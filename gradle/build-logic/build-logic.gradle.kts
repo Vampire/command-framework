@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ dependencies {
     implementation(libs.build.javaparser.core)
     implementation(libs.build.grgit.core)
     implementation(libs.build.github.api)
-    implementation(libs.build.saxon)
     implementation(libs.test.pitest)
     implementation(libs.test.pitest.plugin.rv)
 }
