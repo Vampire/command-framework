@@ -150,7 +150,7 @@ public class SpockTestUnitFinder implements TestUnitFinder {
                                 Collection<String> includedTestMethods,
                                 Launcher launcher) {
         this.testGroupConfig = testGroupConfig;
-        this.includedTestMethods = includedTestMethods;
+        this.includedTestMethods = new ArrayList<>(includedTestMethods);
         this.launcher = launcher;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.pitest.testapi.TestGroupConfig;
 import org.pitest.testapi.TestSuiteFinder;
 import org.pitest.testapi.TestUnitFinder;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -50,7 +51,7 @@ public class SpockConfiguration implements Configuration {
     public SpockConfiguration(TestGroupConfig config,
                               Collection<String> includedTestMethods) {
         this.config = config;
-        this.includedTestMethods = includedTestMethods;
+        this.includedTestMethods = new ArrayList<>(includedTestMethods);
     }
 
     @Override
