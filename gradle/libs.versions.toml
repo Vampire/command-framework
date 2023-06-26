@@ -43,7 +43,7 @@ build-saxon = "9.9.1-5"
 build-spotbugs = "3.1.12"
 build-spotbugs-stylesheet = "4.0.0-beta4"
 build-spotbugs-plugin-findsecbugs = "1.14.0"
-build-spotbugs-plugin-sbContrib = "7.4.7"
+build-spotbugs-plugin-sbContrib = "7.6.9"
 
 test-byteBuddy = "1.10.1"
 test-discordWebhooks = "0.8.4"

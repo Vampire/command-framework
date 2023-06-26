@@ -51,7 +51,11 @@ val spotbugsStylesheets = configurations.resolvable("spotbugsStylesheets") {
 dependencies {
     spotbugsStylesheetsDependency(libs.build.spotbugs.stylesheet)
     spotbugsPlugins(libs.build.spotbugs.plugin.findsecbugs)
-    spotbugsPlugins(libs.build.spotbugs.plugin.sbContrib)
+    spotbugsPlugins(libs.build.spotbugs.plugin.sbContrib) {
+        // work-around for https://github.com/spotbugs/spotbugs-gradle-plugin/issues/910
+        // work-around for https://github.com/spotbugs/spotbugs/issues/663
+        isTransitive = false
+    }
 
     // needed for using the SpotBugs 4 fancy-hist stylesheet with SpotBugs 3
     spotbugs(libs.build.spotbugs)

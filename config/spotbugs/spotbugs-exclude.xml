@@ -117,10 +117,7 @@
         <Or>
             <And>
                 <Class name="net.kautler.command.util.lazy.LazyReference"/>
-                <Or>
-                    <Method name="equals" params="java.lang.Object" returns="boolean"/>
-                    <Method name="isSet" params="" returns="boolean"/>
-                </Or>
+                <Method name="equals" params="java.lang.Object" returns="boolean"/>
             </And>
             <And>
                 <Class name="net.kautler.command.api.CommandContext"/>
@@ -143,21 +140,6 @@
         <Class name="net.kautler.command.handler.CommandHandlerJda"/>
         <Method name="addListener" params="" returns="void"/>
         <Bug pattern="CRLF_INJECTION_LOGS"/>
-    </Match>
-
-    <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/384 -->
-    <Match>
-        <Or>
-            <And>
-                <Class name="net.kautler.command.api.CommandContext"/>
-                <Method name="getAdditionalData" params="java.lang.String, java.util.function.Supplier" returns="java.lang.Object"/>
-            </And>
-            <And>
-                <Class name="net.kautler.command.parameter.ParametersImpl"/>
-                <Method name="get" params="java.lang.String, java.util.function.Supplier" returns="java.lang.Object"/>
-            </And>
-        </Or>
-        <Bug pattern="OI_OPTIONAL_ISSUES_USES_ORELSEGET_WITH_NULL"/>
     </Match>
 
     <!-- the field gets set in an @Inject setter, so should never be null at usage time -->
