@@ -30,15 +30,11 @@
     </Match>
 
     <Match>
-        <Or>
-            <!-- just ensures bean initialization at startup for subclasses -->
-            <And>
-                <Class name="net.kautler.command.api.CommandHandler"/>
-                <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
-            </And>
-            <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/504 -->
-            <Method name="finalize" params="" returns="void"/>
-        </Or>
+        <!-- just ensures bean initialization at startup for subclasses -->
+        <And>
+            <Class name="net.kautler.command.api.CommandHandler"/>
+            <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
+        </And>
         <Bug pattern="ACEM_ABSTRACT_CLASS_EMPTY_METHODS"/>
     </Match>
 
@@ -102,11 +98,6 @@
 
     <Match>
         <Or>
-            <!-- false positive, work-around for https://github.com/mebigfatguy/fb-contrib/issues/468 -->
-            <And>
-                <Class name="net.kautler.command.util.lazy.LazyReference"/>
-                <Method name="equals" params="java.lang.Object" returns="boolean"/>
-            </And>
             <!-- false positive, these are for downstream consumers -->
             <And>
                 <Class name="net.kautler.command.api.CommandContext"/>
