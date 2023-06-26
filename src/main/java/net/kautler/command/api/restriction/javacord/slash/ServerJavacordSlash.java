@@ -46,9 +46,13 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
     private final String serverName;
 
     /**
-     * Whether the {@code serverName} should be case sensitive or not.
+     * Whether the {@code serverName} should be case-sensitive or not.
      * This does not apply to the {@code serverPattern},
      * where an embedded flag can be used to control case sensitivity.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      */
     private final boolean caseSensitive;
 
@@ -77,6 +81,10 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
 
     /**
      * Constructs a new server restriction for checking the server name against a fixed name.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      *
      * @param serverName    the name of the server where a command should be allowed
      * @param caseSensitive whether the name should be matched case-sensitively or not
@@ -169,6 +177,10 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
          * Whether the {@code serverName} should be case sensitive or not.
          * This does not apply to the {@code serverPattern},
          * where an embedded flag can be used to control case sensitivity.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          */
         private final boolean caseSensitive;
 
@@ -179,6 +191,10 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
 
         /**
          * Constructs a new server restriction parameters instance.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          *
          * @param serverId      the ID of the server where a command should be allowed
          * @param serverName    the name of the server where a command should be allowed

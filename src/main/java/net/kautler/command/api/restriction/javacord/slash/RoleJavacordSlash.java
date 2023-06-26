@@ -55,9 +55,13 @@ public abstract class RoleJavacordSlash implements Restriction<SlashCommandInter
     private final String roleName;
 
     /**
-     * Whether the {@code roleName} should be case sensitive or not.
+     * Whether the {@code roleName} should be case-sensitive or not.
      * This does not apply to the {@code rolePattern},
      * where an embedded flag can be used to control case sensitivity.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      */
     private final boolean caseSensitive;
 
@@ -89,6 +93,10 @@ public abstract class RoleJavacordSlash implements Restriction<SlashCommandInter
     /**
      * Constructs a new role restriction for checking the role name against a fixed name
      * for an exact role match.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      *
      * @param roleName      the name of the role for which a command should be allowed
      * @param caseSensitive whether the name should be matched case-sensitively or not
@@ -130,6 +138,10 @@ public abstract class RoleJavacordSlash implements Restriction<SlashCommandInter
 
     /**
      * Constructs a new role restriction for checking the role name against a fixed name.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      *
      * @param exact         whether the role needs to be matched exactly or whether a higher role would also be
      *                      sufficient
@@ -309,6 +321,10 @@ public abstract class RoleJavacordSlash implements Restriction<SlashCommandInter
          * Whether the {@code roleName} should be case sensitive or not.
          * This does not apply to the {@code rolePattern},
          * where an embedded flag can be used to control case sensitivity.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          */
         private final boolean caseSensitive;
 
@@ -319,6 +335,10 @@ public abstract class RoleJavacordSlash implements Restriction<SlashCommandInter
 
         /**
          * Constructs a new role restriction parameters instance.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          *
          * @param exact         whether the role needs to be matched exactly or whether a higher role would also be
          *                      sufficient

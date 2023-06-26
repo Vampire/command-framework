@@ -47,9 +47,13 @@ public abstract class UserJda implements Restriction<Message> {
     private final String userName;
 
     /**
-     * Whether the {@code userName} should be case sensitive or not.
+     * Whether the {@code userName} should be case-sensitive or not.
      * This does not apply to the {@code userPattern},
      * where an embedded flag can be used to control case sensitivity.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      */
     private final boolean caseSensitive;
 
@@ -78,6 +82,10 @@ public abstract class UserJda implements Restriction<Message> {
 
     /**
      * Constructs a new user restriction for checking the user name against a fixed name.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      *
      * @param userName      the name of the user for whom a command should be allowed
      * @param caseSensitive whether the name should be matched case-sensitively or not
@@ -168,6 +176,10 @@ public abstract class UserJda implements Restriction<Message> {
          * Whether the {@code userName} should be case sensitive or not.
          * This does not apply to the {@code userPattern},
          * where an embedded flag can be used to control case sensitivity.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          */
         private final boolean caseSensitive;
 
@@ -178,6 +190,10 @@ public abstract class UserJda implements Restriction<Message> {
 
         /**
          * Constructs a new user restriction parameters instance.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          *
          * @param userId        the ID of the user for whom a command should be allowed
          * @param userName      the name of the user for whom a command should be allowed

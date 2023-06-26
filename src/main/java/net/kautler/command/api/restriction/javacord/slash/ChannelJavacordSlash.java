@@ -46,9 +46,13 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
     private final String channelName;
 
     /**
-     * Whether the {@code channelName} should be case sensitive or not.
+     * Whether the {@code channelName} should be case-sensitive or not.
      * This does not apply to the {@code channelPattern},
      * where an embedded flag can be used to control case sensitivity.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      */
     private final boolean caseSensitive;
 
@@ -77,6 +81,10 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
 
     /**
      * Constructs a new channel restriction for checking the channel name against a fixed name.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      *
      * @param channelName   the name of the channel where a command should be allowed
      * @param caseSensitive whether the name should be matched case-sensitively or not
@@ -168,6 +176,10 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
          * Whether the {@code channelName} should be case sensitive or not.
          * This does not apply to the {@code channelPattern},
          * where an embedded flag can be used to control case sensitivity.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          */
         private final boolean caseSensitive;
 
@@ -178,6 +190,10 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
 
         /**
          * Constructs a new channel restriction parameters instance.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          *
          * @param channelId      the ID of the channel where a command should be allowed
          * @param channelName    the name of the channel where a command should be allowed

@@ -47,9 +47,13 @@ public abstract class GuildJda implements Restriction<Message> {
     private final String guildName;
 
     /**
-     * Whether the {@code guildName} should be case sensitive or not.
+     * Whether the {@code guildName} should be case-sensitive or not.
      * This does not apply to the {@code guildPattern},
      * where an embedded flag can be used to control case sensitivity.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      */
     private final boolean caseSensitive;
 
@@ -78,6 +82,10 @@ public abstract class GuildJda implements Restriction<Message> {
 
     /**
      * Constructs a new guild restriction for checking the guild name against a fixed name.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
      *
      * @param guildName     the name of the guild where a command should be allowed
      * @param caseSensitive whether the name should be matched case-sensitively or not
@@ -172,6 +180,10 @@ public abstract class GuildJda implements Restriction<Message> {
          * Whether the {@code guildName} should be case sensitive or not.
          * This does not apply to the {@code guildPattern},
          * where an embedded flag can be used to control case sensitivity.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          */
         private final boolean caseSensitive;
 
@@ -182,6 +194,10 @@ public abstract class GuildJda implements Restriction<Message> {
 
         /**
          * Constructs a new guild restriction parameters instance.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
          *
          * @param guildId       the ID of the guild where a command should be allowed
          * @param guildName     the name of the guild where a command should be allowed
