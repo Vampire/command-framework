@@ -138,32 +138,11 @@
         <Bug pattern="IMC_IMMATURE_CLASS_NO_TOSTRING"/>
     </Match>
 
-    <!-- work-around for https://github.com/find-sec-bugs/find-sec-bugs/issues/505 -->
-    <Match>
-        <Class name="net.kautler.command.api.Version"/>
-        <Method name="&lt;init&gt;" params="" returns="void"/>
-        <Bug pattern="URLCONNECTION_SSRF_FD"/>
-    </Match>
-
     <!-- false positives -->
     <Match>
         <Class name="net.kautler.command.handler.CommandHandlerJda"/>
         <Method name="addListener" params="" returns="void"/>
         <Bug pattern="CRLF_INJECTION_LOGS"/>
-    </Match>
-
-    <Match>
-        <Class name="net.kautler.command.integ.test.javacord.restriction.WebhookSenderHelper"/>
-        <Method name="send" params="org.javacord.api.entity.webhook.Webhook, java.lang.String" returns="void"/>
-        <Local name="webhookClient"/>
-        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
-    </Match>
-
-    <Match>
-        <Class name="net.kautler.command.integ.test.jda.restriction.WebhookSenderHelper"/>
-        <Method name="send" params="net.dv8tion.jda.api.entities.Webhook, java.lang.String" returns="void"/>
-        <Local name="webhookClient"/>
-        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
     </Match>
 
     <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/384 -->
@@ -192,5 +171,60 @@
     <Match>
         <Class name="net.kautler.test.pitest.NonkilledSurvivorDetector"/>
         <Bug pattern="IMC_IMMATURE_CLASS_NO_EQUALS"/>
+    </Match>
+
+    <!-- the decision is up to the user of the library, according methods have a warning -->
+    <Match>
+        <Or>
+            <And>
+                <Class name="net.kautler.command.api.restriction.javacord.ChannelJavacord"/>
+                <Method name="lambda$allowCommandByChannelName$0" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.javacord.RoleJavacord"/>
+                <Method name="lambda$null$9" params="java.lang.String" returns="boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord"/>
+                <Method name="lambda$allowCommandByServerName$1" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.javacord.UserJavacord"/>
+                <Method name="lambda$allowCommandByUserName$1" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.javacord.slash.ChannelJavacordSlash"/>
+                <Method name="lambda$allowCommandByChannelName$0" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlash"/>
+                <Method name="lambda$null$9" params="java.lang.String" returns="boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.javacord.slash.ServerJavacordSlash"/>
+                <Method name="lambda$allowCommandByServerName$1" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.javacord.slash.UserJavacordSlash"/>
+                <Method name="allowCommandByUserName" params="org.javacord.api.interaction.SlashCommandInteraction" returns="boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.jda.ChannelJda"/>
+                <Method name="allowCommandByChannelName" params="net.dv8tion.jda.api.entities.Message" returns="boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.jda.GuildJda"/>
+                <Method name="lambda$allowCommandByGuildName$3" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.jda.RoleJda"/>
+                <Method name="lambda$null$8" params="java.lang.String" returns="boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.jda.UserJda"/>
+                <Method name="lambda$allowCommandByUserName$1" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+        </Or>
+        <Bug pattern="IMPROPER_UNICODE"/>
     </Match>
 </FindBugsFilter>
