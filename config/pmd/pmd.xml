@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright 2019-2025 Björn Kautler
+  ~ Copyright 2019-2026 Björn Kautler
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -23,8 +23,24 @@
         PMD rules for Command Framework
     </description>
 
-    <rule ref="category/java/bestpractices.xml">
-        <exclude name="GuardLogStatement"/>
+    <rule ref="category/java/bestpractices.xml"/>
+
+    <rule ref="category/java/bestpractices.xml/ImplicitFunctionalInterface">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (: these are not functional interfaces they just happen to only have one abstract method :)
+                        pmd-java:typeIsExactly('net.kautler.command.api.Command')
+                        or pmd-java:typeIsExactly('net.kautler.command.api.CommandContextTransformer')
+                        or pmd-java:typeIsExactly('net.kautler.command.api.parameter.ParameterConverter')
+                        or pmd-java:typeIsExactly('net.kautler.command.api.parameter.ParameterParser')
+                        or pmd-java:typeIsExactly('net.kautler.command.api.restriction.Restriction')
+                        or pmd-java:typeIsExactly('net.kautler.command.api.slash.javacord.SlashCommandJavacord')
+                    ]
+                </value>
+            </property>
+        </properties>
     </rule>
 
     <rule ref="category/java/bestpractices.xml/UnusedFormalParameter">
@@ -32,8 +48,9 @@
             <property name="violationSuppressXPath">
                 <value>
                     .[
+                        (: a dummy parameter for finalizer attack prevention :)
                         parent::FormalParameter
-                        and (@Image = "parametersValidated")
+                        and (@Name = "parametersValidated")
                         and ancestor::ConstructorDeclaration
                     ]
                 </value>
@@ -49,21 +66,17 @@
         <exclude name="MethodArgumentCouldBeFinal"/>
         <exclude name="OnlyOneReturn"/>
         <exclude name="TooManyStaticImports"/>
-        <exclude name="UselessParentheses"/>
     </rule>
 
-    <rule ref="category/java/codestyle.xml/DefaultPackage">
+    <rule ref="category/java/codestyle.xml/UselessParentheses">
         <properties>
             <property name="violationSuppressXPath">
                 <value>
                     .[
-                        ((MethodDeclaration/@MethodName = 'ensureInitializationAtStartup') and descendant::FormalParameter[
-                            Annotation[typeIsExactly('jakarta.enterprise.event.Observes')]
-                                and Annotation[typeIsExactly('jakarta.enterprise.context.Initialized')]])
-                        or Annotation[typeIsExactly('jakarta.enterprise.inject.Produces')]
-                        or Annotation[typeIsExactly('jakarta.inject.Inject')]
-                        or Annotation[typeIsExactly('jakarta.annotation.PostConstruct')]
-                        or Annotation[typeIsExactly('jakarta.annotation.PreDestroy')]
+                        (: false positive, work-around for https://github.com/pmd/pmd/issues/6274 :)
+                        ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.util.SlashCommandBuilderProducer')]
+                        and ancestor::MethodDeclaration/@Name = 'getSlashCommandBuilders'
+                        and ancestor::MethodCall/@MethodName = "groupingBy"
                     ]
                 </value>
             </property>
@@ -75,16 +88,19 @@
             <property name="violationSuppressXPath">
                 <value>
                     .[
-                        ((@MethodName = 'ensureInitializationAtStartup') and descendant::FormalParameter[
-                            Annotation[typeIsExactly('jakarta.enterprise.event.Observes')]
-                                and Annotation[typeIsExactly('jakarta.enterprise.context.Initialized')]])
-                        or (((@MethodName = 'expression')
-                             or (@MethodName = 'optional')
-                             or (@MethodName = 'placeholder')
-                             or (@MethodName = 'placeholderWithWhitespace')
-                             or (@MethodName = 'alternatives')
-                             or (@MethodName = 'literal'))
-                            and ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.usage.UsageParserRuleContext')])
+                        (: CDI observer method to ensure initialization at startup :)
+                        ((@Name = 'ensureInitializationAtStartup')
+                         and descendant::FormalParameter[
+                            pmd-java:hasAnnotation('jakarta.enterprise.event.Observes')
+                            and pmd-java:hasAnnotation('jakarta.enterprise.context.Initialized')])
+                        (: the subclasses should not be forced to provide implementations :)
+                        or (((@Name = 'expression')
+                             or (@Name = 'optional')
+                             or (@Name = 'placeholder')
+                             or (@Name = 'placeholderWithWhitespace')
+                             or (@Name = 'alternatives')
+                             or (@Name = 'literal'))
+                            and ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.usage.UsageParserRuleContext')])
                     ]
                 </value>
             </property>
@@ -106,14 +122,7 @@
 
     <rule ref="category/java/codestyle.xml/LinguisticNaming">
         <properties>
-            <property name="violationSuppressXPath">
-                <value>
-                    .[
-                        ((@MethodName = 'setAdditionalData')
-                            and ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.CommandContext')])
-                    ]
-                </value>
-            </property>
+            <property name="ignoredAnnotations" value="java.lang.Override, java.lang.Deprecated"/>
         </properties>
     </rule>
 
@@ -128,40 +137,9 @@
             <property name="violationSuppressXPath">
                 <value>
                     .[
-                        (@Image = 'or') and parent::MethodDeclaration/ResultType/Type[typeIsExactly('net.kautler.command.api.restriction.RestrictionChainElement')]
-                    ]
-                </value>
-            </property>
-        </properties>
-    </rule>
-
-    <rule ref="category/java/codestyle.xml/UnnecessaryConstructor">
-        <properties>
-            <property name="violationSuppressXPath">
-                <value>
-                    <!-- false positives, work-around for https://github.com/pmd/pmd/issues/6284 -->
-                    .[
-                        ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.BotOwnerJavacord')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.BotOwnerJavacordSlash')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.BotOwnerJda')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.CommandHandler')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.Everyone')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.GuildOwnerJda')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.prefix.javacord.MentionPrefixTransformerJavacord')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.prefix.jda.MentionPrefixTransformerJda')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.NsfwChannelJavacord')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.NsfwChannelJavacordSlash')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.NsfwChannelJda')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.PrivateMessageJavacord')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.PrivateMessageJavacordSlash')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.PrivateMessageJda')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.RegularUserJavacord')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.RegularUserJda')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.ServerManagerJavacord')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.ServerManagerJavacordSlash')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.ServerManagerJda')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.ServerOwnerJavacord')]
-                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.ServerOwnerJavacordSlash')]
+                        (: this is a logical or combination, so the short name is perfectly fine :)
+                        (@Name = 'or')
+                        and ClassType[pmd-java:typeIsExactly('net.kautler.command.api.restriction.RestrictionChainElement')]
                     ]
                 </value>
             </property>
@@ -169,20 +147,59 @@
     </rule>
 
     <rule ref="category/java/design.xml">
-        <exclude name="AvoidCatchingGenericException"/>
+        <exclude name="ClassWithOnlyPrivateConstructorsShouldBeFinal"/>
         <exclude name="ExcessiveImports"/>
         <exclude name="LawOfDemeter"/>
         <exclude name="LoosePackageCoupling"/>
+    </rule>
+
+    <rule ref="category/java/design.xml/CouplingBetweenObjects">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (: maybe could be refactored or removed at some point, but not now :)
+                        descendant::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.test.pitest.SpockTestUnitFinder')]
+                    ]
+                </value>
+            </property>
+        </properties>
     </rule>
 
     <rule ref="category/java/design.xml/DataClass">
         <properties>
             <property name="violationSuppressXPath">
                 <value>
-                    <!-- typeIs('java.lang.Exception') is a work-around for https://github.com/pmd/pmd/issues/2246 -->
                     .[
-                        typeIsExactly('net.kautler.command.api.Version')
-                            or typeIs('java.lang.Exception')
+                        (: all behavior is inside the class already :)
+                        pmd-java:typeIsExactly('net.kautler.command.api.Version')
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/GodClass">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (: might qualify as god class, maybe untangle at some point, but not now :)
+                        pmd-java:typeIsExactly('net.kautler.command.api.CommandHandler')
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/PublicMemberInNonPublicType">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (: the method is for consumers of the two subclasses :)
+                        ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.util.lazy.LazyReference')]
+                        and self::MethodDeclaration/@Name = 'isSet'
                     ]
                 </value>
             </property>
@@ -194,8 +211,24 @@
             <property name="violationSuppressXPath">
                 <value>
                     .[
-                        ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.parameter.ParameterConverter')]
-                            and ancestor::MethodDeclaration/@MethodName = 'convert'
+                        (: the exception gets rethrown as runtime exception :)
+                        ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.api.parameter.ParameterConverter')]
+                        and ancestor::MethodDeclaration/@Name = 'convert'
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/SimplifyBooleanReturns">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (: it is better readable like it is :)
+                        ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.test.pitest.DuplicateMutationFilter')]
+                        and ancestor::MethodDeclaration/@Name = 'intercept'
+                        and descendant::LambdaParameter/VariableId/@Name = "seenBytes"
                     ]
                 </value>
             </property>
@@ -217,8 +250,20 @@
         </properties>
     </rule>
 
-    <rule ref="category/java/errorprone.xml">
-        <exclude name="BeanMembersShouldSerialize"/>
+    <rule ref="category/java/errorprone.xml"/>
+
+    <rule ref="category/java/errorprone.xml/AvoidCatchingGenericException">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (: the exception gets rethrown as runtime exception :)
+                        ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.parameter.parser.TypedParameterParser')]
+                        and ancestor::MethodDeclaration/@Name = 'convertTokenValue'
+                    ]
+                </value>
+            </property>
+        </properties>
     </rule>
 
     <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
@@ -226,8 +271,9 @@
             <property name="violationSuppressXPath">
                 <value>
                     .[
-                        ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.test.pitest.ExplicitMutationFilter')]
-                            and ancestor::VariableDeclarator/VariableDeclaratorId/@Image = 'filter'
+                        (: these should all be listed explicitly without using constants :)
+                        ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.test.pitest.ExplicitMutationFilter')]
+                        and ancestor::VariableDeclarator/@Name = 'filter'
                     ]
                 </value>
             </property>
@@ -239,7 +285,8 @@
             <property name="violationSuppressXPath">
                 <value>
                     .[
-                        ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.Version')]
+                        (: it's ok for Version to have a version field :)
+                        ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.api.Version')]
                     ]
                 </value>
             </property>
@@ -252,57 +299,13 @@
         </properties>
     </rule>
 
-    <rule ref="category/java/errorprone.xml/DataflowAnomalyAnalysis">
-        <properties>
-            <!-- false positives -->
-            <property name="violationSuppressRegex">
-                <value>(?x)
-                    \QFound 'UR'-anomaly for variable \E.* |
-                    \QFound 'DD'-anomaly for variable 'groupName' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'restrictionPolicy' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'usageTree' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'seen' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'channelId' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'roleId' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'userId' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'alias' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'subcommandOrGroup' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'throwable' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'iterationIdentifier' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'firstTokenValues' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'message' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'internalParameterConverter' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'result' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'parameterNames' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'arguments' (lines '\E.* |
-                    \QFound 'DU'-anomaly for variable 'filters' (lines '\E.*
-                </value>
-            </property>
-        </properties>
-    </rule>
-
-    <rule ref="category/java/errorprone.xml/EmptyFinalizer">
-        <properties>
-            <!-- false positives, work-around for https://github.com/pmd/pmd/issues/4742 -->
-            <property name="violationSuppressXPath">
-                <value>
-                    .[
-                        (../@Final = true())
-                        and (ancestor::TypeDeclaration/@Final = false())
-                    ]
-                </value>
-            </property>
-        </properties>
-    </rule>
-
-    <rule ref="category/java/errorprone.xml/NullAssignment">
+    <rule ref="category/java/errorprone.xml/TestClassWithoutTestCases">
         <properties>
             <property name="violationSuppressXPath">
                 <value>
                     .[
-                        ancestor::ClassOrInterfaceDeclaration[
-                            typeIsExactly('net.kautler.command.api.Version')
-                                or typeIsExactly('net.kautler.command.api.restriction.RestrictionChainElement')]
+                        (: not a test class :)
+                        pmd-java:typeIsExactly('net.kautler.test.pitest.SpockTestUnitFinder.TestIdentifierListener')
                     ]
                 </value>
             </property>
@@ -311,7 +314,29 @@
 
     <rule ref="category/java/multithreading.xml">
         <exclude name="DoNotUseThreads"/>
-        <exclude name="UseConcurrentHashMap"/>
+    </rule>
+
+    <rule ref="category/java/multithreading.xml/UseConcurrentHashMap">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (: these are not used concurrently :)
+                        (ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.test.pitest.DuplicateMutationFilter')]
+                         and ancestor::MethodDeclaration/@Name = 'intercept'
+                         and ancestor::LocalVariableDeclaration/VariableDeclarator/@Name = 'seen')
+                        or (ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.api.CommandContext.Builder')]
+                            and ancestor::FieldDeclaration/VariableDeclarator/@Name = 'additionalData')
+                        or (ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.parameter.parser.TypedParameterParser')]
+                            and ancestor::MethodDeclaration/@Name = 'parseParameters'
+                            and ancestor::LocalVariableDeclaration/VariableDeclarator/@Name = 'result')
+                        or (ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.parameter.parser.UntypedParameterParser')]
+                            and ancestor::MethodDeclaration/@Name = 'parse'
+                            and ancestor::LocalVariableDeclaration/VariableDeclarator/@Name = 'parameters')
+                    ]
+                </value>
+            </property>
+        </properties>
     </rule>
 
     <rule ref="category/java/performance.xml"/>
