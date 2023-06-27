@@ -152,7 +152,7 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
                 && methodDesc.equals(mutationDetails.getId().getLocation().getMethodDesc())
                 && mutator.equals(mutationDetails.getMutator())
                 && description.equals(mutationDetails.getDescription())
-                && (firstIndexes.isEmpty() || (firstIndexes.contains(mutationDetails.getFirstIndex())));
+                && (firstIndexes.isEmpty() || firstIndexes.contains(mutationDetails.getFirstIndex()));
     }
 
     @Override

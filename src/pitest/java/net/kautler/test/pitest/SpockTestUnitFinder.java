@@ -192,7 +192,7 @@ public class SpockTestUnitFinder implements TestUnitFinder {
     @SuppressWarnings("unchecked")
     private static <T> Optional<Class<? extends T>> findClass(String className) {
         try {
-            return Optional.of(((Class<? extends T>) Class.forName(className)));
+            return Optional.of((Class<? extends T>) Class.forName(className));
         } catch (final ClassNotFoundException ex) {
             return Optional.empty();
         }
