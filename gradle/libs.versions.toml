@@ -32,6 +32,7 @@ build-gradle-plugin-pitest = "1.6.0"
 build-gradle-plugin-release = "2.8.1"
 build-gradle-plugin-spotbugs = "6.4.8"
 build-gradle-plugin-versions = "0.51.0"
+build-gradle-plugin-refresh-versions = "0.60.6"
 build-grgit = "4.1.1"
 build-jacoco = "0.8.5"
 build-javadoc = "21"
@@ -127,3 +128,4 @@ pitest = { id = "info.solidsoft.pitest", version.ref = "build-gradle-plugin-pite
 release = { id = "net.researchgate.release", version.ref = "build-gradle-plugin-release" }
 spotbugs = { id = "com.github.spotbugs", version.ref = "build-gradle-plugin-spotbugs" }
 versions = { id = "com.github.ben-manes.versions", version.ref = "build-gradle-plugin-versions" }
+refresh-versions = { id = "de.fayard.refreshVersions", version.ref = "build-gradle-plugin-refresh-versions" }

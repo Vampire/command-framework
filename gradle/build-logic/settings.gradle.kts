@@ -14,15 +14,65 @@
  * limitations under the License.
  */
 
+import de.fayard.refreshVersions.core.FeatureFlag.GRADLE_UPDATES
+import net.kautler.conditionalRefreshVersions
 import org.gradle.api.initialization.resolve.RepositoriesMode.FAIL_ON_PROJECT_REPOS
 import org.gradle.api.initialization.resolve.RulesMode.FAIL_ON_PROJECT_RULES
 
 pluginManagement {
     includeBuild("../dependency-updates-report-aggregation")
+    includeBuild("../conditional-refresh-versions")
 }
 
 plugins {
+    id("net.kautler.conditional-refresh-versions")
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
+conditionalRefreshVersions {
+    featureFlags {
+        disable(GRADLE_UPDATES)
+    }
+    rejectVersionIf {
+        candidate.stabilityLevel.isLessStableThan(current.stabilityLevel)
+    }
+    // work-around for https://github.com/Splitties/refreshVersions/issues/662
+    layout.rootDirectory.dir("build/tmp/refreshVersions").asFile.mkdirs()
+    // work-around for https://github.com/Splitties/refreshVersions/issues/640
+    versionsPropertiesFile = layout.rootDirectory.file("build/tmp/refreshVersions/versions.properties").asFile
+}
+
+// work-around for https://github.com/Splitties/refreshVersions/issues/596
+gradle.rootProject {
+    val copyVersionCatalog by tasks.registering {
+        doLast {
+            copy {
+                from(gradle.parent!!.rootProject.file("gradle/libs.versions.toml"))
+                into("gradle")
+            }
+        }
+    }
+    tasks.named { it == "refreshVersions" }.configureEach {
+        dependsOn(copyVersionCatalog)
+        val layout = layout
+        doLast {
+            // work-around for https://github.com/Splitties/refreshVersions/issues/661
+            // and https://github.com/Splitties/refreshVersions/issues/663
+            layout.projectDirectory.file("gradle/libs.versions.toml").asFile.apply {
+                readText()
+                    .replace("⬆ =", " ⬆ =")
+                    .replace("⬆=", "⬆ =")
+                    .replace("]\n\n", "]\n")
+                    .replace("""(?s)^(.*)(\n\Q[plugins]\E[^\[]*)(\n.*)$""".toRegex(), "$1$3$2")
+                    .also { writeText(it) }
+            }
+            copy {
+                from("gradle/libs.versions.toml")
+                into(gradle.parent!!.rootProject.file("gradle"))
+            }
+            delete("gradle/libs.versions.toml")
+        }
+    }
 }
 
 dependencyResolutionManagement {

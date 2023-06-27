@@ -50,9 +50,9 @@ val includedBuildNames = gradle
     .map { it.name }
 
 dependencies {
-    includedBuildNames.forEach {
-        dependencyUpdatesResultsDependencies(":$it")
-    }
+    includedBuildNames
+        .filterNot { it == "conditional-refresh-versions" }
+        .forEach { dependencyUpdatesResultsDependencies(":$it") }
 }
 
 tasks.dependencyUpdates {
