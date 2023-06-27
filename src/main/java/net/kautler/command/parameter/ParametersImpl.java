@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ import net.kautler.command.api.parameter.Parameters;
 
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -45,7 +45,7 @@ public class ParametersImpl<V> implements Parameters<V> {
     /**
      * The map that backs this parameters instance and holds the actual mappings.
      */
-    private final Map<String, V> parameters = new HashMap<>();
+    private final Map<String, V> parameters = new ConcurrentHashMap<>();
 
     /**
      * An unmodifiable view on the backing map.

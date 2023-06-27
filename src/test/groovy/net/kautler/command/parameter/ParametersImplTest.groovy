@@ -205,7 +205,7 @@ class ParametersImplTest extends Specification {
     def 'calling fixup while one forEach iteration is in progress should throw ConcurrentModificationException'() {
         when:
             testee.forEach { name, value ->
-                testee.fixup(null, null)
+                testee.fixup('placeholder', null)
             }
 
         then:
@@ -217,7 +217,7 @@ class ParametersImplTest extends Specification {
         when:
             testee.forEach { name, value ->
                 testee.forEach { innerName, innerValue ->
-                    testee.fixup(null, null)
+                    testee.fixup('placeholder', null)
                 }
             }
 
@@ -229,7 +229,7 @@ class ParametersImplTest extends Specification {
     def 'calling fixup after forEach iterations are finished should not throw ConcurrentModificationException'() {
         when:
             testee.forEach { name, value -> true }
-            testee.fixup(null, null)
+            testee.fixup('placeholder', null)
 
         then:
             notThrown(ConcurrentModificationException)
