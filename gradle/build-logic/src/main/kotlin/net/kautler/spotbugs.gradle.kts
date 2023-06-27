@@ -18,6 +18,7 @@ package net.kautler
 
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.SpotBugsTask
+import net.kautler.util.ProblemsProvider
 import net.kautler.util.Property.Companion.string
 import org.gradle.accessors.dm.LibrariesForLibs
 
@@ -53,9 +54,46 @@ tasks.withType<SpotBugsTask>().configureEach {
 
     reports {
         create("xml")
+        create("text")
         create("html") {
             setStylesheet("fancy-hist.xsl")
         }
+    }
+}
+
+sourceSets.configureEach {
+    val spotbugsTaskName = getTaskName("spotbugs", null)
+
+    val spotbugsTask = tasks.named<SpotBugsTask>(spotbugsTaskName) {
+        ignoreFailures = true
+    }
+
+    val spotbugsVerify = tasks.register("${spotbugsTaskName}Verify") {
+        val textReport = spotbugsTask.flatMap { it.reports["text"].outputLocation }
+        val htmlReport = spotbugsTask.flatMap { it.reports["html"].outputLocation }
+        val spotbugsTaskPath = spotbugsTask.map { it.path }
+        val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
+        doLast {
+            if (textReport.get().asFile.takeIf { it.isFile && it.readBytes().isNotEmpty() } != null) {
+                throw problemReporter.throwing(
+                    IllegalStateException(),
+                    ProblemId.create(
+                        "spotbugs-task-failed-with-errors",
+                        "SpotBugs task failed with errors",
+                        ProblemGroup.create("spotbugs", "SpotBugs")
+                    )
+                ) {
+                    contextualLabel("Task ${spotbugsTaskPath.get()}")
+                    solution("See HTML report at ${htmlReport.get().asFile.toURI().toURL()}")
+                    solution("Fix or suppress the found SpotBugs issues")
+                    severity(Severity.ERROR)
+                }
+            }
+        }
+    }
+
+    spotbugsTask {
+        finalizedBy(spotbugsVerify)
     }
 }
 
