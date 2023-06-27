@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
 
 import static java.lang.String.format;
 import static java.util.Comparator.comparingInt;
@@ -89,100 +90,117 @@ class TypedParameterParser extends BaseParameterParser {
                 .collect(toMap(Entry::getKey, entry -> (TypeLiteral<ParameterConverter<?, ?>>) entry.getValue())));
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <V> Parameters<V> parse(CommandContext<?> commandContext) {
-        return parse(commandContext, (parameterMatcher, groupNamesByTokenName) -> {
-            Collection<String> firstTokenValues = new ArrayList<>();
-            Map<String, Object> parameters = new HashMap<>();
-            groupNamesByTokenName.forEach((tokenName, groupNames) -> groupNames
-                    .stream()
-                    .map(parameterMatcher::group)
-                    .filter(Objects::nonNull)
-                    .forEach(tokenValue -> {
-                        int colon = tokenName.lastIndexOf(':');
-                        if (colon == -1) {
-                            addParameterValue(parameters, tokenName, tokenValue, firstTokenValues);
-                        } else {
-                            Object message = commandContext.getMessage();
-                            Optional<TypeLiteral<ParameterConverter<?, ?>>> parameterConverterTypeLiteral =
-                                    parameterConverterTypeLiteralsByMessageType
-                                            .get()
-                                            .entrySet()
-                                            .stream()
-                                            .filter(entry -> entry.getKey().isInstance(message))
-                                            .map(Entry::getValue)
-                                            .findAny();
+        return parse(commandContext, (parameterMatcher, groupNamesByTokenName) ->
+                parseParameters(commandContext, parameterMatcher, groupNamesByTokenName));
+    }
 
-                            if (!parameterConverterTypeLiteral.isPresent()) {
-                                throw new IllegalArgumentException(format(
-                                        "Class '%s' of 'message' parameter is not one of the supported and active message framework message classes",
-                                        message.getClass().getName()));
-                            }
+    private <V> ParametersImpl<V> parseParameters(CommandContext<?> commandContext, Matcher parameterMatcher,
+                                                  Map<String, List<String>> groupNamesByTokenName) {
+        Collection<String> firstTokenValues = new ArrayList<>();
+        Map<String, Object> result = new HashMap<>();
+        groupNamesByTokenName.forEach((tokenName, groupNames) -> groupNames
+                .stream()
+                .map(parameterMatcher::group)
+                .filter(Objects::nonNull)
+                .forEach(tokenValue -> parseArgument(commandContext, firstTokenValues, result, tokenName, tokenValue)));
+        return new ParametersImpl<>(result);
+    }
 
-                            String type = tokenName.substring(colon + 1);
+    private void parseArgument(CommandContext<?> commandContext, Collection<String> firstTokenValues,
+                               Map<String, Object> result, String tokenName, String tokenValue) {
+        int colon = tokenName.lastIndexOf(':');
+        if (colon == -1) {
+            addParameterValue(result, tokenName, tokenValue, firstTokenValues);
+        } else {
+            String untypedTokenName = tokenName.substring(0, colon);
+            String tokenType = tokenName.substring(colon + 1);
+            parseTypedParameter(commandContext, firstTokenValues, result, untypedTokenName, tokenType, tokenValue);
+        }
+    }
 
-                            Instance<ParameterConverter<?, ?>> parameterConverterInstance =
-                                    parameterConverters.select(
-                                            parameterConverterTypeLiteral.get(),
-                                            new ParameterType.Literal(type));
+    private void parseTypedParameter(CommandContext<?> commandContext, Collection<String> firstTokenValues,
+                                     Map<String, Object> result, String untypedTokenName, String tokenType,
+                                     String tokenValue) {
+        Object message = commandContext.getMessage();
+        Optional<TypeLiteral<ParameterConverter<?, ?>>> parameterConverterTypeLiteral =
+                parameterConverterTypeLiteralsByMessageType
+                        .get()
+                        .entrySet()
+                        .stream()
+                        .filter(entry -> entry.getKey().isInstance(message))
+                        .map(Entry::getValue)
+                        .findAny();
 
-                            if (parameterConverterInstance.isUnsatisfied()) {
-                                throw new IllegalArgumentException(format(
-                                        "Parameter type '%s' in usage string '%s' was not found",
-                                        type, commandContext
-                                                .getCommand()
-                                                .flatMap(Command::getUsage)
-                                                .orElseThrow(AssertionError::new)));
-                            } else {
-                                String untypedTokenName = tokenName.substring(0, colon);
+        if (!parameterConverterTypeLiteral.isPresent()) {
+            throw new IllegalArgumentException(format(
+                    "Class '%s' of 'message' parameter is not one of the supported and active message framework message classes",
+                    message.getClass().getName()));
+        }
 
-                                Instance<ParameterConverter<?, ?>> internalParameterConverterInstance =
-                                        parameterConverterInstance.select(Internal.Literal.INSTANCE);
+        Instance<ParameterConverter<?, ?>> parameterConverterInstance =
+                parameterConverters.select(
+                        parameterConverterTypeLiteral.get(),
+                        new ParameterType.Literal(tokenType));
 
-                                ParameterConverter<?, ?> parameterConverter;
+        if (parameterConverterInstance.isUnsatisfied()) {
+            throw new IllegalArgumentException(format(
+                    "Parameter type '%s' in usage string '%s' was not found",
+                    tokenType, commandContext
+                            .getCommand()
+                            .flatMap(Command::getUsage)
+                            .orElseThrow(AssertionError::new)));
+        } else {
+            Instance<ParameterConverter<?, ?>> internalParameterConverterInstance =
+                    parameterConverterInstance.select(Internal.Literal.INSTANCE);
 
-                                if (internalParameterConverterInstance.isResolvable()) {
-                                    ParameterConverter<?, ?> internalParameterConverter =
-                                            internalParameterConverterInstance.get();
-                                    List<ParameterConverter<?, ?>> parameterConverters =
-                                            parameterConverterInstance
-                                                    .stream()
-                                                    .sorted(comparingInt(converter -> converter
-                                                            .equals(internalParameterConverter) ? 1 : 0))
-                                                    .collect(toList());
-                                    if (parameterConverters.size() == ALLOWED_AMOUNT_OF_PARAMETER_CONVERTERS) {
-                                        parameterConverter = parameterConverters.get(0);
-                                    } else {
-                                        parameterConverter = parameterConverterInstance.get();
-                                    }
-                                } else {
-                                    parameterConverter = parameterConverterInstance.get();
-                                }
+            ParameterConverter<?, ?> parameterConverter;
 
-                                Object convertedTokenValue;
-                                try {
-                                    convertedTokenValue = ((ParameterConverter<? super Object, ?>) parameterConverter)
-                                            .convert(tokenValue, type, commandContext);
-                                } catch (ParameterParseException ppe) {
-                                    ppe.setParameterName(untypedTokenName);
-                                    ppe.setParameterValue(tokenValue);
-                                    throw ppe;
-                                } catch (Exception e) {
-                                    throw new ParameterParseException(
-                                            untypedTokenName,
-                                            tokenValue,
-                                            format("Exception during conversion of value '%s' for parameter '%s'", tokenValue, untypedTokenName),
-                                            e);
-                                }
-                                requireNonNull(convertedTokenValue, () -> format(
-                                        "Converter with class '%s' returned 'null'",
-                                        parameterConverter.getClass().getName()));
-                                addParameterValue(parameters, untypedTokenName, convertedTokenValue, firstTokenValues);
-                            }
-                        }
-                    }));
-            return new ParametersImpl<>(parameters);
-        });
+            if (internalParameterConverterInstance.isResolvable()) {
+                ParameterConverter<?, ?> internalParameterConverter =
+                        internalParameterConverterInstance.get();
+                List<ParameterConverter<?, ?>> parameterConverters =
+                        parameterConverterInstance
+                                .stream()
+                                .sorted(comparingInt(converter -> converter
+                                        .equals(internalParameterConverter) ? 1 : 0))
+                                .collect(toList());
+                if (parameterConverters.size() == ALLOWED_AMOUNT_OF_PARAMETER_CONVERTERS) {
+                    parameterConverter = parameterConverters.get(0);
+                } else {
+                    parameterConverter = parameterConverterInstance.get();
+                }
+            } else {
+                parameterConverter = parameterConverterInstance.get();
+            }
+
+            Object convertedTokenValue = convertTokenValue(commandContext, untypedTokenName, tokenType, tokenValue, parameterConverter);
+            addParameterValue(result, untypedTokenName, convertedTokenValue, firstTokenValues);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object convertTokenValue(CommandContext<?> commandContext, String untypedTokenName,
+                                            String tokenType, String tokenValue,
+                                            ParameterConverter<?, ?> parameterConverter) {
+        Object result;
+        try {
+            result = ((ParameterConverter<? super Object, ?>) parameterConverter)
+                    .convert(tokenValue, tokenType, commandContext);
+        } catch (ParameterParseException ppe) {
+            ppe.setParameterName(untypedTokenName);
+            ppe.setParameterValue(tokenValue);
+            throw ppe;
+        } catch (Exception e) {
+            throw new ParameterParseException(
+                    untypedTokenName,
+                    tokenValue,
+                    format("Exception during conversion of value '%s' for parameter '%s'", tokenValue, untypedTokenName),
+                    e);
+        }
+        return requireNonNull(result, () -> format(
+                "Converter with class '%s' returned 'null'",
+                parameterConverter.getClass().getName()));
     }
 }

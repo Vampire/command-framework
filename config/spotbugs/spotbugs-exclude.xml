@@ -221,4 +221,11 @@
         </Or>
         <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
     </Match>
+
+    <!-- false-positive, work-around for https://github.com/mebigfatguy/fb-contrib/issues/447 and https://github.com/mebigfatguy/fb-contrib/issues/505 -->
+    <Match>
+        <Class name="net.kautler.command.parameter.parser.TypedParameterParser"/>
+        <Method name="convertTokenValue" params="net.kautler.command.api.CommandContext, java.lang.String, java.lang.String, java.lang.String, net.kautler.command.api.parameter.ParameterConverter" returns="java.lang.Object"/>
+        <Bug pattern="EXS_EXCEPTION_SOFTENING_NO_CONSTRAINTS"/>
+    </Match>
 </FindBugsFilter>

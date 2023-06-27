@@ -269,6 +269,10 @@
                     \QFound 'DU'-anomaly for variable 'subcommandOrGroup' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'throwable' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'iterationIdentifier' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'firstTokenValues' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'message' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'internalParameterConverter' (lines '\E.* |
+                    \QFound 'DU'-anomaly for variable 'result' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'parameterNames' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'arguments' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'filters' (lines '\E.*

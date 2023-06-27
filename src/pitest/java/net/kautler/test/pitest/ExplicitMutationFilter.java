@@ -192,11 +192,18 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             // giving a 3 instead of 2 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.parameter.parser.TypedParameterParser",
-                    "lambda$null",
-                    "(Ljava/lang/String;Ljava/util/Map;Ljava/util/Collection;Lnet/kautler/command/api/CommandContext;Ljava/lang/String;)V",
+                    "convertTokenValue",
+                    "(Lnet/kautler/command/api/CommandContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lnet/kautler/command/api/parameter/ParameterConverter;)Ljava/lang/Object;",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3"),
+            // giving a 3 instead of 2 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.parameter.parser.TypedParameterParser",
+                    "parseTypedParameter",
+                    "(Lnet/kautler/command/api/CommandContext;Ljava/util/Collection;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3",
-                    119, 273),
+                    91),
             // this causes an endless while-loop
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.util.ExceptionUtil",
