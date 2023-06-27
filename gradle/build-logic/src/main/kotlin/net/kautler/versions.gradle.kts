@@ -16,11 +16,15 @@
 
 package net.kautler
 
+import net.kautler.util.NullOutputStream
 import net.kautler.util.PreliminaryReleaseFilter
+import net.kautler.util.ProblemsProvider
 import net.kautler.util.add
 import net.kautler.util.ignoredDependencies
 import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.kotlin.dsl.newInstance
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.time.Instant.now
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -87,7 +91,48 @@ tasks.processResources {
     }
 }
 
+val validateGradleWrapperJar by tasks.registering {
+    onlyIf {
+        !gradle.startParameter.isOffline
+    }
+
+    val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
+    doLast {
+        val expectedDigest = resources.text.fromUri("https://services.gradle.org/distributions/gradle-${gradle.gradleVersion}-wrapper.jar.sha256").asString()
+
+        val sha256 = MessageDigest.getInstance("SHA-256")
+        layout
+            .projectDirectory
+            .dir("gradle")
+            .dir("wrapper")
+            .file("gradle-wrapper.jar")
+            .asFile
+            .inputStream()
+            .let { DigestInputStream(it, sha256) }
+            .use { it.copyTo(NullOutputStream()) }
+        val actualDigest = sha256.digest().let {
+            "%02x".repeat(it.size).format(*it.toTypedArray())
+        }
+
+        if (expectedDigest != actualDigest) {
+            throw problemReporter.throwing(
+                IllegalStateException(),
+                ProblemId.create(
+                    "the-wrapper-jar-does-not-match-the-configured-gradle-version",
+                    "The wrapper JAR does not match the configured Gradle version",
+                    ProblemGroup.create("build-authoring", "Build Authoring")
+                )
+            ) {
+                solution("Update the wrapper to the version of Gradle")
+                severity(Severity.ERROR)
+            }
+        }
+    }
+}
+
 tasks.dependencyUpdates {
+    dependsOn(validateGradleWrapperJar)
+
     rejectVersionIf {
         if (PreliminaryReleaseFilter.reject(this)) {
             reject("preliminary release")
