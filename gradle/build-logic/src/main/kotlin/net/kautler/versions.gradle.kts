@@ -77,7 +77,9 @@ val commitId by lazy(NONE) {
 }
 
 tasks.processResources {
-    val now = now()
+    val version = version
+    val commitId = commitId
+    val now = now().toString()
     inputs.property("version", version)
     inputs.property("commitId", commitId)
     inputs.property("buildTimestamp", now)
