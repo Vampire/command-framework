@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,6 @@
  */
 
 import org.gradle.api.initialization.resolve.RepositoriesMode.FAIL_ON_PROJECT_REPOS
-import org.gradle.api.initialization.resolve.RulesMode.FAIL_ON_PROJECT_RULES
-
-pluginManagement {
-    includeBuild("../dependency-updates-report-aggregation")
-}
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
@@ -29,29 +24,17 @@ dependencyResolutionManagement {
     repositories {
         gradlePluginPortal()
     }
-    repositoriesMode = FAIL_ON_PROJECT_REPOS
+    repositoriesMode.set(FAIL_ON_PROJECT_REPOS)
 
     versionCatalogs {
         create("libs") {
             from(files("../libs.versions.toml"))
         }
     }
-
-    // work-around for https://github.com/wooga/atlas-github/pull/152
-    components {
-        withModule("net.wooga.gradle:github") {
-            withVariant("apiElements") {
-                withDependencies {
-                    add("org.kohsuke:github-api:1.135")
-                }
-            }
-        }
-    }
-    rulesMode = FAIL_ON_PROJECT_RULES
 }
 
-rootProject.name = "build-logic"
-rootProject.buildFileName = "build-logic.gradle.kts"
+rootProject.name = "dependency-updates-report-aggregation"
+rootProject.buildFileName = "dependency-updates-report-aggregation.gradle.kts"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 enableFeaturePreview("STABLE_CONFIGURATION_CACHE")

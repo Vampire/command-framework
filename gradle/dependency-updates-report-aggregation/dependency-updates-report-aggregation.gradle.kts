@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,34 +18,28 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    alias(libs.plugins.convention.dependencyUpdatesReportAggregatee)
+    kotlin("plugin.serialization") version embeddedKotlinVersion
+    alias(libs.plugins.versions)
 }
 
 dependencies {
-    implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
     // Enforce the embedded Kotlin version for build logic
     implementation(enforcedPlatform(kotlin("bom")))
     implementation(plugin(libs.plugins.versions))
-    implementation(plugin(libs.plugins.grgit))
-    implementation(plugin(libs.plugins.spotbugs))
-    implementation(plugin(libs.plugins.bndBuilder))
-    implementation(plugin(libs.plugins.nexus.publish))
-    implementation(plugin(libs.plugins.nexus.staging))
-    implementation(plugin(libs.plugins.release))
-    implementation(plugin(libs.plugins.github))
-    implementation(plugin(libs.plugins.pitest))
-    implementation(":dependency-updates-report-aggregation")
-    implementation(libs.build.javaparser.core)
-    implementation(libs.build.grgit.core)
-    implementation(libs.build.github.api)
-    implementation(libs.test.pitest)
-    implementation(libs.test.pitest.plugin.rv)
+    implementation(platform(libs.build.kotlinx.serialization.bom))
+    implementation(libs.build.kotlinx.serialization.core)
+    implementation(libs.build.kotlinx.serialization.json)
 }
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         allWarningsAsErrors = true
     }
+}
+
+tasks.dependencyUpdates {
+    checkForGradleUpdate = false
+    checkConstraints = true
 }
 
 fun plugin(plugin: Provider<PluginDependency>) = plugin.map {

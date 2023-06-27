@@ -32,6 +32,7 @@ dependencyResolutionManagement {
     repositoriesMode = FAIL_ON_PROJECT_REPOS
 }
 
+includeBuild("gradle/build-logic")
 rootProject.name = "command-framework"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

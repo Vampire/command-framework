@@ -16,13 +16,9 @@
 
 package net.kautler
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.benmanes.gradle.versions.reporter.PlainTextReporter
-import com.github.benmanes.gradle.versions.reporter.result.Result
-import com.github.benmanes.gradle.versions.updates.gradle.GradleReleaseChannel.CURRENT
-import net.kautler.util.ProblemsProvider
-import net.kautler.util.matches
-import net.kautler.util.updateCounts
+import net.kautler.util.PreliminaryReleaseFilter
+import net.kautler.util.add
+import net.kautler.util.ignoredDependencies
 import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.kotlin.dsl.newInstance
 import java.time.Instant.now
@@ -31,7 +27,7 @@ import kotlin.LazyThreadSafetyMode.NONE
 plugins {
     java
     id("org.ajoberstar.grgit")
-    id("com.github.ben-manes.versions")
+    id("net.kautler.dependency-updates-report-aggregator")
 }
 
 val libs = the<LibrariesForLibs>()
@@ -92,144 +88,44 @@ tasks.processResources {
 }
 
 tasks.dependencyUpdates {
-    gradleReleaseChannel = CURRENT.id
-    checkConstraints = true
-
     rejectVersionIf {
-        val preliminaryReleaseRegex = Regex(
-            """(?i)[.-](?:${
-                listOf(
-                    "alpha",
-                    "beta",
-                    "rc",
-                    "cr",
-                    "m",
-                    "preview",
-                    "test",
-                    "pr",
-                    "pre",
-                    "b",
-                    "ea"
-                ).joinToString("|")
-            })[.\d-]*"""
-        )
-        preliminaryReleaseRegex.containsMatchIn(candidate.version) &&
-                !preliminaryReleaseRegex.containsMatchIn(currentVersion)
+        if (PreliminaryReleaseFilter.reject(this)) {
+            reject("preliminary release")
+        }
+
+        if ((candidate.group == libs.test.groovy.get().group) &&
+            (candidate.module == libs.test.groovy.get().name) &&
+            (candidate.version.substringBefore(".").toInt() > 4)
+        ) {
+            reject("Minimum supported version is Java 11")
+        }
+
+        if ((candidate.group == libs.test.spock.core.get().group) &&
+            (candidate.module == libs.test.spock.core.get().name) &&
+            (candidate.version.substringAfter("-groovy-").substringBefore(".").toInt() > 4)
+        ) {
+            reject("Minimum supported version is Java 11")
+        }
+
+        // branches above already rejected with appropriate reason
+        return@rejectVersionIf false
     }
 
-    outputFormatter = closureOf<Result> {
-        val buildLogicResultFile = file("gradle/build-logic/build/dependencyUpdates/report.json")
-        if (buildLogicResultFile.isFile) {
-            val buildLogicResult = ObjectMapper().readValue(buildLogicResultFile, Result::class.java)!!
-            current.dependencies.addAll(buildLogicResult.current.dependencies)
-            outdated.dependencies.addAll(buildLogicResult.outdated.dependencies)
-            exceeded.dependencies.addAll(buildLogicResult.exceeded.dependencies)
-            undeclared.dependencies.addAll(buildLogicResult.undeclared.dependencies)
-            unresolved.dependencies.addAll(buildLogicResult.unresolved.dependencies)
-        }
-
-        val ignored = outdated.dependencies.filter {
-            it.matches("org.gradle.kotlin.kotlin-dsl", "org.gradle.kotlin.kotlin-dsl.gradle.plugin") ||
-                    it.matches("org.jetbrains.kotlin", "kotlin-reflect") ||
-                    it.matches("org.jetbrains.kotlin", "kotlin-sam-with-receiver") ||
-                    it.matches("org.jetbrains.kotlin", "kotlin-scripting-compiler-embeddable") ||
-                    it.matches("org.jetbrains.kotlin", "kotlin-stdlib-jdk8") ||
-                    it.matches("org.kohsuke", "github-api") ||
-                    // minimum supported version Java 11
-                    it.matches("org.apache.groovy", "groovy") ||
-                    it.matches("org.spockframework", "spock-core", newVersion = "2.4-groovy-5.0")
-        }
-
-        outdated.dependencies.removeAll(ignored)
-        updateCounts()
-
-        PlainTextReporter(project, revisionLevel(), gradleReleaseChannelLevel())
-            .write(System.out, this)
-
-        if (ignored.isNotEmpty()) {
-            println("\nThe following dependencies have later ${revisionLevel()} versions but were ignored:")
-            ignored.forEach {
-                println(" - ${it.group}:${it.name} [${it.version} -> ${it.available.getProperty(revisionLevel())}]")
-                it.projectUrl?.let { println("     $it") }
-            }
-        }
-
-        val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
-
-        val problems = buildList {
-            val dependenciesGroup = ProblemGroup.create("dependencies", "Dependencies")
-
-            if (gradle.current.isFailure) {
-                add(
-                    problemReporter.create(
-                        ProblemId.create(
-                            "gradle-version-could-not-be-checked",
-                            "Gradle version could not be checked",
-                            dependenciesGroup
-                        )
-                    ) {
-                        solution("Retry later")
-                        solution("Check the concrete error above")
-                        severity(Severity.ERROR)
-                    }
-                )
-            }
-
-            if (unresolved.count != 0) {
-                add(
-                    problemReporter.create(
-                        ProblemId.create(
-                            "unresolved-libraries-found",
-                            "Unresolved libraries found",
-                            dependenciesGroup
-                        )
-                    ) {
-                        solution("Retry later")
-                        solution("Check the concrete error above")
-                        solution("Find out why resolution failed")
-                        severity(Severity.ERROR)
-                    }
-                )
-            }
-
-            if (gradle.current.isUpdateAvailable) {
-                add(
-                    problemReporter.create(
-                        ProblemId.create(
-                            "gradle-version-is-outdated",
-                            "Gradle version is outdated",
-                            dependenciesGroup
-                        )
-                    ) {
-                        solution("Update Gradle")
-                        severity(Severity.ERROR)
-                    }
-                )
-            }
-
-            if (outdated.count != 0) {
-                add(
-                    problemReporter.create(
-                        ProblemId.create(
-                            "outdated-libraries-found",
-                            "Outdated libraries found",
-                            dependenciesGroup
-                        )
-                    ) {
-                        solution("Update the libraries")
-                        solution("Add the outdated libraries to the list of ignored libraries")
-                        severity(Severity.ERROR)
-                    }
-                )
-            }
-        }
-
-        if (problems.isNotEmpty()) {
-            throw problemReporter.throwing(IllegalStateException(), problems)
-        }
+    ignoredDependencies {
+        // This plugin should always be used without version as it is tightly
+        // tied to the Gradle version that is building the precompiled script plugins
+        add(group = "org.gradle.kotlin.kotlin-dsl", name = "org.gradle.kotlin.kotlin-dsl.gradle.plugin")
+        // These dependencies are used in the build logic so should match the
+        // embedded Kotlin version and not be upgraded independently
+        add(group = "org.jetbrains.kotlin", name = "kotlin-assignment-compiler-plugin-embeddable")
+        add(group = "org.jetbrains.kotlin", name = "kotlin-bom")
+        add(group = "org.jetbrains.kotlin", name = "kotlin-build-tools-impl")
+        add(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
+        add(group = "org.jetbrains.kotlin", name = "kotlin-reflect")
+        add(group = "org.jetbrains.kotlin", name = "kotlin-sam-with-receiver-compiler-plugin-embeddable")
+        add(group = "org.jetbrains.kotlin", name = "kotlin-scripting-compiler-embeddable")
+        add(group = "org.jetbrains.kotlin", name = "kotlin-stdlib")
+        // should be the one used by the Wooga GitHub Gradle plugin
+        add(group = "org.kohsuke", name = "github-api")
     }
-}
-
-tasks.dependencyUpdates {
-    dependsOn(gradle.includedBuild("build-logic").task(":dependencyUpdates"))
 }
