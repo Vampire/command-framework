@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Björn Kautler
+ * Copyright 2023-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import static java.lang.Boolean.TRUE;
 import static java.util.Collections.singletonList;
 
 /**
- * A property source for Log4j to make thread context maps inhertiable.
+ * A property source for Log4j to make thread context maps inheritable.
  * With this, log messages can be properly attributed to test methods even when
  * multiple threads are involved.
  */

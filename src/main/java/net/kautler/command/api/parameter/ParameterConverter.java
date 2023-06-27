@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public interface ParameterConverter<M, R> {
      * @param commandContext the command context, usually fully populated but not necessarily
      * @return the converted parameter
      * @throws InvalidParameterFormatException if the format of the parameter is invalid and could not be parsed
-     * @throws InvalidParameterValueException  if the value of the parameter is invalid, e. g. the id of an unknown user
+     * @throws InvalidParameterValueException  if the value of the parameter is invalid, e.g. the id of an unknown user
      * @throws Exception                       if there goes anything wrong during parsing
      */
     R convert(String parameter, String type, CommandContext<? extends M> commandContext) throws Exception;
