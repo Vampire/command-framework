@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2023 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,23 +146,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
                 && shardManagers.isUnsatisfied() && shardManagerCollections.isUnsatisfied()) {
             logger.info("No JDA, Collection<JDA>, ShardManager or Collection<ShardManager> injected, CommandHandlerJda will not be used.");
         } else {
-            Stream.Builder<String> injectedObjects = Stream.builder();
-            if (!jdas.isUnsatisfied()) {
-                injectedObjects.add("JDA");
-            }
-            if (!jdaCollections.isUnsatisfied()) {
-                injectedObjects.add("Collection<JDA>");
-            }
-            if (!shardManagers.isUnsatisfied()) {
-                injectedObjects.add("ShardManager");
-            }
-            if (!shardManagerCollections.isUnsatisfied()) {
-                injectedObjects.add("Collection<ShardManager>");
-            }
-            logger.info(injectedObjects
-                    .build()
-                    .collect(joining(", ", "", " injected, CommandHandlerJda will be used."))
-                    .replaceFirst(",(?=(?>[^,]* injected, CommandHandlerJda will be used\\.$))", " and"));
+            logger.info(this::constructWillBeUsedLogMessage);
             Stream.concat(
                     jdas.stream(),
                     jdaCollections.stream().flatMap(Collection::stream)
@@ -172,6 +156,26 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
                     shardManagerCollections.stream().flatMap(Collection::stream)
             ).forEach(shardManager -> shardManager.addEventListener(this));
         }
+    }
+
+    private String constructWillBeUsedLogMessage() {
+        Stream.Builder<String> injectedObjects = Stream.builder();
+        if (!jdas.isUnsatisfied()) {
+            injectedObjects.add("JDA");
+        }
+        if (!jdaCollections.isUnsatisfied()) {
+            injectedObjects.add("Collection<JDA>");
+        }
+        if (!shardManagers.isUnsatisfied()) {
+            injectedObjects.add("ShardManager");
+        }
+        if (!shardManagerCollections.isUnsatisfied()) {
+            injectedObjects.add("Collection<ShardManager>");
+        }
+        return injectedObjects
+                .build()
+                .collect(joining(", ", "", " injected, CommandHandlerJda will be used."))
+                .replaceFirst(",(?=(?>[^,]* injected, CommandHandlerJda will be used\\.$))", " and");
     }
 
     /**
