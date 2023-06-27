@@ -67,43 +67,7 @@ public class SpockTestUnit extends AbstractTestUnit implements ExecutedInDiscove
                 .selectors(DiscoverySelectors.selectUniqueId(testIdentifier.getUniqueId()))
                 .build();
 
-        launcher.registerTestExecutionListeners(new TestExecutionListener() {
-            @Override
-            public void executionSkipped(TestIdentifier testIdentifier, String reason) {
-                if (testIdentifier.isTest()) {
-                    resultCollector.notifySkipped(new Description(testIdentifier.getUniqueId(), testClass));
-                }
-            }
-
-            @Override
-            public void executionStarted(TestIdentifier testIdentifier) {
-                if (testIdentifier.isTest()) {
-                    resultCollector.notifyStart(new Description(testIdentifier.getUniqueId(), testClass));
-                }
-            }
-
-            @Override
-            public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
-                Optional<Throwable> throwable = testExecutionResult.getThrowable();
-                if (testIdentifier.isTest()) {
-                    if (TestExecutionResult.Status.ABORTED == testExecutionResult.getStatus()) {
-                        // abort treated as success
-                        // see: https://junit.org/junit5/docs/5.0.0/api/org/junit/jupiter/api/Assumptions.html
-                        resultCollector.notifyEnd(new Description(testIdentifier.getUniqueId(), testClass));
-                    } else if (throwable.isPresent()) {
-                        resultCollector.notifyEnd(new Description(testIdentifier.getUniqueId(), testClass), throwable.get());
-                    } else {
-                        resultCollector.notifyEnd(new Description(testIdentifier.getUniqueId(), testClass));
-                    }
-                } else {
-                    // Classes with failing BeforeAll methods identify as containers, not tests.
-                    if (throwable.isPresent()) {
-                        resultCollector.notifyEnd(new Description(testIdentifier.getUniqueId(), testClass), throwable.get());
-                    }
-                }
-            }
-
-        });
+        launcher.registerTestExecutionListeners(new ResultCollectorNotifier(resultCollector, testClass));
         launcher.execute(launcherDiscoveryRequest);
     }
 
@@ -131,5 +95,66 @@ public class SpockTestUnit extends AbstractTestUnit implements ExecutedInDiscove
                 .add("uniqueId=" + testIdentifier.getUniqueId())
                 .add("displayName=" + testIdentifier.getDisplayName())
                 .toString();
+    }
+
+    /**
+     * A test execution listener that notifies the given result collector about executed tests.
+     */
+    private static class ResultCollectorNotifier implements TestExecutionListener {
+        /**
+         * The result collector to be notified about executed tests.
+         */
+        private final ResultCollector resultCollector;
+
+        /**
+         * The test class to be used for the created {@code Description}s.
+         */
+        private final Class<?> testClass;
+
+        /**
+         * Constructs a new Spock test unit.
+         *
+         * @param resultCollector the result collector to be notified about executed tests
+         * @param testClass       the test class to be used for the created {@code Description}s
+         */
+        public ResultCollectorNotifier(ResultCollector resultCollector, Class<?> testClass) {
+            this.resultCollector = resultCollector;
+            this.testClass = testClass;
+        }
+
+        @Override
+        public void executionSkipped(TestIdentifier testIdentifier, String reason) {
+            if (testIdentifier.isTest()) {
+                resultCollector.notifySkipped(new Description(testIdentifier.getUniqueId(), testClass));
+            }
+        }
+
+        @Override
+        public void executionStarted(TestIdentifier testIdentifier) {
+            if (testIdentifier.isTest()) {
+                resultCollector.notifyStart(new Description(testIdentifier.getUniqueId(), testClass));
+            }
+        }
+
+        @Override
+        public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
+            Optional<Throwable> throwable = testExecutionResult.getThrowable();
+            if (testIdentifier.isTest()) {
+                if (TestExecutionResult.Status.ABORTED == testExecutionResult.getStatus()) {
+                    // abort treated as success
+                    // see: https://junit.org/junit5/docs/5.0.0/api/org/junit/jupiter/api/Assumptions.html
+                    resultCollector.notifyEnd(new Description(testIdentifier.getUniqueId(), testClass));
+                } else if (throwable.isPresent()) {
+                    resultCollector.notifyEnd(new Description(testIdentifier.getUniqueId(), testClass), throwable.get());
+                } else {
+                    resultCollector.notifyEnd(new Description(testIdentifier.getUniqueId(), testClass));
+                }
+            } else {
+                // Classes with failing BeforeAll methods identify as containers, not tests.
+                if (throwable.isPresent()) {
+                    resultCollector.notifyEnd(new Description(testIdentifier.getUniqueId(), testClass), throwable.get());
+                }
+            }
+        }
     }
 }
