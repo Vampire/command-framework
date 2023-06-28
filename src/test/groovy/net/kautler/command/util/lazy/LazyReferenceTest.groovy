@@ -16,7 +16,6 @@
 
 package net.kautler.command.util.lazy
 
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -36,7 +35,7 @@ class LazyReferenceTest extends Specification {
 
     def prepareLocks(Closure writeLockLockInterceptor = { callRealMethod() }) {
         def readLock = Spy(testee.getInternalState('readLock'))
-        testee.setFinalField('readLock', readLock)
+        testee.setInternalState('readLock', readLock)
         readLock.lock() >> {
             callRealMethod()
             readLocks++
@@ -47,7 +46,7 @@ class LazyReferenceTest extends Specification {
         }
 
         def writeLock = Spy(testee.getInternalState('writeLock'))
-        testee.setFinalField('writeLock', writeLock)
+        testee.setInternalState('writeLock', writeLock)
         writeLock.lock() >> {
             boolean readLockReleased = readLocks == 0
             assert readLockReleased
@@ -60,7 +59,6 @@ class LazyReferenceTest extends Specification {
         }
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'value should be initialized only once'() {
         given:
@@ -79,7 +77,6 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'get should throw exception if value producer returns null'() {
         given:
@@ -97,7 +94,6 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'value should not get changed once assigned even if outer check succeeds'() {
         given:
@@ -118,7 +114,6 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'write lock should not be requested if value is already set'() {
         given:
@@ -148,7 +143,6 @@ class LazyReferenceTest extends Specification {
             !testee.set
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'isSet should return true if value was already initialized'() {
         given:
@@ -170,7 +164,6 @@ class LazyReferenceTest extends Specification {
             testee == new LazyReference<Object>()
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'equals should return false if one reference is already initialized and one is not yet initialized'() {
         given:
@@ -187,7 +180,6 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'equals should return false if both references are already initialized but to different values'() {
         given:
@@ -210,7 +202,6 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'equals should return true if both references are initialized to the same value'() {
         given:
@@ -252,7 +243,6 @@ class LazyReferenceTest extends Specification {
             testee.hashCode() == new LazyReference<Object>().hashCode()
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'hash code should not be the same if one reference is already initialized and one is not yet initialized'() {
         given:
@@ -269,7 +259,6 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'hash code should not be the same if both references are already initialized but to different values'() {
         given:
@@ -292,7 +281,6 @@ class LazyReferenceTest extends Specification {
             writeLocks == 0
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'hash code should be the same if both references are initialized to the same value'() {
         given:
@@ -329,7 +317,6 @@ class LazyReferenceTest extends Specification {
             className = clazz.simpleName ?: clazz.typeName[(clazz.package.name.length() + 1)..-1]
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'toString should contain field name and value for "#field.name"'() {
         given:

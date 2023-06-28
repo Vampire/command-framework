@@ -149,12 +149,8 @@ ruleset {
     //MethodParameterTypeRequired
     //MethodReturnTypeRequired
     //NoDef
-    NoDouble {
-        doNotApplyToClassNames = 'net.kautler.test.PrivateFinalFieldSetterCategory'
-    }
-    NoFloat {
-        doNotApplyToClassNames = 'net.kautler.test.PrivateFinalFieldSetterCategory'
-    }
+    NoDouble
+    NoFloat
     NoJavaUtilDate
     NoTabCharacter
     //ParameterReassignment

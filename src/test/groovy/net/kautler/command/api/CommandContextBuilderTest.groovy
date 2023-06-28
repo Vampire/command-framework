@@ -16,7 +16,7 @@
 
 package net.kautler.command.api
 
-import net.kautler.test.PrivateFinalFieldSetterCategory
+import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
@@ -72,11 +72,11 @@ class CommandContextBuilderTest extends Specification {
             thrown(NullPointerException)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should not accept null message in given command context'() {
         given:
             def commandContext = testee.build()
-            commandContext.setFinalField('message', null)
+            commandContext.setInternalState('message', null)
 
         when:
             new CommandContext.Builder(commandContext)
@@ -85,11 +85,11 @@ class CommandContextBuilderTest extends Specification {
             thrown(NullPointerException)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should not accept null message content in given command context'() {
         given:
             def commandContext = testee.build()
-            commandContext.setFinalField('messageContent', null)
+            commandContext.setInternalState('messageContent', null)
 
         when:
             new CommandContext.Builder(commandContext)
@@ -98,11 +98,11 @@ class CommandContextBuilderTest extends Specification {
             thrown(NullPointerException)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should not accept null additional data in given command context'() {
         given:
             def commandContext = testee.build()
-            commandContext.setFinalField('additionalData', null)
+            commandContext.setInternalState('additionalData', null)
 
         when:
             new CommandContext.Builder(commandContext)
@@ -111,11 +111,11 @@ class CommandContextBuilderTest extends Specification {
             thrown(NullPointerException)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should not accept null key in additional data of given command context'() {
         given:
             def commandContext = testee.build()
-            commandContext.setFinalField('additionalData', [(null): _])
+            commandContext.setInternalState('additionalData', [(null): _])
 
         when:
             new CommandContext.Builder(commandContext)
@@ -124,11 +124,11 @@ class CommandContextBuilderTest extends Specification {
             thrown(NullPointerException)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should not accept null value in additional data of given command context'() {
         given:
             def commandContext = testee.build()
-            commandContext.setFinalField('additionalData', [key: null])
+            commandContext.setInternalState('additionalData', [key: null])
 
         when:
             new CommandContext.Builder(commandContext)
@@ -137,77 +137,77 @@ class CommandContextBuilderTest extends Specification {
             thrown(NullPointerException)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should set message in built command context'() {
         given:
             def commandContext = testee.build()
-            commandContext.setFinalField('message', _)
+            commandContext.setInternalState('message', _)
 
         expect:
             new CommandContext.Builder(commandContext).build().message.is(_)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should set message content in built command context'() {
         given:
             def messageContent = randomUUID() as String
             def commandContext = testee.build()
-            commandContext.setFinalField('messageContent', messageContent)
+            commandContext.setInternalState('messageContent', messageContent)
 
         expect:
             new CommandContext.Builder(commandContext).build().messageContent.is(messageContent)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should set prefix in built command context'() {
         given:
             def prefix = randomUUID() as String
             def commandContext = testee.build()
-            commandContext.setFinalField('prefix', prefix)
+            commandContext.setInternalState('prefix', prefix)
 
         expect:
             new CommandContext.Builder(commandContext).build().prefix.get().is(prefix)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should set alias in built command context'() {
         given:
             def alias = randomUUID() as String
             def commandContext = testee.build()
-            commandContext.setFinalField('alias', alias)
+            commandContext.setInternalState('alias', alias)
 
         expect:
             new CommandContext.Builder(commandContext).build().alias.get().is(alias)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should set parameter string in built command context'() {
         given:
             def parameterString = randomUUID() as String
             def commandContext = testee.build()
-            commandContext.setFinalField('parameterString', parameterString)
+            commandContext.setInternalState('parameterString', parameterString)
 
         expect:
             new CommandContext.Builder(commandContext).build().parameterString.get().is(parameterString)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should set command in built command context'() {
         given:
             Command command = Stub()
             def commandContext = testee.build()
-            commandContext.setFinalField('command', command)
+            commandContext.setInternalState('command', command)
 
         expect:
             new CommandContext.Builder(commandContext).build().command.get().is(command)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'command context constructor should not set the same additional data container in built command context'() {
         given:
             def additionalData = [:]
             def commandContext = testee.build()
-            commandContext.setFinalField('additionalData', additionalData)
+            commandContext.setInternalState('additionalData', additionalData)
 
         expect:
             !new CommandContext.Builder(commandContext).build().additionalData.is(additionalData)

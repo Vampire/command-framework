@@ -21,7 +21,6 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Role
 import net.kautler.command.api.CommandContext
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -274,7 +273,6 @@ class RoleJdaTest extends Specification {
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'invariant violation [roleId: #roleId, roleName: #roleName, caseSensitive: #caseSensitive, rolePattern: #rolePattern] is checked'() {
         given:

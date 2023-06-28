@@ -30,7 +30,7 @@ import net.kautler.command.api.restriction.RestrictionChainElement
 import net.kautler.command.api.restriction.RestrictionChainElement.AndCombination
 import net.kautler.command.api.restriction.RestrictionChainElement.Negation
 import net.kautler.command.api.restriction.RestrictionChainElement.OrCombination
-import net.kautler.test.PrivateFinalFieldSetterCategory
+import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
@@ -274,25 +274,23 @@ class CommandTest extends Specification {
             restrictionChainElements.restriction == [Restriction1, Restriction2, Restriction3]
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'multiple restrictions with unknown policy should throw AssertionError'() {
         given:
-            def switchMapField
+            def switchMapClass
             def originalSwitchMap
             def namePrefix = Command.name
             def classLoader = Command.classLoader
             for (int i = 1; ; i++) {
                 def clazz = classLoader.loadClass("$namePrefix\$$i")
                 try {
-                    switchMapField = clazz.getFinalFieldForSetting(
-                            '$SwitchMap$net$kautler$command$api$annotation$RestrictionPolicy$Policy')
-                    if (switchMapField) {
-                        originalSwitchMap = switchMapField.get(null)
-                        def switchMap = new int[originalSwitchMap.size()]
-                        Arrays.fill(switchMap, Integer.MAX_VALUE)
-                        switchMapField.set(null, switchMap)
-                        break
-                    }
+                    clazz.getField('$SwitchMap$net$kautler$command$api$annotation$RestrictionPolicy$Policy')
+                    switchMapClass = clazz
+                    originalSwitchMap = switchMapClass.getInternalState('$SwitchMap$net$kautler$command$api$annotation$RestrictionPolicy$Policy')
+                    def switchMap = new int[originalSwitchMap.size()]
+                    Arrays.fill(switchMap, Integer.MAX_VALUE)
+                    switchMapClass.setInternalState('$SwitchMap$net$kautler$command$api$annotation$RestrictionPolicy$Policy', switchMap)
+                    break
                 } catch (NoSuchFieldException ignore) {
                     // try next class
                 }
@@ -314,7 +312,7 @@ class CommandTest extends Specification {
             ae.message == "Unhandled switch case for policy 'NONE_OF'"
 
         cleanup:
-            switchMapField?.set(null, originalSwitchMap)
+            switchMapClass.setInternalState('$SwitchMap$net$kautler$command$api$annotation$RestrictionPolicy$Policy', originalSwitchMap)
     }
 
     def '#testee.getClass().simpleName should have asynchronous #expectedAsynchronous'() {

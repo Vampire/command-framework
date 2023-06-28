@@ -18,10 +18,10 @@ package net.kautler.command.api
 
 import jakarta.inject.Inject
 import net.kautler.test.ContextualInstanceCategory
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.jboss.weld.spock.EnableWeld
 import org.jboss.weld.spock.WeldInitiator
 import org.jboss.weld.spock.WeldSetup
+import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.environment.RestoreSystemProperties
@@ -31,7 +31,9 @@ import static java.nio.charset.StandardCharsets.UTF_8
 import static java.time.Instant.now
 import static org.powermock.reflect.Whitebox.getAllInstanceFields
 import static org.powermock.reflect.Whitebox.getField
+import static org.powermock.reflect.Whitebox.getInternalState
 import static org.powermock.reflect.Whitebox.newInstance
+import static org.powermock.reflect.Whitebox.setInternalState
 
 @EnableWeld
 @RestoreSystemProperties
@@ -50,12 +52,11 @@ class VersionTest extends Specification {
         System.properties.'java.protocol.handler.pkgs' = 'net.kautler.test.protocol'
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'IOException while reading version properties should set all fields to default value'() {
         given:
-            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
-            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
-            versionPropertiesResourceField.set(null, new URL('testproperties:IOException'))
+            def originalVersionPropertiesResource = Version.getInternalState('versionPropertiesResource')
+            Version.setInternalState('versionPropertiesResource', new URL('testproperties:IOException'))
 
         expect:
             with(testee) {
@@ -66,15 +67,14 @@ class VersionTest extends Specification {
             }
 
         cleanup:
-            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+            Version.setInternalState('versionPropertiesResource', originalVersionPropertiesResource)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'missing version properties should set all fields to default value'() {
         given:
-            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
-            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
-            versionPropertiesResourceField.set(null, new URL('testproperties:'))
+            def originalVersionPropertiesResource = Version.getInternalState('versionPropertiesResource')
+            Version.setInternalState('versionPropertiesResource', new URL('testproperties:'))
 
         expect:
             with(testee) {
@@ -85,18 +85,17 @@ class VersionTest extends Specification {
             }
 
         cleanup:
-            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+            Version.setInternalState('versionPropertiesResource', originalVersionPropertiesResource)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'version properties should be properly interpreted for non-SNAPSHOT version'() {
         given:
-            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
-            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
+            def originalVersionPropertiesResource = Version.getInternalState('versionPropertiesResource')
             def now = now()
 
         and:
-            versionPropertiesResourceField.set(null, new URL("testproperties:${URLEncoder.encode("""
+            Version.setInternalState('versionPropertiesResource', new URL("testproperties:${URLEncoder.encode("""
                 version = 1.2.3
                 commitId = abcdef
                 buildTimestamp = $now
@@ -111,18 +110,17 @@ class VersionTest extends Specification {
             }
 
         cleanup:
-            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+            Version.setInternalState('versionPropertiesResource', originalVersionPropertiesResource)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'version properties should be properly interpreted for SNAPSHOT version'() {
         given:
-            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
-            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
+            def originalVersionPropertiesResource = Version.getInternalState('versionPropertiesResource')
             def now = now()
 
         and:
-            versionPropertiesResourceField.set(null, new URL("testproperties:${URLEncoder.encode("""
+            Version.setInternalState('versionPropertiesResource', new URL("testproperties:${URLEncoder.encode("""
                 version = 1.2.3-SNAPSHOT
                 commitId = abcdef
                 buildTimestamp = $now
@@ -137,18 +135,17 @@ class VersionTest extends Specification {
             }
 
         cleanup:
-            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+            Version.setInternalState('versionPropertiesResource', originalVersionPropertiesResource)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'missing commit ID should show as unknown in display version'() {
         given:
-            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
-            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
+            def originalVersionPropertiesResource = Version.getInternalState('versionPropertiesResource')
             def now = now()
 
         and:
-            versionPropertiesResourceField.set(null, new URL("testproperties:${URLEncoder.encode("""
+            Version.setInternalState('versionPropertiesResource', new URL("testproperties:${URLEncoder.encode("""
                 version = 1.2.3-SNAPSHOT
                 buildTimestamp = $now
             """, UTF_8.name())}"))
@@ -162,17 +159,16 @@ class VersionTest extends Specification {
             }
 
         cleanup:
-            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+            Version.setInternalState('versionPropertiesResource', originalVersionPropertiesResource)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'missing build timestamp should show as unknown in display version'() {
         given:
-            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
-            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
+            def originalVersionPropertiesResource = Version.getInternalState('versionPropertiesResource')
 
         and:
-            versionPropertiesResourceField.set(null, new URL("testproperties:${URLEncoder.encode("""
+            Version.setInternalState('versionPropertiesResource', new URL("testproperties:${URLEncoder.encode("""
                 version = 1.2.3-SNAPSHOT
                 commitId = abcdef
             """, UTF_8.name())}"))
@@ -186,7 +182,7 @@ class VersionTest extends Specification {
             }
 
         cleanup:
-            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+            Version.setInternalState('versionPropertiesResource', originalVersionPropertiesResource)
     }
 
     @Use(ContextualInstanceCategory)
@@ -195,21 +191,20 @@ class VersionTest extends Specification {
             testee.toString().startsWith("${testee.ci().getClass().simpleName}[")
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    // do not use the Whitebox category here as it would halfly overwrite field.type
     @Use(ContextualInstanceCategory)
     def 'toString should contain field name and value for "#field.name"'() {
         given:
-            def versionPropertiesResourceField = Version.getFinalFieldForSetting('versionPropertiesResource')
-            def originalVersionPropertiesResource = versionPropertiesResourceField.get(null)
+            def originalVersionPropertiesResource = getInternalState(Version, 'versionPropertiesResource')
             def now = now()
 
         and:
-            versionPropertiesResourceField.set(null, new URL("testproperties:${URLEncoder.encode("""
+            setInternalState(Version, 'versionPropertiesResource', new URL("testproperties:${URLEncoder.encode("""
                 version = 1.2.3
                 commitId = abcdef
                 buildTimestamp = $now
             """, UTF_8.name())}"))
-            testee.ci().setFinalField('displayVersion', 'display version')
+            setInternalState(testee.ci(), 'displayVersion', 'display version')
 
         when:
             def toStringResult = testee.toString()
@@ -221,7 +216,7 @@ class VersionTest extends Specification {
                     toStringResult.contains(String.valueOf(field.get(testee.ci())))
 
         cleanup:
-            versionPropertiesResourceField?.set(null, originalVersionPropertiesResource)
+            setInternalState(Version, 'versionPropertiesResource', originalVersionPropertiesResource)
 
         where:
             field << getAllInstanceFields(newInstance(getField(getClass(), 'testee').type))

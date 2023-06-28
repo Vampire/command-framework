@@ -19,7 +19,6 @@ package net.kautler.command.api.restriction.jda
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
 import net.kautler.command.api.CommandContext
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -130,7 +129,6 @@ class GuildJdaTest extends Specification {
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'invariant violation [guildId: #guildId, guildName: #guildName, caseSensitive: #caseSensitive, guildPattern: #guildPattern] is checked'() {
         given:

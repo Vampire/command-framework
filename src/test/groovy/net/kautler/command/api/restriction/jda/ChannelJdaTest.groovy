@@ -19,7 +19,6 @@ package net.kautler.command.api.restriction.jda
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.kautler.command.api.CommandContext
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -115,7 +114,6 @@ class ChannelJdaTest extends Specification {
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'invariant violation [channelId: #channelId, channelName: #channelName, caseSensitive: #caseSensitive, channelPattern: #channelPattern] is checked'() {
         given:

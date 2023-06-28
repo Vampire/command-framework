@@ -17,7 +17,6 @@
 package net.kautler.command.api.restriction.javacord.slash
 
 import net.kautler.command.api.CommandContext
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.user.User
 import org.javacord.api.interaction.SlashCommandInteraction
 import org.powermock.reflect.Whitebox
@@ -115,7 +114,6 @@ class UserJavacordSlashTest extends Specification {
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'invariant violation [userId: #userId, userName: #userName, caseSensitive: #caseSensitive, userPattern: #userPattern] is checked'() {
         given:

@@ -16,7 +16,7 @@
 
 package net.kautler.command.api
 
-import net.kautler.test.PrivateFinalFieldSetterCategory
+import org.powermock.reflect.Whitebox
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Subject
@@ -84,11 +84,11 @@ class CommandContextTest extends Specification {
             thrown(NullPointerException)
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
+    @Use(Whitebox)
     def 'constructor should not accept null additional data in given builder'() {
         given:
             def commandContextBuilder = new CommandContext.Builder(_, '')
-            commandContextBuilder.setFinalField('additionalData', null)
+            commandContextBuilder.setInternalState('additionalData', null)
 
         when:
             new CommandContext(commandContextBuilder)

@@ -17,7 +17,6 @@
 package net.kautler.command.api.restriction.javacord.slash
 
 import net.kautler.command.api.CommandContext
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.permission.Role
 import org.javacord.api.entity.server.Server
 import org.javacord.api.entity.user.User
@@ -270,7 +269,6 @@ class RoleJavacordSlashTest extends Specification {
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'invariant violation [roleId: #roleId, roleName: #roleName, caseSensitive: #caseSensitive, rolePattern: #rolePattern] is checked'() {
         given:

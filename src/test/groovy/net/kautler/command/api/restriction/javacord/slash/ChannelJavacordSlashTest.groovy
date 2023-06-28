@@ -17,7 +17,6 @@
 package net.kautler.command.api.restriction.javacord.slash
 
 import net.kautler.command.api.CommandContext
-import net.kautler.test.PrivateFinalFieldSetterCategory
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.channel.TextChannel
 import org.javacord.api.interaction.SlashCommandInteraction
@@ -131,7 +130,6 @@ class ChannelJavacordSlashTest extends Specification {
             be = allowed ? 'be' : 'not be'
     }
 
-    @Use(PrivateFinalFieldSetterCategory)
     @Use(Whitebox)
     def 'invariant violation [channelId: #channelId, channelName: #channelName, caseSensitive: #caseSensitive, channelPattern: #channelPattern] is checked'() {
         given:
