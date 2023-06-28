@@ -25,9 +25,7 @@ plugins {
 
 buildscript {
     repositories {
-        // have both in case JCenter is again refusing to work properly and Maven Central first
         mavenCentral()
-        jcenter()
     }
     dependencies {
         classpath("com.fasterxml.jackson.core:jackson-databind:2.10.0")
@@ -35,9 +33,7 @@ buildscript {
 }
 
 repositories {
-    // have both in case JCenter is again refusing to work properly and Maven Central first
     mavenCentral()
-    jcenter()
     @Suppress("UnstableApiUsage")
     gradlePluginPortal()
     maven("https://artifactory.appodeal.com/appodeal-public/") {

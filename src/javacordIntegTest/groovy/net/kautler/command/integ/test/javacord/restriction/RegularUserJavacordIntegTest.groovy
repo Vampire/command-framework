@@ -16,7 +16,6 @@
 
 package net.kautler.command.integ.test.javacord.restriction
 
-import club.minnced.discord.webhook.WebhookClientBuilder
 import jakarta.enterprise.event.ObservesAsync
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
@@ -63,11 +62,7 @@ class RegularUserJavacordIntegTest extends Specification {
                     .join()
 
         when:
-            new WebhookClientBuilder(webhook.id, webhook.token)
-                    .setWait(false)
-                    .build()
-                    .send('!ping')
-                    .join()
+            WebhookSenderHelper.send(webhook, '!ping')
 
         then:
             commandNotAllowedEventReceived.get()

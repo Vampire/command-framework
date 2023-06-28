@@ -16,7 +16,6 @@
 
 package net.kautler.command.integ.test.jda.restriction
 
-import club.minnced.discord.webhook.WebhookClientBuilder
 import jakarta.enterprise.event.ObservesAsync
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
@@ -63,11 +62,7 @@ class RegularUserJdaIntegTest extends Specification {
                     .complete()
 
         when:
-            new WebhookClientBuilder(webhook.idLong, webhook.token)
-                    .setWait(false)
-                    .build()
-                    .send('!ping')
-                    .complete()
+            WebhookSenderHelper.send(webhook, '!ping')
 
         then:
             commandNotAllowedEventReceived.get()

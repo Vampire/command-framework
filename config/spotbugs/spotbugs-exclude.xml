@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2019-2022 Björn Kautler
+  ~ Copyright 2019-2025 Björn Kautler
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -95,11 +95,25 @@
         <Bug pattern="URLCONNECTION_SSRF_FD"/>
     </Match>
 
-    <!-- false positive -->
+    <!-- false positives -->
     <Match>
         <Class name="net.kautler.command.handler.CommandHandlerJda"/>
         <Method name="addListener" params="" returns="void"/>
         <Bug pattern="CRLF_INJECTION_LOGS"/>
+    </Match>
+
+    <Match>
+        <Class name="net.kautler.command.integ.test.javacord.restriction.WebhookSenderHelper"/>
+        <Method name="send" params="org.javacord.api.entity.webhook.Webhook, java.lang.String" returns="void"/>
+        <Local name="webhookClient"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+    </Match>
+
+    <Match>
+        <Class name="net.kautler.command.integ.test.jda.restriction.WebhookSenderHelper"/>
+        <Method name="send" params="net.dv8tion.jda.api.entities.Webhook, java.lang.String" returns="void"/>
+        <Local name="webhookClient"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
     </Match>
 
     <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/384 -->

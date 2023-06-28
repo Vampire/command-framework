@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Bjoern Kautler
+ * Copyright 2019-2025 Bjoern Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,7 @@ plugins {
 }
 
 repositories {
-    // have both in case JCenter is again refusing to work properly and Maven Central first
     mavenCentral()
-    jcenter()
     maven("https://m2.dv8tion.net/releases")
 }
 
@@ -70,7 +68,7 @@ val versions by extra(mapOf(
         "weld-se" to "4.0.3.Final",
         "jandex" to "2.1.1.Final",
         "jansi" to "1.18",
-        "discordWebhooks" to "0.1.8"
+        "discordWebhooks" to "0.8.4"
 ))
 
 configurations.register("tools")

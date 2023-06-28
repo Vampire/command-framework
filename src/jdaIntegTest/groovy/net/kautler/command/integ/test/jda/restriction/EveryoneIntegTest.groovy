@@ -16,7 +16,6 @@
 
 package net.kautler.command.integ.test.jda.restriction
 
-import club.minnced.discord.webhook.WebhookClientBuilder
 import jakarta.enterprise.event.ObservesAsync
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
@@ -91,11 +90,7 @@ class EveryoneIntegTest extends Specification {
             textChannelAsBot.JDA.addEventListener(eventListener)
 
         when:
-            new WebhookClientBuilder(webhook.idLong, webhook.token)
-                    .setWait(false)
-                    .build()
-                    .send("!ping $random")
-                    .join()
+            WebhookSenderHelper.send(webhook, "!ping $random")
 
         then:
             responseReceived.get()
