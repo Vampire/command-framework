@@ -44,9 +44,7 @@ dependencies {
     implementation(libs.cdi.api)
     compileOnly(libs.inject.api)
     compileOnly(libs.annotation.api)
-    compileOnly(libs.spotbugs.annotations) {
-        exclude(libs.jsr305.get().group, libs.jsr305.get().name)
-    }
+    compileOnly(libs.spotbugs.annotations)
 
     implementation(libs.log4j.api)
 
