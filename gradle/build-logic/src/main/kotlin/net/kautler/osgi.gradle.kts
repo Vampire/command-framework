@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,40 +16,32 @@
 
 package net.kautler
 
-import aQute.bnd.gradle.BundleTaskConvention
-
 plugins {
     id("biz.aQute.bnd.builder")
 }
 
 tasks.jar {
-    @Suppress("DEPRECATION")
-    withConvention(BundleTaskConvention::class) {
+    bundle {
+        properties.put("version", archiveVersion)
         bnd(
-            archiveVersion.map { version ->
-                mapOf(
-                    "Import-Package" to listOf(
-                        listOf(
-                            "org.javacord.*",
-                            "resolution:=optional"
-                        ).joinToString(";"),
-                        listOf(
-                            "net.dv8tion.jda.*",
-                            "resolution:=optional"
-                        ).joinToString(";"),
-                        "*"
-                    ).joinToString(),
-                    "Export-Package" to listOf(
-                        "net.kautler.command.api.*",
-                        "version=$version",
-                        "-noimport:=true"
+            mapOf(
+                "Import-Package" to listOf(
+                    listOf(
+                        "org.javacord.*",
+                        "resolution:=optional"
                     ).joinToString(";"),
-                    // work-around for https://github.com/bndtools/bnd/issues/2227
-                    "-fixupmessages" to """^Classes found in the wrong directory: \\{META-INF/versions/9/module-info\\.class=module-info}$"""
-                )
-                    .entries
-                    .joinToString("\n") { (key, value) -> "$key=$value" }
-            }
+                    listOf(
+                        "net.dv8tion.jda.*",
+                        "resolution:=optional"
+                    ).joinToString(";"),
+                    "*"
+                ).joinToString(),
+                "Export-Package" to listOf(
+                    "net.kautler.command.api.*",
+                    "version=\${version}",
+                    "-noimport:=true"
+                ).joinToString(";")
+            )
         )
     }
 }
