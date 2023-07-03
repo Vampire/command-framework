@@ -23,6 +23,7 @@ import net.kautler.util.Property.Companion.boolean
 import net.kautler.util.Property.Companion.optionalString
 import net.kautler.util.afterReleaseBuild
 import net.kautler.util.beforeReleaseBuild
+import net.kautler.util.cachedProvider
 import net.kautler.util.createReleaseTag
 import net.kautler.util.git
 import net.kautler.util.preTagCommit
@@ -48,14 +49,13 @@ import javax.swing.JOptionPane.showOptionDialog
 import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.SwingUtilities
-import kotlin.LazyThreadSafetyMode.NONE
 
 plugins {
     java
     signing
     id("de.marcphilipp.nexus-publish")
     id("io.codearte.nexus-staging")
-    id("org.ajoberstar.grgit")
+    id("org.ajoberstar.grgit.service")
     id("net.wooga.github")
     id("net.kautler.readme")
 }
@@ -179,12 +179,8 @@ release {
     }
 }
 
-val releasePlugin by lazy(NONE) {
-    plugins.findPlugin(ReleasePlugin::class)!!
-}
-
-val releaseTagName by lazy(NONE) {
-    releasePlugin.tagName()!!
+val releaseTagName = cachedProvider {
+    plugins.findPlugin(ReleasePlugin::class)!!.tagName()
 }
 
 val gitHubToken by optionalString("github.token")
@@ -220,30 +216,38 @@ configure(listOf(tasks.release, tasks.runBuildTasks)) {
 
 tasks.withType<GithubPublish>().configureEach {
     onlyIf("only publish release versions to GitHub") { releaseVersion }
-    tagName = provider { releaseTagName }
-    releaseName = provider { releaseTagName }
+    tagName = releaseTagName
+    releaseName = releaseTagName
 }
 
 tasks.githubPublish {
+    usesService(grgitService.service)
     body = provider {
-        val releaseBody = grgit
-            .log {
-                github
-                    .clientProvider
-                    .get()
-                    .getRepository(github.repositoryName.get())
-                    .latestRelease
-                    ?.apply {
-                        excludes.add(tagName)
+        val releaseBody = grgitService
+            .service
+            .get()
+            .findGrgit()
+            .map {
+                it
+                    .log {
+                        github
+                            .clientProvider
+                            .get()
+                            .getRepository(github.repositoryName.get())
+                            .latestRelease
+                            ?.apply {
+                                excludes.add(tagName)
+                            }
+                    }
+                    .filter { commit ->
+                        !commit.shortMessage.startsWith("[Gradle Release Plugin] ")
+                    }
+                    .asReversed()
+                    .joinToString("\n") { commit ->
+                        "- ${commit.shortMessage} [${commit.id}]"
                     }
             }
-            .filter { commit ->
-                !commit.shortMessage.startsWith("[Gradle Release Plugin] ")
-            }
-            .asReversed()
-            .joinToString("\n") { commit ->
-                "- ${commit.shortMessage} [${commit.id}]"
-            }
+            .orElse("")
 
         if (isHeadless()) {
             return@provider releaseBody
@@ -254,7 +258,7 @@ tasks.githubPublish {
         SwingUtilities.invokeLater {
             val initialReleaseBody = """
                 # Highlights
-                -
+                - 
 
                 # Details
 
@@ -318,7 +322,7 @@ val finishMilestone by tasks.registering(Github::class) {
             listMilestones(OPEN)
                 .find { it.title == "Next Version" }!!
                 .apply {
-                    title = releaseTagName
+                    title = releaseTagName.get()
                     close()
                 }
 

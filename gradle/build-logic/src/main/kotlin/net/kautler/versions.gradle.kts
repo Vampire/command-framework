@@ -16,6 +16,7 @@
 
 package net.kautler
 
+import net.kautler.util.CommitId
 import net.kautler.util.NullOutputStream
 import net.kautler.util.PreliminaryReleaseFilter
 import net.kautler.util.ProblemsProvider
@@ -26,11 +27,9 @@ import org.gradle.kotlin.dsl.newInstance
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.time.Instant.now
-import kotlin.LazyThreadSafetyMode.NONE
 
 plugins {
     java
-    id("org.ajoberstar.grgit")
     id("net.kautler.dependency-updates-report-aggregator")
 }
 
@@ -72,13 +71,13 @@ configurations.configureEach {
     }
 }
 
-val commitId by lazy(NONE) {
-    grgit.head().id + (if (grgit.status().isClean) "" else "-dirty")
-}
-
 tasks.processResources {
     val version = version
-    val commitId = commitId
+    val commitId = providers.of(CommitId::class) {
+        parameters {
+            projectDirectory = layout.projectDirectory
+        }
+    }
     val now = now().toString()
     inputs.property("version", version)
     inputs.property("commitId", commitId)
@@ -87,7 +86,7 @@ tasks.processResources {
     filesMatching("net/kautler/command/api/version.properties") {
         expand(
             "version" to version,
-            "commitId" to commitId,
+            "commitId" to commitId.get(),
             "buildTimestamp" to now
         )
     }

@@ -33,7 +33,7 @@ build-gradle-plugin-release = "2.8.1"
 build-gradle-plugin-spotbugs = "6.4.8"
 build-gradle-plugin-versions = "0.51.0"
 build-gradle-plugin-refresh-versions = "0.60.6"
-build-grgit = "4.1.1"
+build-grgit = "5.3.3"
 build-jacoco = "0.8.14"
 build-javadoc = "21"
 build-javaparser = "3.15.1"
@@ -121,7 +121,7 @@ convention-publishing = { id = "net.kautler.publishing" }
 
 bndBuilder = { id = "biz.aQute.bnd.builder", version.ref = "build-gradle-plugin-bndBuilder" }
 github = { id = "net.wooga.github", version.ref = "build-gradle-plugin-github" }
-grgit = { id = "org.ajoberstar.grgit", version.ref = "build-grgit" }
+grgit = { id = "org.ajoberstar.grgit.service", version.ref = "build-grgit" }
 nexus-publish = { id = "de.marcphilipp.nexus-publish", version.ref = "build-gradle-plugin-nexus-publish" }
 nexus-staging = { id = "io.codearte.nexus-staging", version.ref = "build-gradle-plugin-nexus-staging" }
 pitest = { id = "info.solidsoft.pitest", version.ref = "build-gradle-plugin-pitest" }
