@@ -20,8 +20,10 @@ import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.StaticJavaParser
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.PackageDeclaration
-import com.github.javaparser.printer.PrettyPrinter
-import com.github.javaparser.printer.PrettyPrinterConfiguration
+import com.github.javaparser.printer.DefaultPrettyPrinter
+import com.github.javaparser.printer.configuration.DefaultConfigurationOption
+import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration
+import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration.ConfigOption.END_OF_LINE_CHARACTER
 import net.kautler.util.ProblemsProvider
 import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.api.tasks.PathSensitivity.RELATIVE
@@ -82,10 +84,9 @@ val generateModuleInfo by tasks.registering {
 
         moduleInfoFile.storage.ifPresent {
             it.save { compilationUnit ->
-                PrettyPrinter(
-                    PrettyPrinterConfiguration()
-                        .setOrderImports(true)
-                        .setEndOfLineCharacter("\n")
+                DefaultPrettyPrinter(
+                    DefaultPrinterConfiguration()
+                        .addOption(DefaultConfigurationOption(END_OF_LINE_CHARACTER, "\n"))
                 ).print(compilationUnit)
             }
         }
