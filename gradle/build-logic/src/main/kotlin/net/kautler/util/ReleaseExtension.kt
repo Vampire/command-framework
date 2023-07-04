@@ -16,8 +16,10 @@
 
 package net.kautler.util
 
-import net.researchgate.release.GitAdapter.GitConfig
 import net.researchgate.release.ReleaseExtension
+import net.researchgate.release.tasks.CreateReleaseTag
+import net.researchgate.release.tasks.PreTagCommit
+import net.researchgate.release.tasks.UpdateVersion
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -26,8 +28,6 @@ import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.named
-
-fun ReleaseExtension.git(configure: GitConfig.() -> Unit) = (getProperty("git") as GitConfig).configure()
 
 // part of work-around for https://github.com/researchgate/gradle-release/issues/304
 val Project.release: ReleaseExtension
@@ -42,17 +42,17 @@ val TaskContainer.release: TaskProvider<GradleBuild>
 val TaskContainer.runBuildTasks: TaskProvider<GradleBuild>
     get() = named<GradleBuild>("runBuildTasks")
 
-val TaskContainer.updateVersion: TaskProvider<Task>
-    get() = named("updateVersion")
+val TaskContainer.updateVersion: TaskProvider<UpdateVersion>
+    get() = named<UpdateVersion>("updateVersion")
 
 val TaskContainer.afterReleaseBuild: TaskProvider<Task>
     get() = named("afterReleaseBuild")
 
-val TaskContainer.preTagCommit: TaskProvider<Task>
-    get() = named("preTagCommit")
+val TaskContainer.preTagCommit: TaskProvider<PreTagCommit>
+    get() = named<PreTagCommit>("preTagCommit")
 
-val TaskContainer.createReleaseTag: TaskProvider<Task>
-    get() = named("createReleaseTag")
+val TaskContainer.createReleaseTag: TaskProvider<CreateReleaseTag>
+    get() = named<CreateReleaseTag>("createReleaseTag")
 
 val TaskContainer.beforeReleaseBuild: TaskProvider<Task>
     get() = named("beforeReleaseBuild")

@@ -25,7 +25,6 @@ import net.kautler.util.afterReleaseBuild
 import net.kautler.util.beforeReleaseBuild
 import net.kautler.util.cachedProvider
 import net.kautler.util.createReleaseTag
-import net.kautler.util.git
 import net.kautler.util.preTagCommit
 import net.kautler.util.release
 import net.kautler.util.runBuildTasks
@@ -175,6 +174,7 @@ tasks.withType<BaseStagingTask>().configureEach {
 release {
     tagTemplate = "v\$version"
     git {
+        requireBranch = "master"
         signTag = true
     }
 }
@@ -205,6 +205,7 @@ configure(listOf(tasks.release, tasks.runBuildTasks)) {
                         .setStandardInput(System.`in`)
                         .setStandardOutput(System.out)
                         .setStandardError(System.err)
+                        .addArguments("--no-configuration-cache")
                     gradle.startParameter.excludedTaskNames.forEach {
                         buildLauncher.addArguments("-x", it)
                     }
