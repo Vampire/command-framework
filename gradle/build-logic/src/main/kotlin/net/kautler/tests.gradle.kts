@@ -413,6 +413,7 @@ pitest {
         //"UOI3", "UOI4"
     )
     targetTests = listOf("net.kautler.*Test")
+    verbosity = "${if (logger.isInfoEnabled) VERBOSE_NO_SPINNER else NO_SPINNER}"
     outputFormats = listOf(
         "HTML",
         "XML",
@@ -423,6 +424,9 @@ pitest {
     timeoutConstInMillis = SECONDS.toMillis(30).toInt()
     mutationThreshold = 100
     maxSurviving = 0
+    // part of work-around for https://github.com/szpak/gradle-pitest-plugin/issues/342
+    //inputCharset = UTF_8
+    //outputCharset = UTF_8
 }
 
 val pitestLaunchDependencies = configurations.dependencyScope("pitestLaunchDependencies")
@@ -439,12 +443,12 @@ dependencies {
 }
 
 tasks.pitest {
+    // part of work-around for https://github.com/szpak/gradle-pitest-plugin/issues/342
     argumentProviders.add(
         CommandLineArgumentProvider {
             listOf(
                 "--inputEncoding=$UTF_8",
-                "--outputEncoding=$UTF_8",
-                "--verbosity=${if (logger.isInfoEnabled) VERBOSE_NO_SPINNER else NO_SPINNER}"
+                "--outputEncoding=$UTF_8"
             )
         }
     )
