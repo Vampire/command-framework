@@ -16,8 +16,8 @@
 
 package net.kautler
 
-import io.codearte.gradle.nexus.BaseStagingTask
-import io.codearte.gradle.nexus.GetStagingProfileTask
+import io.github.gradlenexus.publishplugin.AbstractNexusStagingRepositoryTask
+import io.github.gradlenexus.publishplugin.RetrieveStagingProfile
 import net.kautler.util.ProblemsProvider
 import net.kautler.util.Property.Companion.boolean
 import net.kautler.util.Property.Companion.optionalString
@@ -51,9 +51,9 @@ import javax.swing.SwingUtilities
 
 plugins {
     java
+    `maven-publish`
     signing
-    id("de.marcphilipp.nexus-publish")
-    id("io.codearte.nexus-staging")
+    id("io.github.gradle-nexus.publish-plugin")
     id("org.ajoberstar.grgit.service")
     id("net.wooga.github")
     id("net.kautler.readme")
@@ -89,12 +89,6 @@ tasks.withType<PublishToMavenRepository>().configureEach {
     doFirst("verify username and password are set") {
         sonatypeUsername.verifyPropertyIsSet(problemReporter, "sonatypeUsername", rootProject.name)
         sonatypePassword.verifyPropertyIsSet(problemReporter, "sonatypePassword", rootProject.name)
-    }
-}
-
-nexusPublishing {
-    repositories {
-        sonatype()
     }
 }
 
@@ -151,19 +145,20 @@ signing {
     sign(publishing.publications)
 }
 
-nexusStaging {
-    stagingProfileId = sonatypeStagingProfileId
-    username = sonatypeUsername
-    password = sonatypePassword
+nexusPublishing {
+    repositories {
+        sonatype {
+            stagingProfileId = sonatypeStagingProfileId
+            username = sonatypeUsername
+            password = sonatypePassword
+        }
+    }
 }
 
-tasks.withType<BaseStagingTask>().configureEach {
-    // make sure the staging tasks are run after any publishing tasks if both are to be run
-    mustRunAfter(tasks.withType<PublishToMavenRepository>())
-
+tasks.withType<AbstractNexusStagingRepositoryTask>().configureEach {
     val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
     doFirst("verify username, password and staging profile id are set") {
-        if (this !is GetStagingProfileTask) {
+        if (this !is RetrieveStagingProfile) {
             sonatypeStagingProfileId.verifyPropertyIsSet(problemReporter, "sonatypeStagingProfileId", rootProject.name)
         }
         sonatypeUsername.verifyPropertyIsSet(problemReporter, "sonatypeUsername", rootProject.name)
@@ -337,12 +332,12 @@ tasks.beforeReleaseBuild {
     dependsOn(tasks.named("pitest"))
 }
 
-tasks.closeRepository {
+val closeSonatypeStagingRepository by tasks.existing {
     onlyIf("only publish release versions to Maven Central") { releaseVersion }
 }
 
 tasks.publish {
-    dependsOn(tasks.closeRepository)
+    dependsOn(closeSonatypeStagingRepository)
 }
 
 tasks.afterReleaseBuild {
@@ -350,7 +345,8 @@ tasks.afterReleaseBuild {
 }
 
 // those must not run before publish was run
-listOf(tasks.releaseRepository, finishMilestone).forEach {
+val releaseSonatypeStagingRepository by tasks.existing
+listOf(releaseSonatypeStagingRepository, finishMilestone).forEach {
     it.configure {
         mustRunAfter(tasks.publish)
     }

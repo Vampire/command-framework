@@ -30,7 +30,6 @@ dependencies {
     implementation(plugin(libs.plugins.spotbugs))
     implementation(plugin(libs.plugins.bndBuilder))
     implementation(plugin(libs.plugins.nexus.publish))
-    implementation(plugin(libs.plugins.nexus.staging))
     implementation(plugin(libs.plugins.release))
     implementation(plugin(libs.plugins.github))
     implementation(plugin(libs.plugins.pitest))
