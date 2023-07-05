@@ -18,6 +18,7 @@ package net.kautler
 
 import io.github.gradlenexus.publishplugin.AbstractNexusStagingRepositoryTask
 import io.github.gradlenexus.publishplugin.RetrieveStagingProfile
+import net.kautler.util.BuildFeaturesProvider
 import net.kautler.util.InitJGit
 import net.kautler.util.ProblemsProvider
 import net.kautler.util.Property.Companion.boolean
@@ -28,11 +29,16 @@ import net.kautler.util.beforeReleaseBuild
 import net.kautler.util.cachedProvider
 import net.kautler.util.createReleaseTag
 import net.kautler.util.preTagCommit
+import net.kautler.util.registerMockTask
 import net.kautler.util.release
 import net.kautler.util.runBuildTasks
 import net.kautler.util.updateVersion
 import net.kautler.util.verifyPropertyIsSet
+import net.researchgate.release.ReleaseExtension
 import net.researchgate.release.ReleasePlugin
+import net.researchgate.release.tasks.CreateReleaseTag
+import net.researchgate.release.tasks.PreTagCommit
+import net.researchgate.release.tasks.UpdateVersion
 import org.gradle.tooling.GradleConnector
 import org.kohsuke.github.GHIssueState.OPEN
 import wooga.gradle.github.base.tasks.Github
@@ -49,8 +55,20 @@ plugins {
     id("net.kautler.readme")
 }
 
-// part of work-around for https://github.com/researchgate/gradle-release/issues/304
-apply(plugin = "net.researchgate.release")
+// part of work-around for https://github.com/researchgate/gradle-release/pull/405
+if (objects.newInstance<BuildFeaturesProvider>().buildFeatures.configurationCache.active.get()) {
+    extensions.create<ReleaseExtension>("release", project, emptyMap<String, Any>())
+    tasks.registerMockTask<GradleBuild>("release")
+    tasks.registerMockTask<GradleBuild>("runBuildTasks")
+    tasks.registerMockTask<UpdateVersion>("updateVersion")
+    tasks.registerMockTask<Task>("afterReleaseBuild")
+    tasks.registerMockTask<PreTagCommit>("preTagCommit")
+    tasks.registerMockTask<CreateReleaseTag>("createReleaseTag")
+    tasks.registerMockTask<Task>("beforeReleaseBuild")
+} else {
+    // part of work-around for https://github.com/researchgate/gradle-release/issues/304
+    apply(plugin = "net.researchgate.release")
+}
 
 val releaseVersion get() = !"$version".endsWith("-SNAPSHOT")
 val useGpgAgent by boolean("signing.useGpgAgent")

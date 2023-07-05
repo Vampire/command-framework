@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package net.kautler.util
 
 import net.researchgate.release.ReleaseExtension
+import net.researchgate.release.ReleasePlugin.getRELEASE_GROUP
 import net.researchgate.release.tasks.CreateReleaseTag
 import net.researchgate.release.tasks.PreTagCommit
 import net.researchgate.release.tasks.UpdateVersion
@@ -28,6 +29,7 @@ import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 
 // part of work-around for https://github.com/researchgate/gradle-release/issues/304
 val Project.release: ReleaseExtension
@@ -56,3 +58,12 @@ val TaskContainer.createReleaseTag: TaskProvider<CreateReleaseTag>
 
 val TaskContainer.beforeReleaseBuild: TaskProvider<Task>
     get() = named("beforeReleaseBuild")
+
+// part of work-around for https://github.com/researchgate/gradle-release/pull/405
+inline fun <reified T : Task> TaskContainer.registerMockTask(name: String) = register<T>(name) {
+    group = getRELEASE_GROUP()
+    // fail as soon as the task gets configured except while IntelliJ IDEA sync
+    if (!System.getProperty("idea.sync.active").toBoolean()) {
+        error("Please disable the configuration cache to use release tasks")
+    }
+}
