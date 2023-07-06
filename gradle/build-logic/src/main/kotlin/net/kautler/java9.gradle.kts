@@ -50,13 +50,15 @@ if (libs.versions.java.get().toInt() > 8) {
 
 val generateModuleInfo by tasks.registering {
     val main by sourceSets
-    inputs.files(main.allJava).withPropertyName("javaFiles").withPathSensitivity(RELATIVE)
+    val javaSources: FileTree = main.allJava
+    inputs.files(javaSources).withPropertyName("javaFiles").withPathSensitivity(RELATIVE)
     val moduleInfoFilePath = layout.buildDirectory.file("generated/sources/module-info/module-info.java")
     outputs.file(moduleInfoFilePath).withPropertyName("moduleInfoFile")
     outputs.cacheIf { true }
 
+    val javaVersion = libs.versions.java
     doLast("generate module info") {
-        StaticJavaParser.getConfiguration().languageLevel = LanguageLevel.valueOf("JAVA_${libs.versions.java.get()}")
+        StaticJavaParser.getConfiguration().languageLevel = LanguageLevel.valueOf("JAVA_${javaVersion.get()}")
 
         val moduleInfoFile = CompilationUnit()
             .setStorage(moduleInfoFilePath.get().asFile.toPath())
@@ -72,8 +74,7 @@ val generateModuleInfo by tasks.registering {
             .addDirective("requires static org.javacord.api;")
             .addDirective("requires static net.dv8tion.jda;")
 
-        main
-            .allJava
+        javaSources
             .matching { include("net/kautler/command/api/**") }
             .map(StaticJavaParser::parse)
             .flatMap { it.findAll(PackageDeclaration::class.java) }
