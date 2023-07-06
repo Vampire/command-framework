@@ -30,30 +30,34 @@ val readmeTemplateFilePath = "readme/README_template.md"
 val readmeFilePath = "README.md"
 val readmeChecksumFilePath = "readme/$readmeFilePath.sha256"
 
-val verifyReadme by tasks.registering {
-    inputs.files(readmeFilePath).withPropertyName("readme")
-    inputs.file(readmeChecksumFilePath).withPropertyName("readmeChecksum")
+val verifyReadme by tasks.registering(ReadmeTask::class) {
+    val readmeFile = file(readmeFilePath)
+    inputs.file(readmeFile).withPropertyName("readme")
+    val readmeChecksumFile = file(readmeChecksumFilePath)
+    inputs.file(readmeChecksumFile).withPropertyName("readmeChecksum")
 
+    val allTasks = provider { gradle.taskGraph.allTasks.map { it.path } }
     val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
+    val readmeTemplateFile = file(readmeTemplateFilePath)
     doLast("verify readme") {
-        if (!file(readmeFilePath).exists() || (file(readmeChecksumFilePath).readText() != calculateReadmeChecksum())) {
+        if (!readmeFile.exists() || (readmeChecksumFile.readText() != calculateChecksum(readmeFile))) {
             throw problemReporter.throwing(
                 IllegalStateException(),
                 ProblemId.create(
-                    "the-$readmeFilePath-file-was-tampered-with-manually",
+                    "the-${readmeFile.path}-file-was-tampered-with-manually",
                     buildString {
-                        append("The $readmeFilePath file was tampered with manually")
+                        append("The ${readmeFile.path} file was tampered with manually")
                         // do not use hasTask() as this requires realization of the task that maybe is not necessary
-                        if (!gradle.taskGraph.allTasks.none { it.name == "updateReadme" }) {
+                        if (allTasks.get().contains(":updateReadme")) {
                             append(""", if you want to overwrite it, add "-x $name" to your Gradle call""")
                         }
                     },
                     ProblemGroup.create("readme-tampering", "README Tampering")
                 )
             ) {
-                solution("Modify the $readmeTemplateFilePath file instead")
-                solution("Revert the tampered $readmeFilePath file")
-                solution("Overwrite the tampered $readmeFilePath file using the 'updateReadme' task")
+                solution("Modify the ${readmeTemplateFile.path} file instead")
+                solution("Revert the tampered ${readmeFile.path} file")
+                solution("Overwrite the tampered ${readmeFile.path} file using the 'updateReadme' task")
                 severity(Severity.ERROR)
             }
         }
@@ -66,7 +70,7 @@ tasks.check {
 
 val libs = the<LibrariesForLibs>()
 
-tasks.register("updateReadme") {
+tasks.register<ReadmeTask>("updateReadme") {
     val messageFrameworkVersions: Map<String, List<String>> by project
 
     val publishedFeatureVariants = "* `${
@@ -79,43 +83,54 @@ tasks.register("updateReadme") {
 
     dependsOn(verifyReadme)
     inputs.property("version", version)
-    inputs.property("cdiVersion", libs.versions.cdi)
-    inputs.property("antlrVersion", libs.versions.antlr)
+    val cdiVersion = libs.versions.cdi
+    inputs.property("cdiVersion", cdiVersion)
+    val antlrVersion = libs.versions.antlr
+    inputs.property("antlrVersion", antlrVersion)
     inputs.property("publishedFeatureVariants", publishedFeatureVariants)
     inputs.property("testedJavacordVersions", testedJavacordVersions)
     inputs.property("testedJdaVersions", testedJdaVersions)
-    inputs.file(readmeTemplateFilePath).withPropertyName("readmeTemplate")
-    outputs.file(readmeFilePath).withPropertyName("readme")
-    outputs.file(readmeChecksumFilePath).withPropertyName("readmeChecksum")
+    val readmeTemplateFile = file(readmeTemplateFilePath)
+    inputs.file(readmeTemplateFile).withPropertyName("readmeTemplate")
+    val readmeFile = file(readmeFilePath)
+    outputs.file(readmeFile).withPropertyName("readme")
+    val readmeChecksumFile = file(readmeChecksumFilePath)
+    outputs.file(readmeChecksumFile).withPropertyName("readmeChecksum")
 
+    val version = version
     doLast("update readme") {
-        copy {
-            from(readmeTemplateFilePath)
+        fs.copy {
+            from(readmeTemplateFile)
             into(".")
-            rename { readmeFilePath }
+            rename { readmeFile.path }
             filteringCharset = "UTF-8"
             expand(
                 "version" to version,
-                "cdiVersion" to libs.versions.cdi.get(),
-                "antlrVersion" to libs.versions.antlr.get(),
+                "cdiVersion" to cdiVersion.get(),
+                "antlrVersion" to antlrVersion.get(),
                 "publishedFeatureVariants" to publishedFeatureVariants,
                 "testedJavacordVersions" to testedJavacordVersions,
                 "testedJdaVersions" to testedJdaVersions
             )
         }
-        file(readmeChecksumFilePath).writeText(calculateReadmeChecksum())
+        readmeChecksumFile.writeText(calculateChecksum(readmeFile))
     }
 }
 
-fun calculateReadmeChecksum() = MessageDigest.getInstance("SHA-256").let { sha256 ->
-    sha256.digest(
-        file("README.md")
-            .readLines()
-            .joinToString("\n")
-            .toByteArray()
-    ).let {
-        BigInteger(1, it)
-            .toString(16)
-            .padStart(sha256.digestLength * 2, '0')
+abstract class ReadmeTask : DefaultTask() {
+    @get:Inject
+    abstract val fs: FileSystemOperations
+
+    fun calculateChecksum(file: File) = MessageDigest.getInstance("SHA-256").let { sha256 ->
+        sha256.digest(
+            file
+                .readLines()
+                .joinToString("\n")
+                .toByteArray()
+        ).let {
+            BigInteger(1, it)
+                .toString(16)
+                .padStart(sha256.digestLength * 2, '0')
+        }
     }
 }
