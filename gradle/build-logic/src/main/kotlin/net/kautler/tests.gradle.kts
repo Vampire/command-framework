@@ -241,10 +241,14 @@ testing {
                                 systemProperty("testDiscordServerId", testDiscordServerId ?: "")
 
                                 val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
+                                val rootProjectName = rootProject.name
+                                val testDiscordToken1WithoutDelegate = testDiscordToken1
+                                val testDiscordToken2WithoutDelegate = testDiscordToken2
+                                val testDiscordServerIdWithoutDelegate = testDiscordServerId
                                 doFirst("verify Discord tokens and server id are set") {
-                                    testDiscordToken1.verifyPropertyIsSet(problemReporter, "testDiscordToken1", rootProject.name)
-                                    testDiscordToken2.verifyPropertyIsSet(problemReporter, "testDiscordToken2", rootProject.name)
-                                    testDiscordServerId.verifyPropertyIsSet(problemReporter, "testDiscordServerId", rootProject.name)
+                                    testDiscordToken1WithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordToken1", rootProjectName)
+                                    testDiscordToken2WithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordToken2", rootProjectName)
+                                    testDiscordServerIdWithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordServerId", rootProjectName)
                                 }
                             }
 
