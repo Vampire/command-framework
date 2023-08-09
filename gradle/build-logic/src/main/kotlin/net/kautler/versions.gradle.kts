@@ -16,6 +16,10 @@
 
 package net.kautler
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import net.kautler.util.CommitId
 import net.kautler.util.NullOutputStream
 import net.kautler.util.PreliminaryReleaseFilter
@@ -97,12 +101,9 @@ val validateGradleWrapperJar by tasks.registering {
     onlyIf { !offlineBuild }
 
     val resources = resources
-    val gradleVersion = gradle.gradleVersion
     val projectDirectory = layout.projectDirectory
     val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
     doLast {
-        val expectedDigest = resources.text.fromUri("https://services.gradle.org/distributions/gradle-$gradleVersion-wrapper.jar.sha256").asString()
-
         val sha256 = MessageDigest.getInstance("SHA-256")
         projectDirectory
             .dir("gradle")
@@ -112,20 +113,38 @@ val validateGradleWrapperJar by tasks.registering {
             .inputStream()
             .let { DigestInputStream(it, sha256) }
             .use { it.copyTo(NullOutputStream()) }
-        val actualDigest = sha256.digest().let {
+        val currentWrapperChecksum = sha256.digest().let {
             "%02x".repeat(it.size).format(*it.toTypedArray())
         }
 
-        if (expectedDigest != actualDigest) {
+        val gradleVersionOfWrapper = resources.text.fromUri("https://services.gradle.org/versions/all")
+            .asString()
+            .let(Json.Default::parseToJsonElement)
+            .jsonArray
+            .asSequence()
+            .filterIsInstance<JsonObject>()
+            .find {
+                it["wrapperChecksumUrl"]
+                    ?.jsonPrimitive
+                    ?.content
+                    ?.let(resources.text::fromUri)
+                    ?.asString() == currentWrapperChecksum
+            }
+            ?.get("version")
+            ?.jsonPrimitive
+            ?.content
+            ?.let(GradleVersion::version)
+
+        if((gradleVersionOfWrapper == null) || (gradleVersionOfWrapper < GradleVersion.current())) {
             throw problemReporter.throwing(
                 IllegalStateException(),
                 ProblemId.create(
-                    "the-wrapper-jar-does-not-match-the-configured-gradle-version",
-                    "The wrapper JAR does not match the configured Gradle version",
+                    "the-wrapper-jar-is-not-from-the-configured-gradle-version-or-newer",
+                    "The wrapper JAR is not from the configured Gradle version or newer",
                     ProblemGroup.create("build-authoring", "Build Authoring")
                 )
             ) {
-                solution("Update the wrapper to the version of Gradle")
+                solution("Update the wrapper to the version of Gradle or newer")
                 severity(Severity.ERROR)
             }
         }

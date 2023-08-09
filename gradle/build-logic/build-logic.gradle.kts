@@ -34,6 +34,8 @@ dependencies {
     implementation(plugin(libs.plugins.github))
     implementation(plugin(libs.plugins.pitest))
     implementation(":dependency-updates-report-aggregation")
+    implementation(platform(libs.build.kotlinx.serialization.bom))
+    implementation(libs.build.kotlinx.serialization.json)
     implementation(libs.build.javaparser.core)
     implementation(libs.build.grgit.core)
     implementation(libs.build.github.api)
