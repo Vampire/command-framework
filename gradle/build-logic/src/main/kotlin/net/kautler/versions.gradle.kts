@@ -93,17 +93,18 @@ tasks.processResources {
 }
 
 val validateGradleWrapperJar by tasks.registering {
-    onlyIf {
-        !gradle.startParameter.isOffline
-    }
+    val offlineBuild = gradle.startParameter.isOffline
+    onlyIf { !offlineBuild }
 
+    val resources = resources
+    val gradleVersion = gradle.gradleVersion
+    val projectDirectory = layout.projectDirectory
     val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
     doLast {
-        val expectedDigest = resources.text.fromUri("https://services.gradle.org/distributions/gradle-${gradle.gradleVersion}-wrapper.jar.sha256").asString()
+        val expectedDigest = resources.text.fromUri("https://services.gradle.org/distributions/gradle-$gradleVersion-wrapper.jar.sha256").asString()
 
         val sha256 = MessageDigest.getInstance("SHA-256")
-        layout
-            .projectDirectory
+        projectDirectory
             .dir("gradle")
             .dir("wrapper")
             .file("gradle-wrapper.jar")
