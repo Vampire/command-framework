@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,11 @@ repositories {
     jcenter()
     @Suppress("UnstableApiUsage")
     gradlePluginPortal()
+    maven("https://artifactory.appodeal.com/appodeal-public/") {
+        content {
+            includeModule("org.ajoberstar.grgit", "grgit-core")
+        }
+    }
 }
 
 dependencies {
@@ -52,6 +57,7 @@ dependencies {
     implementation(gradlePlugin("net.researchgate.release:2.8.1"))
     implementation(gradlePlugin("net.wooga.github:1.4.0"))
     implementation(gradlePlugin("info.solidsoft.pitest:1.4.5"))
+    implementation("org.ajoberstar.grgit:grgit-core:3.1.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.10.0")
     implementation("com.github.javaparser:javaparser-core:3.15.1")
     implementation("org.kohsuke:github-api:1.99")
