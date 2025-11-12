@@ -135,7 +135,10 @@ tasks.dependencyUpdates {
                     it.matches("org.jetbrains.kotlin", "kotlin-sam-with-receiver") ||
                     it.matches("org.jetbrains.kotlin", "kotlin-scripting-compiler-embeddable") ||
                     it.matches("org.jetbrains.kotlin", "kotlin-stdlib-jdk8") ||
-                    it.matches("org.kohsuke", "github-api")
+                    it.matches("org.kohsuke", "github-api") ||
+                    // minimum supported version Java 11
+                    it.matches("org.apache.groovy", "groovy") ||
+                    it.matches("org.spockframework", "spock-core", newVersion = "2.4-groovy-5.0")
         }
 
         outdated.dependencies.removeAll(ignored)

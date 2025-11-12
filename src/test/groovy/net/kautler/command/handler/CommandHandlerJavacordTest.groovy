@@ -300,14 +300,12 @@ class CommandHandlerJavacordTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotAllowedEvent {
-                    with(it.commandContext) {
-                        it.message == this.message
-                        it.messageContent == this.message.content
-                        it.prefix.orElse(null) == '!'
-                        it.alias.orElse(null) == this.command.aliases.first()
-                        it.parameterString.orElse(null) == ''
-                        it.command.orElse(null)?.metadata?.contextualInstance == this.command
-                    }
+                    it.commandContext.message == this.message
+                    it.commandContext.messageContent == this.message.content
+                    it.commandContext.prefix.orElse(null) == '!'
+                    it.commandContext.alias.orElse(null) == this.command.aliases.first()
+                    it.commandContext.parameterString.orElse(null) == ''
+                    it.commandContext.command.orElse(null)?.metadata?.contextualInstance == this.command
                 } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
@@ -326,14 +324,12 @@ class CommandHandlerJavacordTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotFoundEvent {
-                    with(it.commandContext) {
-                        it.message == this.message
-                        it.messageContent == this.message.content
-                        it.prefix.orElse(null) == '!'
-                        it.alias.orElse(null) == null
-                        it.parameterString.orElse(null) == null
-                        it.command.orElse(null)?.metadata?.contextualInstance == null
-                    }
+                    it.commandContext.message == this.message
+                    it.commandContext.messageContent == this.message.content
+                    it.commandContext.prefix.orElse(null) == '!'
+                    it.commandContext.alias.orElse(null) == null
+                    it.commandContext.parameterString.orElse(null) == null
+                    it.commandContext.command.orElse(null)?.metadata?.contextualInstance == null
                 } >> { commandNotFoundEventReceived.set(true) }
                 0 * _
             }

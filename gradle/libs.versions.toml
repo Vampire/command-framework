@@ -1,4 +1,4 @@
-# Copyright 2023-2025 Björn Kautler
+# Copyright 2023-2026 Björn Kautler
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ javacord = "3.4.0"
 jda = "4.4.0_352"
 log4j = "2.20.0"
 
-build-codenarc = "3.7.0"
+build-codenarc = "3.7.0-groovy-4.0"
 build-gradle-plugin-bndBuilder = "5.3.0"
 # fix or remove component metadata rule in gradle/build-logic/settings.gradle.kts on update
 build-gradle-plugin-github = "3.0.1"
@@ -47,14 +47,14 @@ build-spotbugs-plugin-sbContrib = "7.4.7"
 
 test-byteBuddy = "1.10.1"
 test-discordWebhooks = "0.8.4"
-test-groovy = "3.0.25"
+test-groovy = "4.0.31"
 test-jansi = "1.18"
 test-junit-platform = "1.9.0"
 test-objenesis = "3.1"
 test-pitest = "1.17.4"
 test-pitest-plugin-rv = "0.1"
 test-powermock = "2.0.2"
-test-spock = "2.4-groovy-3.0"
+test-spock = "2.4-groovy-4.0"
 test-weld-se = "4.0.3.Final"
 test-weld-spock = "3.1.0.Final"
 
@@ -85,7 +85,7 @@ opus-java = { module = "club.minnced:opus-java" }
 spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "build-spotbugs" }
 test-byteBuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "test-byteBuddy" }
 test-discordWebhooks = { module = "club.minnced:discord-webhooks", version.ref = "test-discordWebhooks" }
-test-groovy = { module = "org.codehaus.groovy:groovy", version.ref = "test-groovy" }
+test-groovy = { module = "org.apache.groovy:groovy", version.ref = "test-groovy" }
 test-jansi = { module = "org.fusesource.jansi:jansi", version.ref = "test-jansi" }
 test-javacord = { module = "org.javacord:javacord", version.ref = "javacord" }
 test-javacord-core = { module = "org.javacord:javacord-core", version.ref = "javacord" }

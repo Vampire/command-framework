@@ -332,14 +332,12 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotAllowedEvent {
-                    with(it.commandContext) {
-                        it.message == this.slashCommandInteraction
-                        it.messageContent == "/${this.command.aliases.first()}"
-                        it.prefix.orElse(null) == '/'
-                        it.alias.orElse(null) == this.command.aliases.first()
-                        it.parameterString.orElse(null) == ''
-                        it.command.orElse(null)?.metadata?.contextualInstance == this.command
-                    }
+                    it.commandContext.message == this.slashCommandInteraction
+                    it.commandContext.messageContent == "/${this.command.aliases.first()}"
+                    it.commandContext.prefix.orElse(null) == '/'
+                    it.commandContext.alias.orElse(null) == this.command.aliases.first()
+                    it.commandContext.parameterString.orElse(null) == ''
+                    it.commandContext.command.orElse(null)?.metadata?.contextualInstance == this.command
                 } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
@@ -364,14 +362,12 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotAllowedEvent {
-                    with(it.commandContext) {
-                        it.message == this.slashCommandInteraction
-                        it.messageContent == "/${this.command.aliases.first()}"
-                        it.prefix.orElse(null) == '/'
-                        it.alias.orElse(null) == this.command.aliases.first()
-                        it.parameterString.orElse(null) == ''
-                        it.command.orElse(null)?.metadata?.contextualInstance == this.command
-                    }
+                    it.commandContext.message == this.slashCommandInteraction
+                    it.commandContext.messageContent == "/${this.command.aliases.first()}"
+                    it.commandContext.prefix.orElse(null) == '/'
+                    it.commandContext.alias.orElse(null) == this.command.aliases.first()
+                    it.commandContext.parameterString.orElse(null) == ''
+                    it.commandContext.command.orElse(null)?.metadata?.contextualInstance == this.command
                 } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
@@ -396,14 +392,12 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotAllowedEvent {
-                    with(it.commandContext) {
-                        it.message == this.slashCommandInteraction
-                        it.messageContent == "/${this.subcommand.aliases.first()}"
-                        it.prefix.orElse(null) == '/'
-                        it.alias.orElse(null) == this.subcommand.aliases.first()
-                        it.parameterString.orElse(null) == ''
-                        it.command.orElse(null)?.metadata?.contextualInstance == this.subcommand
-                    }
+                    it.commandContext.message == this.slashCommandInteraction
+                    it.commandContext.messageContent == "/${this.subcommand.aliases.first()}"
+                    it.commandContext.prefix.orElse(null) == '/'
+                    it.commandContext.alias.orElse(null) == this.subcommand.aliases.first()
+                    it.commandContext.parameterString.orElse(null) == ''
+                    it.commandContext.command.orElse(null)?.metadata?.contextualInstance == this.subcommand
                 } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
@@ -432,14 +426,12 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotAllowedEvent {
-                    with(it.commandContext) {
-                        it.message == this.slashCommandInteraction
-                        it.messageContent == "/${this.subcommand.aliases.first()}"
-                        it.prefix.orElse(null) == '/'
-                        it.alias.orElse(null) == this.subcommand.aliases.first()
-                        it.parameterString.orElse(null) == ''
-                        it.command.orElse(null)?.metadata?.contextualInstance == this.subcommand
-                    }
+                    it.commandContext.message == this.slashCommandInteraction
+                    it.commandContext.messageContent == "/${this.subcommand.aliases.first()}"
+                    it.commandContext.prefix.orElse(null) == '/'
+                    it.commandContext.alias.orElse(null) == this.subcommand.aliases.first()
+                    it.commandContext.parameterString.orElse(null) == ''
+                    it.commandContext.command.orElse(null)?.metadata?.contextualInstance == this.subcommand
                 } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
@@ -468,14 +460,12 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotAllowedEvent {
-                    with(it.commandContext) {
-                        it.message == this.slashCommandInteraction
-                        it.messageContent == "/${this.groupedSubcommand.aliases.first()}"
-                        it.prefix.orElse(null) == '/'
-                        it.alias.orElse(null) == this.groupedSubcommand.aliases.first()
-                        it.parameterString.orElse(null) == ''
-                        it.command.orElse(null)?.metadata?.contextualInstance == this.groupedSubcommand
-                    }
+                    it.commandContext.message == this.slashCommandInteraction
+                    it.commandContext.messageContent == "/${this.groupedSubcommand.aliases.first()}"
+                    it.commandContext.prefix.orElse(null) == '/'
+                    it.commandContext.alias.orElse(null) == this.groupedSubcommand.aliases.first()
+                    it.commandContext.parameterString.orElse(null) == ''
+                    it.commandContext.command.orElse(null)?.metadata?.contextualInstance == this.groupedSubcommand
                 } >> { commandNotAllowedEventFired.set(true) }
                 0 * _
             }
@@ -494,14 +484,12 @@ class CommandHandlerJavacordSlashTest extends Specification {
         then:
             with(testEventReceiverDelegate) {
                 1 * handleCommandNotFoundEvent {
-                    with(it.commandContext) {
-                        it.message == this.slashCommandInteraction
-                        it.messageContent == '/nocommand'
-                        it.prefix.orElse(null) == '/'
-                        it.alias.orElse(null) == 'nocommand'
-                        it.parameterString.orElse(null) == ''
-                        it.command.orElse(null)?.metadata?.contextualInstance == null
-                    }
+                    it.commandContext.message == this.slashCommandInteraction
+                    it.commandContext.messageContent == '/nocommand'
+                    it.commandContext.prefix.orElse(null) == '/'
+                    it.commandContext.alias.orElse(null) == 'nocommand'
+                    it.commandContext.parameterString.orElse(null) == ''
+                    it.commandContext.command.orElse(null)?.metadata?.contextualInstance == null
                 } >> { commandNotFoundEventReceived.set(true) }
                 0 * _
             }
