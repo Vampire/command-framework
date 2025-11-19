@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -212,6 +212,27 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "()I",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 7 with 8"),
+            // the "true" (1) is just a dummy parameter for finalizer attack prevention and cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.api.CommandContext",
+                    "<init>",
+                    "(Lnet/kautler/command/api/CommandContext$Builder;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 1 with 0"),
+            // the "true" (1) is just a dummy parameter for finalizer attack prevention and cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.api.CommandContext$Builder",
+                    "<init>",
+                    "(Ljava/lang/Object;Ljava/lang/String;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 1 with 0"),
+            // the "true" (1) is just a dummy parameter for finalizer attack prevention and cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.api.CommandContext$Builder",
+                    "<init>",
+                    "(Lnet/kautler/command/api/CommandContext;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 1 with 0"),
             // giving an 8 instead of 7 element array to Objects.hash can be killed, but we do not want to
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandContext$Builder",
@@ -219,6 +240,13 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "()I",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 7 with 8"),
+            // the "true" (1) is just a dummy parameter for finalizer attack prevention and cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.api.restriction.RestrictionChainElement",
+                    "<init>",
+                    "(Ljava/lang/Class;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 1 with 0"),
             // giving a 5 instead of 4 element array to Objects.hash can be killed, but we do not want to
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.parameter.ParameterParseException",
@@ -247,6 +275,20 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "(Lorg/javacord/api/event/interaction/SlashCommandCreateEvent;)V",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
+            // the "true" (1) is just a dummy parameter for finalizer attack prevention and cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.lazy.LazyReferenceByFunction",
+                    "<init>",
+                    "(Ljava/util/function/Function;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 1 with 0"),
+            // the "true" (1) is just a dummy parameter for finalizer attack prevention and cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.lazy.LazyReferenceBySupplier",
+                    "<init>",
+                    "(Ljava/util/function/Supplier;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 1 with 0"),
             // giving a 3 instead of 2 element array to String.format cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.util.SlashCommandBuilderProducer$AliasParts",

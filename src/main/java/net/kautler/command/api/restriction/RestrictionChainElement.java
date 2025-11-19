@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,17 @@ public class RestrictionChainElement {
      * @param restriction the restriction to wrap
      */
     public RestrictionChainElement(Class<? extends Restriction<?>> restriction) {
-        this.restriction = requireNonNull(restriction);
+        this(true, requireNonNull(restriction));
+    }
+
+    /**
+     * Constructs a new restriction chain element for the given restriction class.
+     *
+     * @param parametersValidated a dummy parameter for finalizer attack prevention
+     * @param restriction         the restriction to wrap
+     */
+    private RestrictionChainElement(boolean parametersValidated, Class<? extends Restriction<?>> restriction) {
+        this.restriction = restriction;
     }
 
     /**

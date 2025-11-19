@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,16 +134,11 @@ class GuildJdaTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [guildId: #guildId, guildName: #guildName, caseSensitive: #caseSensitive, guildPattern: #guildPattern] is checked'() {
         given:
-            GuildJda guildJda = Spy(GuildJda, useObjenesis: true)
-
-        and:
-            guildJda.setFinalLongField('guildId', guildId)
-            guildJda.setFinalField('guildName', guildName)
-            guildJda.setFinalBooleanField('caseSensitive', caseSensitive)
-            guildJda.setFinalField('guildPattern', guildPattern)
+            def guildJdaParameters = new GuildJda.Parameters(
+                guildId, guildName, caseSensitive, guildPattern)
 
         when:
-            guildJda.invokeMethod('ensureInvariants')
+            guildJdaParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

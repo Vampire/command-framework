@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,17 @@ public class LazyReferenceBySupplier<T> extends LazyReference<T> {
      * @param valueSupplier the supplier for the value that is called on first query to compute the value
      */
     public LazyReferenceBySupplier(Supplier<T> valueSupplier) {
-        this.valueSupplier = requireNonNull(valueSupplier, "value supplier must not be null");
+        this(true, requireNonNull(valueSupplier, "value supplier must not be null"));
+    }
+
+    /**
+     * Constructs a new lazy reference that gets its value from the given supplier.
+     *
+     * @param parametersValidated a dummy parameter for finalizer attack prevention
+     * @param valueSupplier       the supplier for the value that is called on first query to compute the value
+     */
+    private LazyReferenceBySupplier(boolean parametersValidated, Supplier<T> valueSupplier) {
+        this.valueSupplier = valueSupplier;
     }
 
     /**

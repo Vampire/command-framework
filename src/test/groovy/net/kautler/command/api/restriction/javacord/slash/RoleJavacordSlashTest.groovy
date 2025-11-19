@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -274,16 +274,11 @@ class RoleJavacordSlashTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [roleId: #roleId, roleName: #roleName, caseSensitive: #caseSensitive, rolePattern: #rolePattern] is checked'() {
         given:
-            RoleJavacordSlash roleJavacordSlash = Spy(RoleJavacordSlash, useObjenesis: true)
-
-        and:
-            roleJavacordSlash.setFinalLongField('roleId', roleId)
-            roleJavacordSlash.setFinalField('roleName', roleName)
-            roleJavacordSlash.setFinalBooleanField('caseSensitive', caseSensitive)
-            roleJavacordSlash.setFinalField('rolePattern', rolePattern)
+            def roleJavacordSlashParameters = new RoleJavacordSlash.Parameters(
+                true, roleId, roleName, caseSensitive, rolePattern)
 
         when:
-            roleJavacordSlash.invokeMethod('ensureInvariants')
+            roleJavacordSlashParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

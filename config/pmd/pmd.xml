@@ -27,6 +27,20 @@
         <exclude name="GuardLogStatement"/>
     </rule>
 
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        parent::FormalParameter
+                        and (@Image = "parametersValidated")
+                        and ancestor::ConstructorDeclaration
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+
     <rule ref="category/java/codestyle.xml">
         <exclude name="AtLeastOneConstructor"/>
         <exclude name="CallSuperInConstructor"/>
@@ -258,6 +272,20 @@
                     \QFound 'DU'-anomaly for variable 'parameterNames' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'arguments' (lines '\E.* |
                     \QFound 'DU'-anomaly for variable 'filters' (lines '\E.*
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/errorprone.xml/EmptyFinalizer">
+        <properties>
+            <!-- false positives, work-around for https://github.com/pmd/pmd/issues/4742 -->
+            <property name="violationSuppressXPath">
+                <value>
+                    .[
+                        (../@Final = true())
+                        and (ancestor::TypeDeclaration/@Final = false())
+                    ]
                 </value>
             </property>
         </properties>

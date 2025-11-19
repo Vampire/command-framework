@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
      * @param serverId the ID of the server where a command should be allowed
      */
     protected ServerJavacordSlash(long serverId) {
-        this(serverId, null, true, null);
+        this(new Parameters(serverId, null, true, null).ensureInvariants());
     }
 
     /**
@@ -72,7 +72,7 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
      * @param serverName the case-sensitive name of the server where a command should be allowed
      */
     protected ServerJavacordSlash(String serverName) {
-        this(0, serverName, true, null);
+        this(new Parameters(0, serverName, true, null).ensureInvariants());
     }
 
     /**
@@ -82,7 +82,7 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
      * @param caseSensitive whether the name should be matched case-sensitively or not
      */
     protected ServerJavacordSlash(String serverName, boolean caseSensitive) {
-        this(0, serverName, caseSensitive, null);
+        this(new Parameters(0, serverName, caseSensitive, null).ensureInvariants());
     }
 
     /**
@@ -92,94 +92,19 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
      *                      to determine where a command should be allowed
      */
     protected ServerJavacordSlash(Pattern serverPattern) {
-        this(0, null, true, serverPattern);
+        this(new Parameters(0, null, true, serverPattern).ensureInvariants());
     }
 
     /**
      * Constructs a new server restriction.
      *
-     * @param serverId      the ID of the server where a command should be allowed
-     * @param serverName    the name of the server where a command should be allowed
-     * @param caseSensitive whether the name should be matched case-sensitively or not
-     * @param serverPattern the pattern against which the server name is matched
-     *                      to determine where a command should be allowed
+     * @param parameters the parameters to construct the channel restriction
      */
-    private ServerJavacordSlash(long serverId, String serverName,
-                                boolean caseSensitive, Pattern serverPattern) {
-        this.serverId = serverId;
-        this.serverName = serverName;
-        this.caseSensitive = caseSensitive;
-        this.serverPattern = serverPattern;
-        ensureInvariants();
-    }
-
-    /**
-     * Checks the invariants of this instance and raises
-     * an {@link IllegalStateException} if they are violated.
-     */
-    private void ensureInvariants() {
-        ensureAtMostOneConditionIsSet();
-        ensureAtLeastOneConditionIsSet();
-        ensureCaseSensitiveIfNameIsNotSet();
-    }
-
-    /**
-     * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtMostOneConditionIsSet() {
-        boolean serverIdSet = serverId != 0;
-        boolean serverNameSet = serverName != null;
-        boolean serverPatternSet = serverPattern != null;
-
-        boolean serverNamelySet = serverNameSet || serverPatternSet;
-        boolean serverIdAndNamelySet = serverIdSet && serverNamelySet;
-        boolean bothServerNamelySet = serverNameSet && serverPatternSet;
-        boolean multipleConditionsSet = serverIdAndNamelySet || bothServerNamelySet;
-
-        if (multipleConditionsSet) {
-            StringJoiner stringJoiner = new StringJoiner(", ");
-            if (serverIdSet) {
-                stringJoiner.add("serverId");
-            }
-            if (serverNameSet) {
-                stringJoiner.add("serverName");
-            }
-            if (serverPatternSet) {
-                stringJoiner.add("serverPattern");
-            }
-            throw new IllegalStateException(format(
-                    "Only one of serverId, serverName and serverPattern should be given (%s)",
-                    stringJoiner));
-        }
-    }
-
-    /**
-     * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtLeastOneConditionIsSet() {
-        boolean serverIdSet = serverId != 0;
-        boolean serverNameSet = serverName != null;
-        boolean serverPatternSet = serverPattern != null;
-
-        boolean serverNamelySet = serverNameSet || serverPatternSet;
-
-        boolean atLeastOneConditionSet = serverIdSet || serverNamelySet;
-
-        if (!atLeastOneConditionSet) {
-            throw new IllegalStateException(
-                    "One of serverId, serverName and serverPattern should be given");
-        }
-    }
-
-    /**
-     * Checks that {@link #caseSensitive} is {@code true} if {@link #serverName}
-     * is not set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureCaseSensitiveIfNameIsNotSet() {
-        if ((serverName == null) && !caseSensitive) {
-            throw new IllegalStateException(
-                    "If serverName is not set, caseSensitive should be true");
-        }
+    private ServerJavacordSlash(Parameters parameters) {
+        serverId = parameters.serverId;
+        serverName = parameters.serverName;
+        caseSensitive = parameters.caseSensitive;
+        serverPattern = parameters.serverPattern;
     }
 
     @Override
@@ -224,5 +149,121 @@ public abstract class ServerJavacordSlash implements Restriction<SlashCommandInt
                     }
                 })
                 .orElse(FALSE);
+    }
+
+    /**
+     * A set of parameters to construct a server restriction for Javacord with slash commands.
+     */
+    private static class Parameters {
+        /**
+         * The ID of the server where a command is allowed.
+         */
+        private final long serverId;
+
+        /**
+         * The name of the server where a command is allowed.
+         */
+        private final String serverName;
+
+        /**
+         * Whether the {@code serverName} should be case sensitive or not.
+         * This does not apply to the {@code serverPattern},
+         * where an embedded flag can be used to control case sensitivity.
+         */
+        private final boolean caseSensitive;
+
+        /**
+         * The pattern server names are matched against to determine whether a command is allowed.
+         */
+        private final Pattern serverPattern;
+
+        /**
+         * Constructs a new server restriction parameters instance.
+         *
+         * @param serverId      the ID of the server where a command should be allowed
+         * @param serverName    the name of the server where a command should be allowed
+         * @param caseSensitive whether the name should be matched case-sensitively or not
+         * @param serverPattern the pattern against which the server name is matched
+         *                      to determine where a command should be allowed
+         */
+        private Parameters(long serverId, String serverName,
+                           boolean caseSensitive, Pattern serverPattern) {
+            this.serverId = serverId;
+            this.serverName = serverName;
+            this.caseSensitive = caseSensitive;
+            this.serverPattern = serverPattern;
+        }
+
+        /**
+         * Checks the invariants of this instance and raises
+         * an {@link IllegalStateException} if they are violated.
+         *
+         * @return this instance
+         */
+        private Parameters ensureInvariants() {
+            ensureAtMostOneConditionIsSet();
+            ensureAtLeastOneConditionIsSet();
+            ensureCaseSensitiveIfNameIsNotSet();
+            return this;
+        }
+
+        /**
+         * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtMostOneConditionIsSet() {
+            boolean serverIdSet = serverId != 0;
+            boolean serverNameSet = serverName != null;
+            boolean serverPatternSet = serverPattern != null;
+
+            boolean serverNamelySet = serverNameSet || serverPatternSet;
+            boolean serverIdAndNamelySet = serverIdSet && serverNamelySet;
+            boolean bothServerNamelySet = serverNameSet && serverPatternSet;
+            boolean multipleConditionsSet = serverIdAndNamelySet || bothServerNamelySet;
+
+            if (multipleConditionsSet) {
+                StringJoiner stringJoiner = new StringJoiner(", ");
+                if (serverIdSet) {
+                    stringJoiner.add("serverId");
+                }
+                if (serverNameSet) {
+                    stringJoiner.add("serverName");
+                }
+                if (serverPatternSet) {
+                    stringJoiner.add("serverPattern");
+                }
+                throw new IllegalStateException(format(
+                    "Only one of serverId, serverName and serverPattern should be given (%s)",
+                    stringJoiner));
+            }
+        }
+
+        /**
+         * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtLeastOneConditionIsSet() {
+            boolean serverIdSet = serverId != 0;
+            boolean serverNameSet = serverName != null;
+            boolean serverPatternSet = serverPattern != null;
+
+            boolean serverNamelySet = serverNameSet || serverPatternSet;
+
+            boolean atLeastOneConditionSet = serverIdSet || serverNamelySet;
+
+            if (!atLeastOneConditionSet) {
+                throw new IllegalStateException(
+                    "One of serverId, serverName and serverPattern should be given");
+            }
+        }
+
+        /**
+         * Checks that {@link #caseSensitive} is {@code true} if {@link #serverName}
+         * is not set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureCaseSensitiveIfNameIsNotSet() {
+            if ((serverName == null) && !caseSensitive) {
+                throw new IllegalStateException(
+                    "If serverName is not set, caseSensitive should be true");
+            }
+        }
     }
 }

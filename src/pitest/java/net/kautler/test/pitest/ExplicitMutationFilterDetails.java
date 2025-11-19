@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,73 +72,59 @@ public class ExplicitMutationFilterDetails implements Predicate<MutationDetails>
      * Constructs a new mutation filter details object
      * with amount {@code 1} and without first index.
      *
-     * @param clazz       The class name of the mutations to be filtered
-     * @param method      The method name of the mutations to be filtered
-     * @param methodDesc  The signature of the method of the mutations to be filtered
-     * @param mutator     The actual mutator that produced the mutation
-     * @param description The description of the mutation
+     * @param clazz       the class name of the mutations to be filtered
+     * @param method      the method name of the mutations to be filtered
+     * @param methodDesc  the signature of the method of the mutations to be filtered
+     * @param mutator     the actual mutator that produced the mutation
+     * @param description the description of the mutation
      */
     public ExplicitMutationFilterDetails(String clazz, String method, String methodDesc,
                                          String mutator, String description) {
-        this(1, clazz, method, methodDesc, mutator, description);
+        this(true, 1, requireNonNull(clazz), requireNonNull(method),
+            requireNonNull(methodDesc), requireNonNull(mutator), requireNonNull(description));
     }
 
     /**
      * Constructs a new mutation filter details object with amount {@code 1}.
      *
-     * @param clazz        The class name of the mutations to be filtered
-     * @param method       The method name of the mutations to be filtered
-     * @param methodDesc   The signature of the method of the mutations to be filtered
-     * @param mutator      The actual mutator that produced the mutation
-     * @param description  The description of the mutation
-     * @param firstIndexes The indexes of the first bytecode instruction
+     * @param clazz        the class name of the mutations to be filtered
+     * @param method       the method name of the mutations to be filtered
+     * @param methodDesc   the signature of the method of the mutations to be filtered
+     * @param mutator      the actual mutator that produced the mutation
+     * @param description  the description of the mutation
+     * @param firstIndexes the indexes of the first bytecode instruction
      */
     public ExplicitMutationFilterDetails(String clazz, String method, String methodDesc,
                                          String mutator, String description, int... firstIndexes) {
-        this(firstIndexes.length, clazz, method, methodDesc, mutator, description, firstIndexes);
-    }
-
-    /**
-     * Constructs a new mutation filter details object without first index.
-     *
-     * @param amount      The exact amount of how many findings are expected
-     * @param clazz       The class name of the mutations to be filtered
-     * @param method      The method name of the mutations to be filtered
-     * @param methodDesc  The signature of the method of the mutations to be filtered
-     * @param mutator     The actual mutator that produced the mutation
-     * @param description The description of the mutation
-     */
-    public ExplicitMutationFilterDetails(int amount, String clazz, String method,
-                                         String methodDesc, String mutator, String description) {
-        this(amount, clazz, method, methodDesc, mutator, description, new int[0]);
+        this(true, firstIndexes.length, requireNonNull(clazz), requireNonNull(method),
+            requireNonNull(methodDesc), requireNonNull(mutator), requireNonNull(description),
+            requireNonNull(firstIndexes));
     }
 
     /**
      * Constructs a new mutation filter details object.
      *
-     * @param amount       The exact amount of how many findings are expected
-     * @param clazz        The class name of the mutations to be filtered
-     * @param method       The method name of the mutations to be filtered
-     * @param methodDesc   The signature of the method of the mutations to be filtered
-     * @param mutator      The actual mutator that produced the mutation
-     * @param description  The description of the mutation
-     * @param firstIndexes The indexes of the first bytecode instruction
+     * @param parametersValidated a dummy parameter for finalizer attack prevention
+     * @param amount              the exact amount of how many findings are expected
+     * @param clazz               the class name of the mutations to be filtered
+     * @param method              the method name of the mutations to be filtered
+     * @param methodDesc          the signature of the method of the mutations to be filtered
+     * @param mutator             the actual mutator that produced the mutation
+     * @param description         the description of the mutation
+     * @param firstIndexes        the indexes of the first bytecode instruction
      */
-    private ExplicitMutationFilterDetails(int amount, String clazz, String method, String methodDesc,
-                                          String mutator, String description, int... firstIndexes) {
-        if (amount < 1) {
-            throw new IllegalArgumentException(format("amount must be at least 1, but was %,d", amount));
-        }
+    private ExplicitMutationFilterDetails(boolean parametersValidated, int amount, String clazz, String method,
+                                          String methodDesc, String mutator, String description, int... firstIndexes) {
         this.amount = amount;
-        this.clazz = requireNonNull(clazz);
+        this.clazz = clazz;
         methodPattern = Pattern.compile(format(
                 "\\Q%s\\E%s",
-                requireNonNull(method),
+                method,
                 method.startsWith("lambda$") ? "\\$\\d++" : ""));
-        this.methodDesc = requireNonNull(methodDesc);
-        this.mutator = requireNonNull(mutator);
-        this.description = requireNonNull(description);
-        this.firstIndexes = IntStream.of(requireNonNull(firstIndexes)).boxed().collect(toList());
+        this.methodDesc = methodDesc;
+        this.mutator = mutator;
+        this.description = description;
+        this.firstIndexes = IntStream.of(firstIndexes).boxed().collect(toList());
     }
 
     /**

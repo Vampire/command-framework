@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,17 @@ public class LazyReferenceByFunction<P, T> extends LazyReference<T> {
      * @param valueFunction the function for the value that is called on first query to compute the value
      */
     public LazyReferenceByFunction(Function<P, T> valueFunction) {
-        this.valueFunction = requireNonNull(valueFunction, "value function must not be null");
+        this(true, requireNonNull(valueFunction, "value function must not be null"));
+    }
+
+    /**
+     * Constructs a new lazy reference that gets its value from the given function.
+     *
+     * @param parametersValidated a dummy parameter for finalizer attack prevention
+     * @param valueFunction       the function for the value that is called on first query to compute the value
+     */
+    private LazyReferenceByFunction(boolean parametersValidated, Function<P, T> valueFunction) {
+        this.valueFunction = valueFunction;
     }
 
     /**

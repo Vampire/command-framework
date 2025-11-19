@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,16 +135,11 @@ class ChannelJavacordSlashTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [channelId: #channelId, channelName: #channelName, caseSensitive: #caseSensitive, channelPattern: #channelPattern] is checked'() {
         given:
-            ChannelJavacordSlash channelJavacordSlash = Spy(ChannelJavacordSlash, useObjenesis: true)
-
-        and:
-            channelJavacordSlash.setFinalLongField('channelId', channelId)
-            channelJavacordSlash.setFinalField('channelName', channelName)
-            channelJavacordSlash.setFinalBooleanField('caseSensitive', caseSensitive)
-            channelJavacordSlash.setFinalField('channelPattern', channelPattern)
+            def channelJavacordSlashParameters = new ChannelJavacordSlash.Parameters(
+                channelId, channelName, caseSensitive, channelPattern)
 
         when:
-            channelJavacordSlash.invokeMethod('ensureInvariants')
+            channelJavacordSlashParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

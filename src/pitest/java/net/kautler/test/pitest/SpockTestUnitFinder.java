@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,9 +136,22 @@ public class SpockTestUnitFinder implements TestUnitFinder {
      */
     public SpockTestUnitFinder(TestGroupConfig testGroupConfig,
                                Collection<String> includedTestMethods) {
+        this(testGroupConfig, includedTestMethods, LauncherFactory.create());
+    }
+
+    /**
+     * Constructs a new spock test unit finder.
+     *
+     * @param testGroupConfig     the test group config
+     * @param includedTestMethods test methods that should be included
+     * @param launcher            the JUnit platform launcher to execute tests
+     */
+    private SpockTestUnitFinder(TestGroupConfig testGroupConfig,
+                                Collection<String> includedTestMethods,
+                                Launcher launcher) {
         this.testGroupConfig = testGroupConfig;
         this.includedTestMethods = includedTestMethods;
-        this.launcher = LauncherFactory.create();
+        this.launcher = launcher;
     }
 
     @Override

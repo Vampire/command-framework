@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public abstract class UserJda implements Restriction<Message> {
      * @param userId the ID of the user for whom a command should be allowed
      */
     protected UserJda(long userId) {
-        this(userId, null, true, null);
+        this(new Parameters(userId, null, true, null).ensureInvariants());
     }
 
     /**
@@ -73,7 +73,7 @@ public abstract class UserJda implements Restriction<Message> {
      * @param userName the case-sensitive name of the user for whom a command should be allowed
      */
     protected UserJda(String userName) {
-        this(0, userName, true, null);
+        this(new Parameters(0, userName, true, null).ensureInvariants());
     }
 
     /**
@@ -83,7 +83,7 @@ public abstract class UserJda implements Restriction<Message> {
      * @param caseSensitive whether the name should be matched case-sensitively or not
      */
     protected UserJda(String userName, boolean caseSensitive) {
-        this(0, userName, caseSensitive, null);
+        this(new Parameters(0, userName, caseSensitive, null).ensureInvariants());
     }
 
     /**
@@ -93,93 +93,19 @@ public abstract class UserJda implements Restriction<Message> {
      *                    to determine for whom a command should be allowed
      */
     protected UserJda(Pattern userPattern) {
-        this(0, null, true, userPattern);
+        this(new Parameters(0, null, true, userPattern).ensureInvariants());
     }
 
     /**
      * Constructs a new user restriction.
      *
-     * @param userId        the ID of the user for whom a command should be allowed
-     * @param userName      the name of the user for whom a command should be allowed
-     * @param caseSensitive whether the name should be matched case-sensitively or not
-     * @param userPattern   the pattern against which the user name is matched
-     *                      to determine for whom a command should be allowed
+     * @param parameters the parameters to construct the channel restriction
      */
-    private UserJda(long userId, String userName, boolean caseSensitive, Pattern userPattern) {
-        this.userId = userId;
-        this.userName = userName;
-        this.caseSensitive = caseSensitive;
-        this.userPattern = userPattern;
-        ensureInvariants();
-    }
-
-    /**
-     * Checks the invariants of this instance and raises
-     * an {@link IllegalStateException} if they are violated.
-     */
-    private void ensureInvariants() {
-        ensureAtMostOneConditionIsSet();
-        ensureAtLeastOneConditionIsSet();
-        ensureCaseSensitiveIfNameIsNotSet();
-    }
-
-    /**
-     * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtMostOneConditionIsSet() {
-        boolean userIdSet = userId != 0;
-        boolean userNameSet = userName != null;
-        boolean userPatternSet = userPattern != null;
-
-        boolean userNamelySet = userNameSet || userPatternSet;
-        boolean userIdAndNamelySet = userIdSet && userNamelySet;
-        boolean bothUserNamelySet = userNameSet && userPatternSet;
-        boolean multipleConditionsSet = userIdAndNamelySet || bothUserNamelySet;
-
-        if (multipleConditionsSet) {
-            StringJoiner stringJoiner = new StringJoiner(", ");
-            if (userIdSet) {
-                stringJoiner.add("userId");
-            }
-            if (userNameSet) {
-                stringJoiner.add("userName");
-            }
-            if (userPatternSet) {
-                stringJoiner.add("userPattern");
-            }
-            throw new IllegalStateException(format(
-                    "Only one of userId, userName and userPattern should be given (%s)",
-                    stringJoiner));
-        }
-    }
-
-    /**
-     * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtLeastOneConditionIsSet() {
-        boolean userIdSet = userId != 0;
-        boolean userNameSet = userName != null;
-        boolean userPatternSet = userPattern != null;
-
-        boolean userNamelySet = userNameSet || userPatternSet;
-
-        boolean atLeastOneConditionSet = userIdSet || userNamelySet;
-
-        if (!atLeastOneConditionSet) {
-            throw new IllegalStateException(
-                    "One of userId, userName and userPattern should be given");
-        }
-    }
-
-    /**
-     * Checks that {@link #caseSensitive} is {@code true} if {@link #userName}
-     * is not set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureCaseSensitiveIfNameIsNotSet() {
-        if ((userName == null) && !caseSensitive) {
-            throw new IllegalStateException(
-                    "If userName is not set, caseSensitive should be true");
-        }
+    private UserJda(Parameters parameters) {
+        userId = parameters.userId;
+        userName = parameters.userName;
+        caseSensitive = parameters.caseSensitive;
+        userPattern = parameters.userPattern;
     }
 
     @Override
@@ -222,5 +148,120 @@ public abstract class UserJda implements Restriction<Message> {
                     }
                 })
                 .orElse(FALSE);
+    }
+
+    /**
+     * A set of parameters to construct a user restriction for JDA.
+     */
+    private static class Parameters {
+        /**
+         * The ID of the user for which a command is allowed.
+         */
+        private final long userId;
+
+        /**
+         * The name of the user for which a command is allowed.
+         */
+        private final String userName;
+
+        /**
+         * Whether the {@code userName} should be case sensitive or not.
+         * This does not apply to the {@code userPattern},
+         * where an embedded flag can be used to control case sensitivity.
+         */
+        private final boolean caseSensitive;
+
+        /**
+         * The pattern user names are matched against to determine whether a command is allowed.
+         */
+        private final Pattern userPattern;
+
+        /**
+         * Constructs a new user restriction parameters instance.
+         *
+         * @param userId        the ID of the user for whom a command should be allowed
+         * @param userName      the name of the user for whom a command should be allowed
+         * @param caseSensitive whether the name should be matched case-sensitively or not
+         * @param userPattern   the pattern against which the user name is matched
+         *                      to determine for whom a command should be allowed
+         */
+        private Parameters(long userId, String userName, boolean caseSensitive, Pattern userPattern) {
+            this.userId = userId;
+            this.userName = userName;
+            this.caseSensitive = caseSensitive;
+            this.userPattern = userPattern;
+        }
+
+        /**
+         * Checks the invariants of this instance and raises
+         * an {@link IllegalStateException} if they are violated.
+         *
+         * @return this instance
+         */
+        private Parameters ensureInvariants() {
+            ensureAtMostOneConditionIsSet();
+            ensureAtLeastOneConditionIsSet();
+            ensureCaseSensitiveIfNameIsNotSet();
+            return this;
+        }
+
+        /**
+         * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtMostOneConditionIsSet() {
+            boolean userIdSet = userId != 0;
+            boolean userNameSet = userName != null;
+            boolean userPatternSet = userPattern != null;
+
+            boolean userNamelySet = userNameSet || userPatternSet;
+            boolean userIdAndNamelySet = userIdSet && userNamelySet;
+            boolean bothUserNamelySet = userNameSet && userPatternSet;
+            boolean multipleConditionsSet = userIdAndNamelySet || bothUserNamelySet;
+
+            if (multipleConditionsSet) {
+                StringJoiner stringJoiner = new StringJoiner(", ");
+                if (userIdSet) {
+                    stringJoiner.add("userId");
+                }
+                if (userNameSet) {
+                    stringJoiner.add("userName");
+                }
+                if (userPatternSet) {
+                    stringJoiner.add("userPattern");
+                }
+                throw new IllegalStateException(format(
+                    "Only one of userId, userName and userPattern should be given (%s)",
+                    stringJoiner));
+            }
+        }
+
+        /**
+         * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtLeastOneConditionIsSet() {
+            boolean userIdSet = userId != 0;
+            boolean userNameSet = userName != null;
+            boolean userPatternSet = userPattern != null;
+
+            boolean userNamelySet = userNameSet || userPatternSet;
+
+            boolean atLeastOneConditionSet = userIdSet || userNamelySet;
+
+            if (!atLeastOneConditionSet) {
+                throw new IllegalStateException(
+                    "One of userId, userName and userPattern should be given");
+            }
+        }
+
+        /**
+         * Checks that {@link #caseSensitive} is {@code true} if {@link #userName}
+         * is not set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureCaseSensitiveIfNameIsNotSet() {
+            if ((userName == null) && !caseSensitive) {
+                throw new IllegalStateException(
+                    "If userName is not set, caseSensitive should be true");
+            }
+        }
     }
 }

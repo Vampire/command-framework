@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,16 +119,11 @@ class UserJdaTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [userId: #userId, userName: #userName, caseSensitive: #caseSensitive, userPattern: #userPattern] is checked'() {
         given:
-            UserJda userJda = Spy(UserJda, useObjenesis: true)
-
-        and:
-            userJda.setFinalLongField('userId', userId)
-            userJda.setFinalField('userName', userName)
-            userJda.setFinalBooleanField('caseSensitive', caseSensitive)
-            userJda.setFinalField('userPattern', userPattern)
+            def userJdaParameters = new UserJda.Parameters(
+                userId, userName, caseSensitive, userPattern)
 
         when:
-            userJda.invokeMethod('ensureInvariants')
+            userJdaParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

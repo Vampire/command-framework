@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
      * @param channelId the ID of the channel where a command should be allowed
      */
     protected ChannelJavacordSlash(long channelId) {
-        this(channelId, null, true, null);
+        this(new Parameters(channelId, null, true, null).ensureInvariants());
     }
 
     /**
@@ -72,7 +72,7 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
      * @param channelName the case-sensitive name of the channel where a command should be allowed
      */
     protected ChannelJavacordSlash(String channelName) {
-        this(0, channelName, true, null);
+        this(new Parameters(0, channelName, true, null).ensureInvariants());
     }
 
     /**
@@ -82,7 +82,7 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
      * @param caseSensitive whether the name should be matched case-sensitively or not
      */
     protected ChannelJavacordSlash(String channelName, boolean caseSensitive) {
-        this(0, channelName, caseSensitive, null);
+        this(new Parameters(0, channelName, caseSensitive, null).ensureInvariants());
     }
 
     /**
@@ -92,94 +92,19 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
      *                       to determine where a command should be allowed
      */
     protected ChannelJavacordSlash(Pattern channelPattern) {
-        this(0, null, true, channelPattern);
+        this(new Parameters(0, null, true, channelPattern).ensureInvariants());
     }
 
     /**
      * Constructs a new channel restriction.
      *
-     * @param channelId      the ID of the channel where a command should be allowed
-     * @param channelName    the name of the channel where a command should be allowed
-     * @param caseSensitive  whether the name should be matched case-sensitively or not
-     * @param channelPattern the pattern against which the channel name is matched
-     *                       to determine where a command should be allowed
+     * @param parameters the parameters to construct the channel restriction
      */
-    private ChannelJavacordSlash(long channelId, String channelName,
-                                 boolean caseSensitive, Pattern channelPattern) {
-        this.channelId = channelId;
-        this.channelName = channelName;
-        this.caseSensitive = caseSensitive;
-        this.channelPattern = channelPattern;
-        ensureInvariants();
-    }
-
-    /**
-     * Checks the invariants of this instance and raises
-     * an {@link IllegalStateException} if they are violated.
-     */
-    private void ensureInvariants() {
-        ensureAtMostOneConditionIsSet();
-        ensureAtLeastOneConditionIsSet();
-        ensureCaseSensitiveIfNameIsNotSet();
-    }
-
-    /**
-     * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtMostOneConditionIsSet() {
-        boolean channelIdSet = channelId != 0;
-        boolean channelNameSet = channelName != null;
-        boolean channelPatternSet = channelPattern != null;
-
-        boolean channelNamelySet = channelNameSet || channelPatternSet;
-        boolean channelIdAndNamelySet = channelIdSet && channelNamelySet;
-        boolean bothChannelNamelySet = channelNameSet && channelPatternSet;
-        boolean multipleConditionsSet = channelIdAndNamelySet || bothChannelNamelySet;
-
-        if (multipleConditionsSet) {
-            StringJoiner stringJoiner = new StringJoiner(", ");
-            if (channelIdSet) {
-                stringJoiner.add("channelId");
-            }
-            if (channelNameSet) {
-                stringJoiner.add("channelName");
-            }
-            if (channelPatternSet) {
-                stringJoiner.add("channelPattern");
-            }
-            throw new IllegalStateException(format(
-                    "Only one of channelId, channelName and channelPattern should be given (%s)",
-                    stringJoiner));
-        }
-    }
-
-    /**
-     * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtLeastOneConditionIsSet() {
-        boolean channelIdSet = channelId != 0;
-        boolean channelNameSet = channelName != null;
-        boolean channelPatternSet = channelPattern != null;
-
-        boolean channelNamelySet = channelNameSet || channelPatternSet;
-
-        boolean atLeastOneConditionSet = channelIdSet || channelNamelySet;
-
-        if (!atLeastOneConditionSet) {
-            throw new IllegalStateException(
-                    "One of channelId, channelName and channelPattern should be given");
-        }
-    }
-
-    /**
-     * Checks that {@link #caseSensitive} is {@code true} if {@link #channelName}
-     * is not set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureCaseSensitiveIfNameIsNotSet() {
-        if ((channelName == null) && !caseSensitive) {
-            throw new IllegalStateException(
-                    "If channelName is not set, caseSensitive should be true");
-        }
+    private ChannelJavacordSlash(Parameters parameters) {
+        channelId = parameters.channelId;
+        channelName = parameters.channelName;
+        caseSensitive = parameters.caseSensitive;
+        channelPattern = parameters.channelPattern;
     }
 
     @Override
@@ -223,5 +148,121 @@ public abstract class ChannelJavacordSlash implements Restriction<SlashCommandIn
                     }
                 })
                 .orElse(FALSE);
+    }
+
+    /**
+     * A set of parameters to construct a channel restriction for Javacord with slash commands.
+     */
+    private static class Parameters {
+        /**
+         * The ID of the channel where a command is allowed.
+         */
+        private final long channelId;
+
+        /**
+         * The name of the channel where a command is allowed.
+         */
+        private final String channelName;
+
+        /**
+         * Whether the {@code channelName} should be case sensitive or not.
+         * This does not apply to the {@code channelPattern},
+         * where an embedded flag can be used to control case sensitivity.
+         */
+        private final boolean caseSensitive;
+
+        /**
+         * The pattern channel names are matched against to determine whether a command is allowed.
+         */
+        private final Pattern channelPattern;
+
+        /**
+         * Constructs a new channel restriction parameters instance.
+         *
+         * @param channelId      the ID of the channel where a command should be allowed
+         * @param channelName    the name of the channel where a command should be allowed
+         * @param caseSensitive  whether the name should be matched case-sensitively or not
+         * @param channelPattern the pattern against which the channel name is matched
+         *                       to determine where a command should be allowed
+         */
+        private Parameters(long channelId, String channelName,
+                           boolean caseSensitive, Pattern channelPattern) {
+            this.channelId = channelId;
+            this.channelName = channelName;
+            this.caseSensitive = caseSensitive;
+            this.channelPattern = channelPattern;
+        }
+
+        /**
+         * Checks the invariants of this instance and raises
+         * an {@link IllegalStateException} if they are violated.
+         *
+         * @return this instance
+         */
+        private Parameters ensureInvariants() {
+            ensureAtMostOneConditionIsSet();
+            ensureAtLeastOneConditionIsSet();
+            ensureCaseSensitiveIfNameIsNotSet();
+            return this;
+        }
+
+        /**
+         * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtMostOneConditionIsSet() {
+            boolean channelIdSet = channelId != 0;
+            boolean channelNameSet = channelName != null;
+            boolean channelPatternSet = channelPattern != null;
+
+            boolean channelNamelySet = channelNameSet || channelPatternSet;
+            boolean channelIdAndNamelySet = channelIdSet && channelNamelySet;
+            boolean bothChannelNamelySet = channelNameSet && channelPatternSet;
+            boolean multipleConditionsSet = channelIdAndNamelySet || bothChannelNamelySet;
+
+            if (multipleConditionsSet) {
+                StringJoiner stringJoiner = new StringJoiner(", ");
+                if (channelIdSet) {
+                    stringJoiner.add("channelId");
+                }
+                if (channelNameSet) {
+                    stringJoiner.add("channelName");
+                }
+                if (channelPatternSet) {
+                    stringJoiner.add("channelPattern");
+                }
+                throw new IllegalStateException(format(
+                    "Only one of channelId, channelName and channelPattern should be given (%s)",
+                    stringJoiner));
+            }
+        }
+
+        /**
+         * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtLeastOneConditionIsSet() {
+            boolean channelIdSet = channelId != 0;
+            boolean channelNameSet = channelName != null;
+            boolean channelPatternSet = channelPattern != null;
+
+            boolean channelNamelySet = channelNameSet || channelPatternSet;
+
+            boolean atLeastOneConditionSet = channelIdSet || channelNamelySet;
+
+            if (!atLeastOneConditionSet) {
+                throw new IllegalStateException(
+                    "One of channelId, channelName and channelPattern should be given");
+            }
+        }
+
+        /**
+         * Checks that {@link #caseSensitive} is {@code true} if {@link #channelName}
+         * is not set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureCaseSensitiveIfNameIsNotSet() {
+            if ((channelName == null) && !caseSensitive) {
+                throw new IllegalStateException(
+                    "If channelName is not set, caseSensitive should be true");
+            }
+        }
     }
 }

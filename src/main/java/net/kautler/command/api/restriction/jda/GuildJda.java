@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public abstract class GuildJda implements Restriction<Message> {
      * @param guildId the ID of the guild where a command should be allowed
      */
     protected GuildJda(long guildId) {
-        this(guildId, null, true, null);
+        this(new Parameters(guildId, null, true, null).ensureInvariants());
     }
 
     /**
@@ -73,7 +73,7 @@ public abstract class GuildJda implements Restriction<Message> {
      * @param guildName the case-sensitive name of the guild where a command should be allowed
      */
     protected GuildJda(String guildName) {
-        this(0, guildName, true, null);
+        this(new Parameters(0, guildName, true, null).ensureInvariants());
     }
 
     /**
@@ -83,7 +83,7 @@ public abstract class GuildJda implements Restriction<Message> {
      * @param caseSensitive whether the name should be matched case-sensitively or not
      */
     protected GuildJda(String guildName, boolean caseSensitive) {
-        this(0, guildName, caseSensitive, null);
+        this(new Parameters(0, guildName, caseSensitive, null).ensureInvariants());
     }
 
     /**
@@ -93,93 +93,19 @@ public abstract class GuildJda implements Restriction<Message> {
      *                     to determine where a command should be allowed
      */
     protected GuildJda(Pattern guildPattern) {
-        this(0, null, true, guildPattern);
+        this(new Parameters(0, null, true, guildPattern).ensureInvariants());
     }
 
     /**
      * Constructs a new guild restriction.
      *
-     * @param guildId       the ID of the guild where a command should be allowed
-     * @param guildName     the name of the guild where a command should be allowed
-     * @param caseSensitive whether the name should be matched case-sensitively or not
-     * @param guildPattern  the pattern against which the guild name is matched
-     *                      to determine where a command should be allowed
+     * @param parameters the parameters to construct the channel restriction
      */
-    private GuildJda(long guildId, String guildName, boolean caseSensitive, Pattern guildPattern) {
-        this.guildId = guildId;
-        this.guildName = guildName;
-        this.caseSensitive = caseSensitive;
-        this.guildPattern = guildPattern;
-        ensureInvariants();
-    }
-
-    /**
-     * Checks the invariants of this instance and raises
-     * an {@link IllegalStateException} if they are violated.
-     */
-    private void ensureInvariants() {
-        ensureAtMostOneConditionIsSet();
-        ensureAtLeastOneConditionIsSet();
-        ensureCaseSensitiveIfNameIsNotSet();
-    }
-
-    /**
-     * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtMostOneConditionIsSet() {
-        boolean guildIdSet = guildId != 0;
-        boolean guildNameSet = guildName != null;
-        boolean guildPatternSet = guildPattern != null;
-
-        boolean guildNamelySet = guildNameSet || guildPatternSet;
-        boolean guildIdAndNamelySet = guildIdSet && guildNamelySet;
-        boolean bothGuildNamelySet = guildNameSet && guildPatternSet;
-        boolean multipleConditionsSet = guildIdAndNamelySet || bothGuildNamelySet;
-
-        if (multipleConditionsSet) {
-            StringJoiner stringJoiner = new StringJoiner(", ");
-            if (guildIdSet) {
-                stringJoiner.add("guildId");
-            }
-            if (guildNameSet) {
-                stringJoiner.add("guildName");
-            }
-            if (guildPatternSet) {
-                stringJoiner.add("guildPattern");
-            }
-            throw new IllegalStateException(format(
-                    "Only one of guildId, guildName and guildPattern should be given (%s)",
-                    stringJoiner));
-        }
-    }
-
-    /**
-     * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtLeastOneConditionIsSet() {
-        boolean guildIdSet = guildId != 0;
-        boolean guildNameSet = guildName != null;
-        boolean guildPatternSet = guildPattern != null;
-
-        boolean guildNamelySet = guildNameSet || guildPatternSet;
-
-        boolean atLeastOneConditionSet = guildIdSet || guildNamelySet;
-
-        if (!atLeastOneConditionSet) {
-            throw new IllegalStateException(
-                    "One of guildId, guildName and guildPattern should be given");
-        }
-    }
-
-    /**
-     * Checks that {@link #caseSensitive} is {@code true} if {@link #guildName}
-     * is not set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureCaseSensitiveIfNameIsNotSet() {
-        if ((guildName == null) && !caseSensitive) {
-            throw new IllegalStateException(
-                    "If guildName is not set, caseSensitive should be true");
-        }
+    private GuildJda(Parameters parameters) {
+        guildId = parameters.guildId;
+        guildName = parameters.guildName;
+        caseSensitive = parameters.caseSensitive;
+        guildPattern = parameters.guildPattern;
     }
 
     @Override
@@ -226,5 +152,120 @@ public abstract class GuildJda implements Restriction<Message> {
                     }
                 })
                 .orElse(FALSE);
+    }
+
+    /**
+     * A set of parameters to construct a guild restriction for JDA.
+     */
+    private static class Parameters {
+        /**
+         * The ID of the guild where a command is allowed.
+         */
+        private final long guildId;
+
+        /**
+         * The name of the guild where a command is allowed.
+         */
+        private final String guildName;
+
+        /**
+         * Whether the {@code guildName} should be case sensitive or not.
+         * This does not apply to the {@code guildPattern},
+         * where an embedded flag can be used to control case sensitivity.
+         */
+        private final boolean caseSensitive;
+
+        /**
+         * The pattern guild names are matched against to determine whether a command is allowed.
+         */
+        private final Pattern guildPattern;
+
+        /**
+         * Constructs a new guild restriction parameters instance.
+         *
+         * @param guildId       the ID of the guild where a command should be allowed
+         * @param guildName     the name of the guild where a command should be allowed
+         * @param caseSensitive whether the name should be matched case-sensitively or not
+         * @param guildPattern  the pattern against which the guild name is matched
+         *                      to determine where a command should be allowed
+         */
+        private Parameters(long guildId, String guildName, boolean caseSensitive, Pattern guildPattern) {
+            this.guildId = guildId;
+            this.guildName = guildName;
+            this.caseSensitive = caseSensitive;
+            this.guildPattern = guildPattern;
+        }
+
+        /**
+         * Checks the invariants of this instance and raises
+         * an {@link IllegalStateException} if they are violated.
+         *
+         * @return this instance
+         */
+        private Parameters ensureInvariants() {
+            ensureAtMostOneConditionIsSet();
+            ensureAtLeastOneConditionIsSet();
+            ensureCaseSensitiveIfNameIsNotSet();
+            return this;
+        }
+
+        /**
+         * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtMostOneConditionIsSet() {
+            boolean guildIdSet = guildId != 0;
+            boolean guildNameSet = guildName != null;
+            boolean guildPatternSet = guildPattern != null;
+
+            boolean guildNamelySet = guildNameSet || guildPatternSet;
+            boolean guildIdAndNamelySet = guildIdSet && guildNamelySet;
+            boolean bothGuildNamelySet = guildNameSet && guildPatternSet;
+            boolean multipleConditionsSet = guildIdAndNamelySet || bothGuildNamelySet;
+
+            if (multipleConditionsSet) {
+                StringJoiner stringJoiner = new StringJoiner(", ");
+                if (guildIdSet) {
+                    stringJoiner.add("guildId");
+                }
+                if (guildNameSet) {
+                    stringJoiner.add("guildName");
+                }
+                if (guildPatternSet) {
+                    stringJoiner.add("guildPattern");
+                }
+                throw new IllegalStateException(format(
+                    "Only one of guildId, guildName and guildPattern should be given (%s)",
+                    stringJoiner));
+            }
+        }
+
+        /**
+         * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtLeastOneConditionIsSet() {
+            boolean guildIdSet = guildId != 0;
+            boolean guildNameSet = guildName != null;
+            boolean guildPatternSet = guildPattern != null;
+
+            boolean guildNamelySet = guildNameSet || guildPatternSet;
+
+            boolean atLeastOneConditionSet = guildIdSet || guildNamelySet;
+
+            if (!atLeastOneConditionSet) {
+                throw new IllegalStateException(
+                    "One of guildId, guildName and guildPattern should be given");
+            }
+        }
+
+        /**
+         * Checks that {@link #caseSensitive} is {@code true} if {@link #guildName}
+         * is not set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureCaseSensitiveIfNameIsNotSet() {
+            if ((guildName == null) && !caseSensitive) {
+                throw new IllegalStateException(
+                    "If guildName is not set, caseSensitive should be true");
+            }
+        }
     }
 }

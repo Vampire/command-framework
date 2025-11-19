@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,16 +119,11 @@ class UserJavacordSlashTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [userId: #userId, userName: #userName, caseSensitive: #caseSensitive, userPattern: #userPattern] is checked'() {
         given:
-            UserJavacordSlash userJavacordSlash = Spy(UserJavacordSlash, useObjenesis: true)
-
-        and:
-            userJavacordSlash.setFinalLongField('userId', userId)
-            userJavacordSlash.setFinalField('userName', userName)
-            userJavacordSlash.setFinalBooleanField('caseSensitive', caseSensitive)
-            userJavacordSlash.setFinalField('userPattern', userPattern)
+            def userJavacordSlashParameters = new UserJavacordSlash.Parameters(
+                userId, userName, caseSensitive, userPattern)
 
         when:
-            userJavacordSlash.invokeMethod('ensureInvariants')
+            userJavacordSlashParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Björn Kautler
+ * Copyright 2022-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,16 +74,38 @@ public class CommandContext<M> {
     /**
      * Constructs a new command context from the given builder.
      *
-     * @param builder the message that triggered the command processing
+     * @param builder the builder holding the configuration for the new command context
      */
     private CommandContext(Builder<M> builder) {
-        message = requireNonNull(builder.message);
-        messageContent = requireNonNull(builder.messageContent);
+        this(true, requireNonEmptyMessageAndContent(builder));
+    }
+
+    /**
+     * Constructs a new command context from the given builder.
+     *
+     * @param parametersValidated a dummy parameter for finalizer attack prevention
+     * @param builder the builder holding the configuration for the new command context
+     */
+    private CommandContext(boolean parametersValidated, Builder<M> builder) {
+        message = builder.message;
+        messageContent = builder.messageContent;
         prefix = builder.prefix;
         alias = builder.alias;
         parameterString = builder.parameterString;
         command = builder.command;
         additionalData.putAll(builder.additionalData);
+    }
+
+    /**
+     * Ensures that the given builder has a non-null message and message content.
+     *
+     * @param builder the builder to be validated
+     * @return the validated builder
+     */
+    private static <M> Builder<M> requireNonEmptyMessageAndContent(Builder<M> builder) {
+        requireNonNull(builder.message);
+        requireNonNull(builder.messageContent);
+        return builder;
     }
 
     /**
@@ -436,8 +458,19 @@ public class CommandContext<M> {
          * @param messageContent the content of the message that triggered the command processing
          */
         public Builder(M message, String messageContent) {
-            this.message = requireNonNull(message);
-            this.messageContent = requireNonNull(messageContent);
+            this(true, requireNonNull(message), requireNonNull(messageContent));
+        }
+
+        /**
+         * Constructs a new command context builder with the given message and message content.
+         *
+         * @param parametersValidated a dummy parameter for finalizer attack prevention
+         * @param message             the message that triggered the command processing
+         * @param messageContent      the content of the message that triggered the command processing
+         */
+        private Builder(boolean parametersValidated, M message, String messageContent) {
+            this.message = message;
+            this.messageContent = messageContent;
         }
 
         /**
@@ -446,15 +479,38 @@ public class CommandContext<M> {
          * @param commandContext the command context used to initialize the builder
          */
         private Builder(CommandContext<M> commandContext) {
-            message = requireNonNull(commandContext.message);
-            messageContent = requireNonNull(commandContext.messageContent);
+            this(true, requireNonEmptyMessageAndContentAndAdditionalData(commandContext));
+        }
+
+        /**
+         * Constructs a new command context builder with the same values as the given command context.
+         *
+         * @param parametersValidated a dummy parameter for finalizer attack prevention
+         * @param commandContext      the command context used to initialize the builder
+         */
+        private Builder(boolean parametersValidated, CommandContext<M> commandContext) {
+            message = commandContext.message;
+            messageContent = commandContext.messageContent;
             prefix = commandContext.prefix;
             alias = commandContext.alias;
             parameterString = commandContext.parameterString;
             command = commandContext.command;
+            additionalData.putAll(commandContext.additionalData);
+        }
+
+        /**
+         * Ensures that the given command context has a non-null message and message content, and that all
+         * additional data keys and values are non-null.
+         *
+         * @param commandContext the command context to be validated
+         * @return the validated command context
+         */
+        private static <M> CommandContext<M> requireNonEmptyMessageAndContentAndAdditionalData(CommandContext<M> commandContext) {
+            requireNonNull(commandContext.message);
+            requireNonNull(commandContext.messageContent);
             commandContext.additionalData.keySet().forEach(Objects::requireNonNull);
             commandContext.additionalData.values().forEach(Objects::requireNonNull);
-            additionalData.putAll(commandContext.additionalData);
+            return commandContext;
         }
 
         /**

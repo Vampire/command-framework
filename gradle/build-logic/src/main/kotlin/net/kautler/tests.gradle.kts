@@ -341,6 +341,18 @@ tasks.withType<JacocoReport>().configureEach {
 }
 
 tasks.jacocoTestCoverageVerification {
+    classDirectories = files(
+        classDirectories
+            .files
+            .map {
+                fileTree(it) {
+                    // it is impossible to cover this class due to its nature, so exclude
+                    // it from reporting to be able to check for 100% coverage otherwise
+                    exclude("net/kautler/command/parameter/parser/missingdependency/MissingDependencyParameterParser.class")
+                }
+            }
+    )
+
     violationRules {
         rule {
             element = "CLASS"

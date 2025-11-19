@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,16 +119,11 @@ class UserJavacordTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [userId: #userId, userName: #userName, caseSensitive: #caseSensitive, userPattern: #userPattern] is checked'() {
         given:
-            UserJavacord userJavacord = Spy(UserJavacord, useObjenesis: true)
-
-        and:
-            userJavacord.setFinalLongField('userId', userId)
-            userJavacord.setFinalField('userName', userName)
-            userJavacord.setFinalBooleanField('caseSensitive', caseSensitive)
-            userJavacord.setFinalField('userPattern', userPattern)
+            def userJavacordParameters = new UserJavacord.Parameters(
+                userId, userName, caseSensitive, userPattern)
 
         when:
-            userJavacord.invokeMethod('ensureInvariants')
+            userJavacordParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,16 +127,11 @@ class ServerJavacordTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [serverId: #serverId, serverName: #serverName, caseSensitive: #caseSensitive, serverPattern: #serverPattern] is checked'() {
         given:
-            ServerJavacord serverJavacord = Spy(ServerJavacord, useObjenesis: true)
-
-        and:
-            serverJavacord.setFinalLongField('serverId', serverId)
-            serverJavacord.setFinalField('serverName', serverName)
-            serverJavacord.setFinalBooleanField('caseSensitive', caseSensitive)
-            serverJavacord.setFinalField('serverPattern', serverPattern)
+            def serverJavacordParameters = new ServerJavacord.Parameters(
+                serverId, serverName, caseSensitive, serverPattern)
 
         when:
-            serverJavacord.invokeMethod('ensureInvariants')
+            serverJavacordParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

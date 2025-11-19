@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Björn Kautler
+ * Copyright 2022-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,7 +168,7 @@ class SlashCommandBuilderProducer {
     /**
      * A representation for the parts of the alias.
      */
-    private static class AliasParts {
+    private static final class AliasParts {
         /**
          * The full alias as configured.
          */

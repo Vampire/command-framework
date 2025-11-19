@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,28 @@ public class MutationFilterFactory implements MutationInterceptorFactory {
          * @throws IllegalArgumentException if any non-filter interceptor is given
          */
         CompoundMutationFilter(MutationInterceptor... mutationFilter) {
+            this(true, requireOnlyFilters(mutationFilter));
+        }
+
+        /**
+         * Constructs a new compound mutation filter for the given filter interceptors.
+         *
+         * @param parametersValidated a dummy parameter for finalizer attack prevention
+         * @param mutationFilter      the filter interceptors to multiplex to
+         * @throws IllegalArgumentException if any non-filter interceptor is given
+         */
+        private CompoundMutationFilter(boolean parametersValidated, MutationInterceptor... mutationFilter) {
             super(Arrays.asList(mutationFilter));
+        }
+
+        /**
+         * Ensures that the given command context has a non-null message and message content, and that all
+         * additional data keys and values are non-null.
+         *
+         * @param mutationFilter the mutation filters to be validated
+         * @return the validated mutation filters
+         */
+        private static MutationInterceptor[] requireOnlyFilters(MutationInterceptor... mutationFilter) {
             List<MutationInterceptor> nonFilterInterceptors = Arrays.stream(mutationFilter)
                     .filter(interceptor -> interceptor.type() != FILTER)
                     .collect(toList());
@@ -77,6 +98,7 @@ public class MutationFilterFactory implements MutationInterceptorFactory {
                         "Only filter interceptors should be given %s",
                         nonFilterInterceptors));
             }
+            return mutationFilter;
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -278,16 +278,11 @@ class RoleJdaTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [roleId: #roleId, roleName: #roleName, caseSensitive: #caseSensitive, rolePattern: #rolePattern] is checked'() {
         given:
-            RoleJda roleJda = Spy(RoleJda, useObjenesis: true)
-
-        and:
-            roleJda.setFinalLongField('roleId', roleId)
-            roleJda.setFinalField('roleName', roleName)
-            roleJda.setFinalBooleanField('caseSensitive', caseSensitive)
-            roleJda.setFinalField('rolePattern', rolePattern)
+            def roleJdaParameters = new RoleJda.Parameters(
+                true, roleId, roleName, caseSensitive, rolePattern)
 
         when:
-            roleJda.invokeMethod('ensureInvariants')
+            roleJdaParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

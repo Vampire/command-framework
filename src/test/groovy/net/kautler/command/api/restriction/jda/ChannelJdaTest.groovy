@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,16 +119,11 @@ class ChannelJdaTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [channelId: #channelId, channelName: #channelName, caseSensitive: #caseSensitive, channelPattern: #channelPattern] is checked'() {
         given:
-            ChannelJda channelJda = Spy(ChannelJda, useObjenesis: true)
-
-        and:
-            channelJda.setFinalLongField('channelId', channelId)
-            channelJda.setFinalField('channelName', channelName)
-            channelJda.setFinalBooleanField('caseSensitive', caseSensitive)
-            channelJda.setFinalField('channelPattern', channelPattern)
+            def channelJdaParameters = new ChannelJda.Parameters(
+                channelId, channelName, caseSensitive, channelPattern)
 
         when:
-            channelJda.invokeMethod('ensureInvariants')
+            channelJdaParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

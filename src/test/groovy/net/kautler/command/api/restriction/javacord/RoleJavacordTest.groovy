@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -274,16 +274,11 @@ class RoleJavacordTest extends Specification {
     @Use(Whitebox)
     def 'invariant violation [roleId: #roleId, roleName: #roleName, caseSensitive: #caseSensitive, rolePattern: #rolePattern] is checked'() {
         given:
-            RoleJavacord roleJavacord = Spy(RoleJavacord, useObjenesis: true)
-
-        and:
-            roleJavacord.setFinalLongField('roleId', roleId)
-            roleJavacord.setFinalField('roleName', roleName)
-            roleJavacord.setFinalBooleanField('caseSensitive', caseSensitive)
-            roleJavacord.setFinalField('rolePattern', rolePattern)
+            def roleJavacordParameters = new RoleJavacord.Parameters(
+                true, roleId, roleName, caseSensitive, rolePattern)
 
         when:
-            roleJavacord.invokeMethod('ensureInvariants')
+            roleJavacordParameters.ensureInvariants()
 
         then:
             IllegalStateException ise = thrown()

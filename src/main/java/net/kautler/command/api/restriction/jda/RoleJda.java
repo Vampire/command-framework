@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public abstract class RoleJda implements Restriction<Message> {
      * @param roleId the ID of the role for which a command should be allowed
      */
     protected RoleJda(long roleId) {
-        this(true, roleId, null, true, null);
+        this(new Parameters(true, roleId, null, true, null).ensureInvariants());
     }
 
     /**
@@ -84,7 +84,7 @@ public abstract class RoleJda implements Restriction<Message> {
      * @param roleName the case-sensitive name of the role for which a command should be allowed
      */
     protected RoleJda(String roleName) {
-        this(true, 0, roleName, true, null);
+        this(new Parameters(true, 0, roleName, true, null).ensureInvariants());
     }
 
     /**
@@ -95,7 +95,7 @@ public abstract class RoleJda implements Restriction<Message> {
      * @param caseSensitive whether the name should be matched case-sensitively or not
      */
     protected RoleJda(String roleName, boolean caseSensitive) {
-        this(true, 0, roleName, caseSensitive, null);
+        this(new Parameters(true, 0, roleName, caseSensitive, null).ensureInvariants());
     }
 
     /**
@@ -106,7 +106,7 @@ public abstract class RoleJda implements Restriction<Message> {
      *                    to determine for whom a command should be allowed
      */
     protected RoleJda(Pattern rolePattern) {
-        this(true, 0, null, true, rolePattern);
+        this(new Parameters(true, 0, null, true, rolePattern).ensureInvariants());
     }
 
     /**
@@ -116,7 +116,7 @@ public abstract class RoleJda implements Restriction<Message> {
      * @param roleId the ID of the role for which a command should be allowed
      */
     protected RoleJda(boolean exact, long roleId) {
-        this(exact, roleId, null, true, null);
+        this(new Parameters(exact, roleId, null, true, null).ensureInvariants());
     }
 
     /**
@@ -126,7 +126,7 @@ public abstract class RoleJda implements Restriction<Message> {
      * @param roleName the case-sensitive name of the role for which a command should be allowed
      */
     protected RoleJda(boolean exact, String roleName) {
-        this(exact, 0, roleName, true, null);
+        this(new Parameters(exact, 0, roleName, true, null).ensureInvariants());
     }
 
     /**
@@ -138,7 +138,7 @@ public abstract class RoleJda implements Restriction<Message> {
      * @param caseSensitive whether the name should be matched case-sensitively or not
      */
     protected RoleJda(boolean exact, String roleName, boolean caseSensitive) {
-        this(exact, 0, roleName, caseSensitive, null);
+        this(new Parameters(exact, 0, roleName, caseSensitive, null).ensureInvariants());
     }
 
     /**
@@ -150,96 +150,20 @@ public abstract class RoleJda implements Restriction<Message> {
      *                    to determine for whom a command should be allowed
      */
     protected RoleJda(boolean exact, Pattern rolePattern) {
-        this(exact, 0, null, true, rolePattern);
+        this(new Parameters(exact, 0, null, true, rolePattern).ensureInvariants());
     }
 
     /**
      * Constructs a new role restriction.
      *
-     * @param exact         whether the role needs to be matched exactly or whether a higher role would also be
-     *                      sufficient
-     * @param roleId        the ID of the role for which a command should be allowed
-     * @param roleName      the name of the role for which a command should be allowed
-     * @param caseSensitive whether the name should be matched case-sensitively or not
-     * @param rolePattern   the pattern against which the role name is matched
-     *                      to determine for whom a command should be allowed
+     * @param parameters the parameters to construct the channel restriction
      */
-    private RoleJda(boolean exact, long roleId, String roleName, boolean caseSensitive, Pattern rolePattern) {
-        this.exact = exact;
-        this.roleId = roleId;
-        this.roleName = roleName;
-        this.caseSensitive = caseSensitive;
-        this.rolePattern = rolePattern;
-        ensureInvariants();
-    }
-
-    /**
-     * Checks the invariants of this instance and raises
-     * an {@link IllegalStateException} if they are violated.
-     */
-    private void ensureInvariants() {
-        ensureAtMostOneConditionIsSet();
-        ensureAtLeastOneConditionIsSet();
-        ensureCaseSensitiveIfNameIsNotSet();
-    }
-
-    /**
-     * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtMostOneConditionIsSet() {
-        boolean roleIdSet = roleId != 0;
-        boolean roleNameSet = roleName != null;
-        boolean rolePatternSet = rolePattern != null;
-
-        boolean roleNamelySet = roleNameSet || rolePatternSet;
-        boolean roleIdAndNamelySet = roleIdSet && roleNamelySet;
-        boolean bothRoleNamelySet = roleNameSet && rolePatternSet;
-        boolean multipleConditionsSet = roleIdAndNamelySet || bothRoleNamelySet;
-
-        if (multipleConditionsSet) {
-            StringJoiner stringJoiner = new StringJoiner(", ");
-            if (roleIdSet) {
-                stringJoiner.add("roleId");
-            }
-            if (roleNameSet) {
-                stringJoiner.add("roleName");
-            }
-            if (rolePatternSet) {
-                stringJoiner.add("rolePattern");
-            }
-            throw new IllegalStateException(format(
-                    "Only one of roleId, roleName and rolePattern should be given (%s)",
-                    stringJoiner));
-        }
-    }
-
-    /**
-     * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureAtLeastOneConditionIsSet() {
-        boolean roleIdSet = roleId != 0;
-        boolean roleNameSet = roleName != null;
-        boolean rolePatternSet = rolePattern != null;
-
-        boolean roleNamelySet = roleNameSet || rolePatternSet;
-
-        boolean atLeastOneConditionSet = roleIdSet || roleNamelySet;
-
-        if (!atLeastOneConditionSet) {
-            throw new IllegalStateException(
-                    "One of roleId, roleName and rolePattern should be given");
-        }
-    }
-
-    /**
-     * Checks that {@link #caseSensitive} is {@code true} if {@link #roleName}
-     * is not set and raises an {@link IllegalStateException} otherwise.
-     */
-    private void ensureCaseSensitiveIfNameIsNotSet() {
-        if ((roleName == null) && !caseSensitive) {
-            throw new IllegalStateException(
-                    "If roleName is not set, caseSensitive should be true");
-        }
+    private RoleJda(Parameters parameters) {
+        exact = parameters.exact;
+        roleId = parameters.roleId;
+        roleName = parameters.roleName;
+        caseSensitive = parameters.caseSensitive;
+        rolePattern = parameters.rolePattern;
     }
 
     @Override
@@ -361,5 +285,128 @@ public abstract class RoleJda implements Restriction<Message> {
                             );
                 })
                 .orElse(FALSE);
+    }
+
+    /**
+     * A set of parameters to construct a role restriction for JDA.
+     */
+    private static class Parameters {
+        /**
+         * Whether the role needs to be matched exactly or whether a higher role would also be sufficient.
+         */
+        private final boolean exact;
+
+        /**
+         * The ID of the role for which a command is allowed.
+         */
+        private final long roleId;
+
+        /**
+         * The name of the role for which a command is allowed.
+         */
+        private final String roleName;
+
+        /**
+         * Whether the {@code roleName} should be case sensitive or not.
+         * This does not apply to the {@code rolePattern},
+         * where an embedded flag can be used to control case sensitivity.
+         */
+        private final boolean caseSensitive;
+
+        /**
+         * The pattern role names are matched against to determine whether a command is allowed.
+         */
+        private final Pattern rolePattern;
+
+        /**
+         * Constructs a new role restriction parameters instance.
+         *
+         * @param exact         whether the role needs to be matched exactly or whether a higher role would also be
+         *                      sufficient
+         * @param roleId        the ID of the role for which a command should be allowed
+         * @param roleName      the name of the role for which a command should be allowed
+         * @param caseSensitive whether the name should be matched case-sensitively or not
+         * @param rolePattern   the pattern against which the role name is matched
+         *                      to determine for whom a command should be allowed
+         */
+        private Parameters(boolean exact, long roleId, String roleName, boolean caseSensitive, Pattern rolePattern) {
+            this.exact = exact;
+            this.roleId = roleId;
+            this.roleName = roleName;
+            this.caseSensitive = caseSensitive;
+            this.rolePattern = rolePattern;
+        }
+
+        /**
+         * Checks the invariants of this instance and raises
+         * an {@link IllegalStateException} if they are violated.
+         *
+         * @return this instance
+         */
+        private Parameters ensureInvariants() {
+            ensureAtMostOneConditionIsSet();
+            ensureAtLeastOneConditionIsSet();
+            ensureCaseSensitiveIfNameIsNotSet();
+            return this;
+        }
+
+        /**
+         * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtMostOneConditionIsSet() {
+            boolean roleIdSet = roleId != 0;
+            boolean roleNameSet = roleName != null;
+            boolean rolePatternSet = rolePattern != null;
+
+            boolean roleNamelySet = roleNameSet || rolePatternSet;
+            boolean roleIdAndNamelySet = roleIdSet && roleNamelySet;
+            boolean bothRoleNamelySet = roleNameSet && rolePatternSet;
+            boolean multipleConditionsSet = roleIdAndNamelySet || bothRoleNamelySet;
+
+            if (multipleConditionsSet) {
+                StringJoiner stringJoiner = new StringJoiner(", ");
+                if (roleIdSet) {
+                    stringJoiner.add("roleId");
+                }
+                if (roleNameSet) {
+                    stringJoiner.add("roleName");
+                }
+                if (rolePatternSet) {
+                    stringJoiner.add("rolePattern");
+                }
+                throw new IllegalStateException(format(
+                    "Only one of roleId, roleName and rolePattern should be given (%s)",
+                    stringJoiner));
+            }
+        }
+
+        /**
+         * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtLeastOneConditionIsSet() {
+            boolean roleIdSet = roleId != 0;
+            boolean roleNameSet = roleName != null;
+            boolean rolePatternSet = rolePattern != null;
+
+            boolean roleNamelySet = roleNameSet || rolePatternSet;
+
+            boolean atLeastOneConditionSet = roleIdSet || roleNamelySet;
+
+            if (!atLeastOneConditionSet) {
+                throw new IllegalStateException(
+                    "One of roleId, roleName and rolePattern should be given");
+            }
+        }
+
+        /**
+         * Checks that {@link #caseSensitive} is {@code true} if {@link #roleName}
+         * is not set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureCaseSensitiveIfNameIsNotSet() {
+            if ((roleName == null) && !caseSensitive) {
+                throw new IllegalStateException(
+                    "If roleName is not set, caseSensitive should be true");
+            }
+        }
     }
 }

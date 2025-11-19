@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2019-2025 Björn Kautler
+  ~ Copyright 2019-2026 Björn Kautler
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -46,8 +46,14 @@
     </Match>
 
     <Match>
-        <Class name="net.kautler.command.api.CommandHandler"/>
-        <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
+        <Or>
+            <And>
+                <Class name="net.kautler.command.api.CommandHandler"/>
+                <Method name="ensureInitializationAtStartup" params="java.lang.Object" returns="void"/>
+            </And>
+            <!-- work-around for https://github.com/mebigfatguy/fb-contrib/issues/504 -->
+            <Method name="finalize" params="" returns="void"/>
+        </Or>
         <Bug pattern="ACEM_ABSTRACT_CLASS_EMPTY_METHODS"/>
     </Match>
 
@@ -62,18 +68,18 @@
             <!-- the static string should be clear enough in these cases -->
             <And>
                 <Or>
-                    <Class name="net.kautler.command.api.restriction.javacord.ChannelJavacord"/>
-                    <Class name="net.kautler.command.api.restriction.javacord.RoleJavacord"/>
-                    <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord"/>
-                    <Class name="net.kautler.command.api.restriction.javacord.UserJavacord"/>
-                    <Class name="net.kautler.command.api.restriction.javacord.slash.ChannelJavacordSlash"/>
-                    <Class name="net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlash"/>
-                    <Class name="net.kautler.command.api.restriction.javacord.slash.ServerJavacordSlash"/>
-                    <Class name="net.kautler.command.api.restriction.javacord.slash.UserJavacordSlash"/>
-                    <Class name="net.kautler.command.api.restriction.jda.ChannelJda"/>
-                    <Class name="net.kautler.command.api.restriction.jda.GuildJda"/>
-                    <Class name="net.kautler.command.api.restriction.jda.RoleJda"/>
-                    <Class name="net.kautler.command.api.restriction.jda.UserJda"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.ChannelJavacord$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.RoleJavacord$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.ServerJavacord$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.UserJavacord$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.slash.ChannelJavacordSlash$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlash$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.slash.ServerJavacordSlash$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.javacord.slash.UserJavacordSlash$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.jda.ChannelJda$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.jda.GuildJda$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.jda.RoleJda$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.jda.UserJda$Parameters"/>
                 </Or>
                 <Or>
                     <Method name="ensureAtLeastOneConditionIsSet" params="" returns="void"/>
@@ -122,11 +128,6 @@
                     <Method name="getAdditionalData" params="java.lang.String" returns="java.util.Optional"/>
                     <Method name="getAdditionalData" params="java.lang.String, java.lang.Object" returns="java.lang.Object"/>
                 </Or>
-            </And>
-            <!-- currently not used outside the class, but should be available for usage -->
-            <And>
-                <Class name="net.kautler.test.pitest.ExplicitMutationFilterDetails"/>
-                <Method name="&lt;init&gt;" params="int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String" returns="void"/>
             </And>
         </Or>
         <Bug pattern="OPM_OVERLY_PERMISSIVE_METHOD"/>
