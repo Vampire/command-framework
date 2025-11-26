@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@ public abstract class BaseParameterParser implements ParameterParser {
             }
             if (firstParameterValues.contains(parameterName)) {
                 firstParameterValues.remove(parameterName);
-                ArrayList<Object> result = new ArrayList<>();
+                List<Object> result = new ArrayList<>();
                 result.add(parameterValues);
                 result.add(parameterValue);
                 return result;
