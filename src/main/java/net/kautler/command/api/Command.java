@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,10 +213,8 @@ public interface Command<M> {
                         .reduce(RestrictionChainElement::or)
                         .orElseThrow(AssertionError::new)
                         .negate();
-
-            default:
-                throw new AssertionError(format("Unhandled switch case for policy '%s'", restrictionPolicy.value()));
         }
+        throw new AssertionError(format("Unhandled switch case for policy '%s'", restrictionPolicy.value()));
     }
 
     /**
