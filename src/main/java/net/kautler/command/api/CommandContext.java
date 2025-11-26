@@ -340,9 +340,38 @@ public class CommandContext<M> {
      * @param value the value to set for the given key
      * @param <R>   the class to which the returned old value is implicitly downcasted
      * @return the value to which the specified additional data key was mapped previously or an empty {@code Optional}
+     * @deprecated As of release 0.6.0, replaced by {@link #putAdditionalData(String, Object)}
+     */
+    @Deprecated
+    public <R> Optional<R> setAdditionalData(String key, Object value) {
+        return putAdditionalData(key, value);
+    }
+
+    /**
+     * Sets the additional data for the given key to the given value. If the additional data key was mapped to a value
+     * previously, the old value is returned, otherwise an empty {@link Optional} is returned.
+     *
+     * <p>The returned value can implicitly be downcasted by using {@link R} to define the type
+     * using an explicit type parameter like with
+     * <pre>{@code
+     * commandContext.<User>putAdditionalData("user", user);
+     * }</pre>
+     * or using implicit type inference like with
+     * <pre>{@code
+     * Optional<User> user = commandContext.putAdditionalData("user", user);
+     * }</pre>
+     *
+     * <p><b>Warning:</b> Be aware that choosing {@code R} must be done wisely as it is an unsafe operation.
+     * If you for example select {@code String} for {@code R} and then try to get a {@code User} object,
+     * you will get a {@link ClassCastException} at runtime.
+     *
+     * @param key   the additional data key whose value is to be set
+     * @param value the value to set for the given key
+     * @param <R>   the class to which the returned old value is implicitly downcasted
+     * @return the value to which the specified additional data key was mapped previously or an empty {@code Optional}
      */
     @SuppressWarnings("unchecked")
-    public <R> Optional<R> setAdditionalData(String key, Object value) {
+    public <R> Optional<R> putAdditionalData(String key, Object value) {
         return Optional.ofNullable((R) additionalData.put(key, value));
     }
 

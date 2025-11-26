@@ -254,6 +254,31 @@ class CommandContextTest extends Specification {
             randomUUID() as String | _     | null
     }
 
+    def 'putAdditionalData should not accept null values [key: #key, value: #value]'() {
+        when:
+            testee.putAdditionalData(key, value)
+
+        then:
+            thrown(NullPointerException)
+
+        where:
+            key                    | value
+            null                   | _
+            randomUUID() as String | null
+            null                   | null
+    }
+
+    def 'putAdditionalData "#key" should set value and return previous value'() {
+        expect:
+            testee.putAdditionalData(key, value) == Optional.ofNullable(oldValue)
+            testee.getAdditionalData(key, null) == _
+
+        where:
+            key                    | value | oldValue
+            additionalDataKey      | _     | additionalDataValue
+            randomUUID() as String | _     | null
+    }
+
     def 'removeAdditionalData "#key" should unset value and return previous value'() {
         expect:
             testee.removeAdditionalData(key) == Optional.ofNullable(oldValue)

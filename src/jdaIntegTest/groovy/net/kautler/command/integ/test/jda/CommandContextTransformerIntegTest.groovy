@@ -462,7 +462,7 @@ class CommandContextTransformerIntegTest extends Specification {
             MyTransformer.phaseActions = [
                     (phaseToSet): {
                         it.tap {
-                            setAdditionalData('foo', random1)
+                            putAdditionalData('foo', random1)
                             phaseToSetExecuted.set(true)
                         }
                     },

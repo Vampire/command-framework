@@ -104,6 +104,7 @@
                 <Or>
                     <Method name="getAdditionalData" params="java.lang.String" returns="java.util.Optional"/>
                     <Method name="getAdditionalData" params="java.lang.String, java.lang.Object" returns="java.lang.Object"/>
+                    <Method name="putAdditionalData" params="java.lang.String, java.lang.Object" returns="java.util.Optional"/>
                 </Or>
             </And>
         </Or>
