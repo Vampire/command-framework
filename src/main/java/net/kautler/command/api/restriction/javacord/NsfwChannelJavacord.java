@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,13 @@ import static java.lang.Boolean.FALSE;
  */
 @ApplicationScoped
 public class NsfwChannelJavacord implements Restriction<Message> {
+    /**
+     * Constructs a new NSFW channel restriction for Javacord.
+     */
+    public NsfwChannelJavacord() {
+        // just exists to carry JavaDoc
+    }
+
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return commandContext

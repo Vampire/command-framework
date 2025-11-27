@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,13 @@ import org.javacord.api.interaction.SlashCommandInteraction;
  */
 @ApplicationScoped
 public class BotOwnerJavacordSlash implements Restriction<SlashCommandInteraction> {
+    /**
+     * Constructs a new bot owner restriction for Javacord slash commands.
+     */
+    public BotOwnerJavacordSlash() {
+        // just exists to carry JavaDoc
+    }
+
     @Override
     public boolean allowCommand(CommandContext<? extends SlashCommandInteraction> commandContext) {
         return commandContext

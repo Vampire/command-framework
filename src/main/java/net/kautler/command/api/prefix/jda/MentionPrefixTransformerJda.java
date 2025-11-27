@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,13 @@ public abstract class MentionPrefixTransformerJda implements CommandContextTrans
      */
     private final LazyReferenceByFunction<Message, String> nicknamePrefix =
             new LazyReferenceByFunction<>(message -> prefix.get(message).replaceFirst("^<@", "<@!"));
+
+    /**
+     * Constructs a new mention prefix command context transformer for JDA.
+     */
+    public MentionPrefixTransformerJda() {
+        // just exists to carry JavaDoc
+    }
 
     @Override
     public <T extends Message> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {

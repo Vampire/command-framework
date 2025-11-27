@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Björn Kautler
+ * Copyright 2022-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,13 @@ public abstract class MentionPrefixTransformerJavacord implements CommandContext
             new LazyReferenceByFunction<>(message -> format(
                     "%s ",
                     message.getApi().getYourself().getNicknameMentionTag()));
+
+    /**
+     * Constructs a new mention prefix command context transformer for Javacord.
+     */
+    public MentionPrefixTransformerJavacord() {
+        // just exists to carry JavaDoc
+    }
 
     @Override
     public <T extends Message> CommandContext<T> transform(CommandContext<T> commandContext, Phase phase) {

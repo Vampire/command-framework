@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,13 @@ import static net.dv8tion.jda.api.Permission.MANAGE_SERVER;
  */
 @ApplicationScoped
 public class ServerManagerJda implements Restriction<Message> {
+    /**
+     * Constructs a new server manager restriction for JDA.
+     */
+    public ServerManagerJda() {
+        // just exists to carry JavaDoc
+    }
+
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.ofNullable(commandContext.getMessage().getMember())

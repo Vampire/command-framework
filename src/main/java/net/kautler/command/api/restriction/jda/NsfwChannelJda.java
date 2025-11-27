@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,13 @@ import static net.dv8tion.jda.api.entities.ChannelType.TEXT;
  */
 @ApplicationScoped
 public class NsfwChannelJda implements Restriction<Message> {
+    /**
+     * Constructs a new NSFW channel restriction for JDA.
+     */
+    public NsfwChannelJda() {
+        // just exists to carry JavaDoc
+    }
+
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.of(commandContext.getMessage())

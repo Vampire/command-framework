@@ -121,6 +121,39 @@
         </properties>
     </rule>
 
+    <rule ref="category/java/codestyle.xml/UnnecessaryConstructor">
+        <properties>
+            <property name="violationSuppressXPath">
+                <value>
+                    <!-- false positives, work-around for https://github.com/pmd/pmd/issues/6284 -->
+                    .[
+                        ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.BotOwnerJavacord')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.BotOwnerJavacordSlash')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.BotOwnerJda')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.CommandHandler')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.Everyone')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.GuildOwnerJda')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.prefix.javacord.MentionPrefixTransformerJavacord')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.prefix.jda.MentionPrefixTransformerJda')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.NsfwChannelJavacord')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.NsfwChannelJavacordSlash')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.NsfwChannelJda')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.PrivateMessageJavacord')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.PrivateMessageJavacordSlash')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.PrivateMessageJda')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.RegularUserJavacord')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.RegularUserJda')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.ServerManagerJavacord')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.ServerManagerJavacordSlash')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.jda.ServerManagerJda')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.ServerOwnerJavacord')]
+                        or ancestor::ClassOrInterfaceDeclaration[typeIsExactly('net.kautler.command.api.restriction.javacord.slash.ServerOwnerJavacordSlash')]
+                    ]
+                </value>
+            </property>
+        </properties>
+    </rule>
+
     <rule ref="category/java/design.xml">
         <exclude name="AvoidCatchingGenericException"/>
         <exclude name="ExcessiveImports"/>

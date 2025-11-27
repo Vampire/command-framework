@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,6 +119,13 @@ public abstract class CommandHandler<M> {
      */
     private final LazyReferenceBySupplier<ExecutorService> executorService =
             new LazyReferenceBySupplier<>(Executors::newCachedThreadPool);
+
+    /**
+     * Constructs a new command handler.
+     */
+    public CommandHandler() {
+        // just exists to carry JavaDoc
+    }
 
     /**
      * Ensures the implementing command handlers are initialized on startup.

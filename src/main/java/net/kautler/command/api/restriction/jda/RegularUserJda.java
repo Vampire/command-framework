@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,13 @@ import static java.lang.Boolean.FALSE;
  */
 @ApplicationScoped
 public class RegularUserJda implements Restriction<Message> {
+    /**
+     * Constructs a new regular user restriction for JDA.
+     */
+    public RegularUserJda() {
+        // just exists to carry JavaDoc
+    }
+
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.of(commandContext.getMessage().getAuthor())

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,13 @@ public class BotOwnerJda implements Restriction<Message> {
      * A cache of bot owners by JDA instance as JDA does not cache this information.
      */
     private final Map<JDA, Long> ownerByJda = new ConcurrentHashMap<>();
+
+    /**
+     * Constructs a new bot owner restriction for JDA.
+     */
+    public BotOwnerJda() {
+        // just exists to carry JavaDoc
+    }
 
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,13 @@ import org.javacord.api.entity.message.Message;
  */
 @ApplicationScoped
 public class ServerManagerJavacord implements Restriction<Message> {
+    /**
+     * Constructs a new server manager restriction for Javacord.
+     */
+    public ServerManagerJavacord() {
+        // just exists to carry JavaDoc
+    }
+
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return commandContext.getMessage().getAuthor().canManageServer();

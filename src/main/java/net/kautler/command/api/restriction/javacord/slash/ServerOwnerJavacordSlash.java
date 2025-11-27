@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,13 @@ import static java.lang.Boolean.FALSE;
  */
 @ApplicationScoped
 public class ServerOwnerJavacordSlash implements Restriction<SlashCommandInteraction> {
+    /**
+     * Constructs a new server owner restriction for Javacord slash commands.
+     */
+    public ServerOwnerJavacordSlash() {
+        // just exists to carry JavaDoc
+    }
+
     @Override
     public boolean allowCommand(CommandContext<? extends SlashCommandInteraction> commandContext) {
         SlashCommandInteraction slashCommandInteraction = commandContext.getMessage();
