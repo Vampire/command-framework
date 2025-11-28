@@ -36,11 +36,7 @@ spotbugs {
 
 dependencies {
     spotbugsPlugins(libs.build.spotbugs.plugin.findsecbugs)
-    spotbugsPlugins(libs.build.spotbugs.plugin.sbContrib) {
-        // work-around for https://github.com/spotbugs/spotbugs-gradle-plugin/issues/910
-        // work-around for https://github.com/spotbugs/spotbugs/issues/663
-        isTransitive = false
-    }
+    spotbugsPlugins(libs.build.spotbugs.plugin.sbContrib)
 }
 
 val spotbugsTest by tasks.existing(SpotBugsTask::class) {
@@ -52,11 +48,8 @@ tasks.withType<SpotBugsTask>().configureEach {
         languageVersion = JavaLanguageVersion.of(11)
     }
 
-    // work-around for https://github.com/spotbugs/spotbugs-gradle-plugin/pull/1311
-    inputs.files(configurations.spotbugsPlugins).withPropertyName("spotbugsPlugins")
-
     val sourceSetName = name.removePrefix("spotbugs").replaceFirstChar { it.lowercase() }
-    auxClassPaths += sourceSets[sourceSetName].runtimeClasspath
+    auxClassPaths.from(sourceSets.named(sourceSetName).map { it.runtimeClasspath })
 
     reports {
         create("xml")
