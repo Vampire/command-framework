@@ -43,9 +43,11 @@ conditionalRefreshVersions {
 // work-around for https://github.com/Splitties/refreshVersions/issues/596
 gradle.rootProject {
     val copyVersionCatalog by tasks.registering {
+        val fs = objects.newInstance<FileSystemOperationsProvider>().fs
+        val versionCatalog = gradle.parent!!.rootProject.file("gradle/libs.versions.toml")
         doLast {
-            copy {
-                from(gradle.parent!!.rootProject.file("gradle/libs.versions.toml"))
+            fs.copy {
+                from(versionCatalog)
                 into("gradle")
             }
         }
@@ -53,6 +55,8 @@ gradle.rootProject {
     tasks.named { it == "refreshVersions" }.configureEach {
         dependsOn(copyVersionCatalog)
         val layout = layout
+        val fs = objects.newInstance<FileSystemOperationsProvider>().fs
+        val gradleDirectory = gradle.parent!!.rootProject.file("gradle")
         doLast {
             // work-around for https://github.com/Splitties/refreshVersions/issues/661
             // and https://github.com/Splitties/refreshVersions/issues/663
@@ -64,11 +68,13 @@ gradle.rootProject {
                     .replace("""(?s)^(.*)(\n\Q[plugins]\E[^\[]*)(\n.*)$""".toRegex(), "$1$3$2")
                     .also { writeText(it) }
             }
-            copy {
+            fs.copy {
                 from("gradle/libs.versions.toml")
-                into(gradle.parent!!.rootProject.file("gradle"))
+                into(gradleDirectory)
             }
-            delete("gradle/libs.versions.toml")
+            fs.delete {
+                delete("gradle/libs.versions.toml")
+            }
         }
     }
 }
@@ -91,3 +97,8 @@ rootProject.buildFileName = "dependency-updates-report-aggregation.gradle.kts"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 enableFeaturePreview("STABLE_CONFIGURATION_CACHE")
+
+interface FileSystemOperationsProvider {
+    @get:Inject
+    val fs: FileSystemOperations
+}
