@@ -18,9 +18,11 @@ package net.kautler
 
 import io.github.gradlenexus.publishplugin.AbstractNexusStagingRepositoryTask
 import io.github.gradlenexus.publishplugin.RetrieveStagingProfile
+import net.kautler.util.InitJGit
 import net.kautler.util.ProblemsProvider
 import net.kautler.util.Property.Companion.boolean
 import net.kautler.util.Property.Companion.optionalString
+import net.kautler.util.ReleaseBody
 import net.kautler.util.afterReleaseBuild
 import net.kautler.util.beforeReleaseBuild
 import net.kautler.util.cachedProvider
@@ -31,23 +33,11 @@ import net.kautler.util.runBuildTasks
 import net.kautler.util.updateVersion
 import net.kautler.util.verifyPropertyIsSet
 import net.researchgate.release.ReleasePlugin
-import org.gradle.kotlin.dsl.newInstance
 import org.gradle.tooling.GradleConnector
 import org.kohsuke.github.GHIssueState.OPEN
 import wooga.gradle.github.base.tasks.Github
 import wooga.gradle.github.publish.PublishMethod.update
 import wooga.gradle.github.publish.tasks.GithubPublish
-import java.awt.GraphicsEnvironment.isHeadless
-import java.util.concurrent.CompletableFuture
-import javax.swing.JButton
-import javax.swing.JFrame
-import javax.swing.JOptionPane.DEFAULT_OPTION
-import javax.swing.JOptionPane.OK_OPTION
-import javax.swing.JOptionPane.QUESTION_MESSAGE
-import javax.swing.JOptionPane.showOptionDialog
-import javax.swing.JScrollPane
-import javax.swing.JTextArea
-import javax.swing.SwingUtilities
 
 plugins {
     java
@@ -210,6 +200,14 @@ configure(listOf(tasks.release, tasks.runBuildTasks)) {
     }
 }
 
+// work-around for GitHub plugin using JGit without a ValueSource
+// in non-configurable property branchName
+providers.of(InitJGit::class) {
+    parameters {
+        projectDirectory = layout.projectDirectory
+    }
+}.get()
+
 tasks.withType<GithubPublish>().configureEach {
     onlyIf("only publish release versions to GitHub") { releaseVersion }
     tagName = releaseTagName
@@ -217,87 +215,12 @@ tasks.withType<GithubPublish>().configureEach {
 }
 
 tasks.githubPublish {
-    usesService(grgitService.service)
-    body = provider {
-        val releaseBody = grgitService
-            .service
-            .get()
-            .findGrgit()
-            .map {
-                it
-                    .log {
-                        github
-                            .clientProvider
-                            .get()
-                            .getRepository(github.repositoryName.get())
-                            .latestRelease
-                            ?.apply {
-                                excludes.add(tagName)
-                            }
-                    }
-                    .filter { commit ->
-                        !commit.shortMessage.startsWith("[Gradle Release Plugin] ")
-                    }
-                    .asReversed()
-                    .joinToString("\n") { commit ->
-                        "- ${commit.shortMessage} [${commit.id}]"
-                    }
-            }
-            .orElse("")
-
-        if (isHeadless()) {
-            return@provider releaseBody
+    body = providers.of(ReleaseBody::class) {
+        parameters {
+            projectDirectory = layout.projectDirectory
+            githubToken = github.token
+            repositoryName = github.repositoryName
         }
-
-        val result = CompletableFuture<String>()
-
-        SwingUtilities.invokeLater {
-            val initialReleaseBody = """
-                # Highlights
-                - 
-
-                # Details
-
-            """.trimIndent() + releaseBody
-
-            val textArea = JTextArea(initialReleaseBody)
-
-            val parentFrame = JFrame().apply {
-                isUndecorated = true
-                setLocationRelativeTo(null)
-                isVisible = true
-            }
-
-            val resetButton = JButton("Reset").apply {
-                addActionListener {
-                    textArea.text = initialReleaseBody
-                }
-            }
-
-            result.complete(
-                try {
-                    when (
-                        showOptionDialog(
-                            parentFrame,
-                            JScrollPane(textArea),
-                            "Release Body",
-                            DEFAULT_OPTION,
-                            QUESTION_MESSAGE,
-                            null,
-                            arrayOf("OK", resetButton),
-                            null
-                        )
-                    ) {
-                        OK_OPTION -> textArea.text!!
-                        else -> releaseBody
-                    }
-                } finally {
-                    parentFrame.dispose()
-                }
-            )
-        }
-
-        return@provider result.join()!!
     }
     draft = true
     from(files(commandFramework.map { it.artifacts.map { it.file } }) {
