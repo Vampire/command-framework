@@ -31,6 +31,7 @@ import org.gradle.kotlin.dsl.newInstance
 
 plugins {
     java
+    id("net.kautler.generate")
 }
 
 val libs = the<LibrariesForLibs>()
