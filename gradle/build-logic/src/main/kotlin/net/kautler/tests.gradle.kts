@@ -399,10 +399,16 @@ tasks.check {
     dependsOn(tasks.jacocoTestCoverageVerification)
 }
 
+val compilePitestJava by tasks.existing(JavaCompile::class) {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(libs.versions.test.pitest.java.get())
+    }
+}
+
 pitest {
     pitestVersion = libs.versions.test.pitest.asProvider()
     jvmPath = javaToolchains
-        .launcherFor { languageVersion = JavaLanguageVersion.of(libs.versions.java.get()) }
+        .launcherFor { languageVersion = JavaLanguageVersion.of(libs.versions.test.pitest.java.get()) }
         .map { it.executablePath }
     mutators = listOf(
         "INVERT_NEGS",
