@@ -47,7 +47,7 @@ test-byteBuddy = "1.18.7"
 test-discordWebhooks = "0.8.4"
 test-groovy = "4.0.31"
 test-jansi = "1.18"
-test-junit-platform = "1.9.0"
+test-junit = "5.14.3"
 test-objenesis = "3.5"
 test-pitest = "1.23.0"
 test-pitest-java = "11"
@@ -88,7 +88,8 @@ test-groovy = { module = "org.apache.groovy:groovy", version.ref = "test-groovy"
 test-jansi = { module = "org.fusesource.jansi:jansi", version.ref = "test-jansi" }
 test-javacord = { module = "org.javacord:javacord", version.ref = "javacord" }
 test-javacord-core = { module = "org.javacord:javacord-core", version.ref = "javacord" }
-test-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "test-junit-platform" }
+test-junit-bom = { module = "org.junit:junit-bom", version.ref = "test-junit" }
+test-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 test-log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4j" }
 test-log4j-core = { module = "org.apache.logging.log4j:log4j-core" }
 test-log4j-core-test = { module = "org.apache.logging.log4j:log4j-core-test" }

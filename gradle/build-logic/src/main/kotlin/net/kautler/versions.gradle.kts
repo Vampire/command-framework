@@ -181,6 +181,20 @@ tasks.dependencyUpdates {
             reject("Minimum supported version is Java 11")
         }
 
+        if ((candidate.group == libs.test.junit.bom.get().group) &&
+            (candidate.module == libs.test.junit.bom.get().name) &&
+            (candidate.version.substringBefore(".").toInt() > 5)
+        ) {
+            reject("Minimum supported version is Java 17")
+        }
+
+        if ((candidate.group == libs.test.junit.platform.launcher.get().group) &&
+            (candidate.module == libs.test.junit.platform.launcher.get().name) &&
+            (candidate.version.substringBefore(".").toInt() > 5)
+        ) {
+            reject("Minimum supported version is Java 17")
+        }
+
         // branches above already rejected with appropriate reason
         return@rejectVersionIf false
     }

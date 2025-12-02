@@ -95,6 +95,7 @@ testing {
             useSpock(libs.versions.test.spock)
 
             dependencies {
+                implementation(platform(libs.test.junit.bom))
                 implementation(libs.test.powermock.reflect)
                 implementation(libs.test.weld.spock)
                 implementation(libs.test.weld.junit.common)
@@ -197,6 +198,7 @@ testing {
                             requireFeature("spock")
                         }
                     }
+                    implementation(platform(libs.test.junit.bom))
                     implementation(libs.cdi.api)
                     implementation(platform(libs.test.log4j.bom))
                     implementation(libs.test.log4j.core.test) { isTransitive = false }
@@ -317,6 +319,7 @@ dependencies {
 
     val pitestImplementation by configurations.existing
     pitestImplementation(libs.test.pitest.entry)
+    pitestImplementation(platform(libs.test.junit.bom))
     pitestImplementation(libs.test.junit.platform.launcher)
 
     val spockCompileOnly by configurations.existing
