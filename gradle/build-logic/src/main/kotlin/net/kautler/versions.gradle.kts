@@ -173,6 +173,14 @@ tasks.dependencyUpdates {
             reject("Minimum supported version is Java 11")
         }
 
+        if ((candidate.group == libs.build.litho.annotations.get().group) &&
+            (candidate.module == libs.build.litho.annotations.get().name) &&
+            ((candidate.version.substringBefore(".").toInt() > 0) ||
+                (candidate.version.substringAfter(".").substringBefore(".").toInt() > 49))
+        ) {
+            reject("Minimum supported version is Java 11")
+        }
+
         // branches above already rejected with appropriate reason
         return@rejectVersionIf false
     }
