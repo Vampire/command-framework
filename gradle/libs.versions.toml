@@ -18,7 +18,7 @@ cdi = "3.0.1"
 jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
 java = "8"
-javacord = "3.4.0"
+javacord = "3.8.0"
 jda = "4.4.0_352"
 log4j = "2.25.4"
 

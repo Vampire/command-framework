@@ -67,7 +67,7 @@ public interface Command<M> {
     /**
      * Returns the aliases for this command.
      *
-     * <p>When injecting a {@link SlashCommandBuilder List&lt;SlashCommandBuilder&gt;} anywhere, all aliases
+     * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} anywhere, all aliases
      * of commands implementing {@link SlashCommandJavacord} have to follow a pre-defined format that is described
      * at {@code SlashCommandJavacord}.
      *
@@ -105,7 +105,7 @@ public interface Command<M> {
      * Returns the description of this command.
      * This description can for example be displayed in an own help command.
      *
-     * <p>When injecting a {@link SlashCommandBuilder List&lt;SlashCommandBuilder&gt;} anywhere, all commands
+     * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} anywhere, all commands
      * implementing {@link SlashCommandJavacord} have to provide a description.
      *
      * <p>The default implementation of this method returns the description configured using the

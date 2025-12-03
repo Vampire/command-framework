@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,6 +108,7 @@ class JavacordExtension implements IGlobalExtension {
         // so all roles deleted further below were added by some test
         if (botDiscordApi
                 .owner
+                .get()
                 .join()
                 .getRoles(serverAsBot) != [serverAsBot.everyoneRole]) {
             throw new IllegalArgumentException('The owner of bot with testDiscordToken1 must not have any roles in the test server')
@@ -176,18 +177,18 @@ class JavacordExtension implements IGlobalExtension {
             // this can be removed or rather changed to modify that account
             rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             listenerManager = serverAsBot.addUserRoleRemoveListener {
-                if (serverAsBot.getRoles(botDiscordApi.owner.join()) == [serverAsBot.everyoneRole]) {
+                if (serverAsBot.getRoles(botDiscordApi.owner.get().join()) == [serverAsBot.everyoneRole]) {
                     rolesUpdateReceived.set(true)
                 }
             }
             try {
-                if (serverAsBot.getRoles(botDiscordApi.owner.join()) == [serverAsBot.everyoneRole]) {
+                if (serverAsBot.getRoles(botDiscordApi.owner.get().join()) == [serverAsBot.everyoneRole]) {
                     rolesUpdateReceived.set(true)
                 }
 
                 serverAsBot
                         .createUpdater()
-                        .removeAllRolesFromUser(botDiscordApi.owner.join())
+                        .removeAllRolesFromUser(botDiscordApi.owner.get().join())
                         .update()
                         .join()
 

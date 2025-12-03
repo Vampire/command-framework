@@ -125,7 +125,7 @@ class EveryoneIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addMessageCreateListener {
                 if ((it.channel == serverTextChannelAsBot) && (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {

@@ -60,7 +60,7 @@ class UserJavacordSlashIntegTest extends Specification {
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -90,7 +90,7 @@ class UserJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if correct user by id'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            User.criterion = serverTextChannelAsBot.api.ownerId
+            User.criterion = serverTextChannelAsBot.api.ownerId.get()
 
         and:
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
@@ -108,7 +108,7 @@ class UserJavacordSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -139,10 +139,10 @@ class UserJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not correct user by name'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def userName = serverTextChannelAsBot.api.owner.join().name.toUpperCase()
-            if (userName == serverTextChannelAsBot.api.owner.join().name) {
-                userName = serverTextChannelAsBot.api.owner.join().name.toLowerCase()
-                assert userName != serverTextChannelAsBot.api.owner.join().name: 'Could not determine a name that is unequal normally but equal case-insensitively'
+            def userName = serverTextChannelAsBot.api.owner.get().join().name.toUpperCase()
+            if (userName == serverTextChannelAsBot.api.owner.get().join().name) {
+                userName = serverTextChannelAsBot.api.owner.get().join().name.toLowerCase()
+                assert userName != serverTextChannelAsBot.api.owner.get().join().name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             User.criterion = userName
 
@@ -152,7 +152,7 @@ class UserJavacordSlashIntegTest extends Specification {
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -182,7 +182,7 @@ class UserJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if correct user by name'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            User.criterion = serverTextChannelAsBot.api.owner.join().name
+            User.criterion = serverTextChannelAsBot.api.owner.get().join().name
 
         and:
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
@@ -200,7 +200,7 @@ class UserJavacordSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -239,7 +239,7 @@ class UserJavacordSlashIntegTest extends Specification {
             PingCommandCaseInsensitive.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -269,10 +269,10 @@ class UserJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if correct user by name case-insensitively'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def userName = serverTextChannelAsBot.api.owner.join().name.toUpperCase()
-            if (userName == serverTextChannelAsBot.api.owner.join().name) {
-                userName = serverTextChannelAsBot.api.owner.join().name.toLowerCase()
-                assert userName != serverTextChannelAsBot.api.owner.join().name: 'Could not determine a name that is unequal normally but equal case-insensitively'
+            def userName = serverTextChannelAsBot.api.owner.get().join().name.toUpperCase()
+            if (userName == serverTextChannelAsBot.api.owner.get().join().name) {
+                userName = serverTextChannelAsBot.api.owner.get().join().name.toLowerCase()
+                assert userName != serverTextChannelAsBot.api.owner.get().join().name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             UserCaseInsensitive.userName = userName
 
@@ -292,7 +292,7 @@ class UserJavacordSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -331,7 +331,7 @@ class UserJavacordSlashIntegTest extends Specification {
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -379,7 +379,7 @@ class UserJavacordSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&

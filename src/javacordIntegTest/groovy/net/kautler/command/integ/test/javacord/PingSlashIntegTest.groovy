@@ -72,7 +72,7 @@ class PingSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -115,7 +115,7 @@ class PingSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -158,7 +158,7 @@ class PingSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -201,7 +201,7 @@ class PingSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -247,7 +247,7 @@ class PingSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -285,7 +285,7 @@ class PingSlashIntegTest extends Specification {
         Server server
 
         @Inject
-        List<SlashCommandBuilder> slashCommandBuilders
+        Set<SlashCommandBuilder> slashCommandBuilders
 
         List<SlashCommand> slashCommands
 
@@ -297,7 +297,7 @@ class PingSlashIntegTest extends Specification {
 
         @PreDestroy
         void deleteSlashCommands() {
-            CompletableFuture.allOf(*slashCommands*.deleteForServer(server)).join()
+            CompletableFuture.allOf(*slashCommands*.delete()).join()
         }
     }
 

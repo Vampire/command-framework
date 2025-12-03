@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
             PingCommand.commandNotFoundEventReceived = commandNotFoundEventReceived
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
@@ -121,7 +121,7 @@ class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
         Server server
 
         @Inject
-        List<SlashCommandBuilder> slashCommandBuilders
+        Set<SlashCommandBuilder> slashCommandBuilders
 
         List<SlashCommand> slashCommands
 
@@ -141,7 +141,7 @@ class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
 
         @PreDestroy
         void deleteSlashCommands() {
-            CompletableFuture.allOf(*slashCommands*.deleteForServer(server)).join()
+            CompletableFuture.allOf(*slashCommands*.delete()).join()
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ class PingSlashCommand implements SlashCommandJavacord {
         slashCommandInteraction
                 .createImmediateResponder()
                 .setContent(slashCommandInteraction
-                        .getOptionStringValueByName("nonce")
+                        .getArgumentStringValueByName("nonce")
                         .map(nonce -> "pong: " + nonce)
                         .orElse("pong"))
                 .respond()

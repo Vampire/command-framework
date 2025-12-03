@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * If no alias is configured, the class name, stripped by {@code Command} or {@code Cmd}
  * suffix and / or prefix if present and the first letter lowercased is used as default.
  *
- * <p>When injecting a {@link SlashCommandBuilder List&lt;SlashCommandBuilder&gt;} anywhere, all aliases
+ * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} anywhere, all aliases
  * of commands implementing {@link SlashCommandJavacord} have to follow a pre-defined format that is described
  * at {@code SlashCommandJavacord}.
  *

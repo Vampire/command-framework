@@ -176,6 +176,8 @@ class JavacordProducer {
     DiscordApi produceDiscordApi() {
         return new DiscordApiBuilder()
                 .setToken(discordToken)
+                // comment in the next line when using text commands 
+                //.addIntents(MESSAGE_CONTENT)
                 .login()
                 .exceptionally(ExceptionLogger.get())
                 .join();
@@ -209,7 +211,7 @@ commands, all phases before `BEFORE_COMMAND_COMPUTATION` are skipped by the comm
 Finally, this framework does not register the slash commands with Discord for you automatically, because you
 might want to register them globally, or per server, or you might want to add further commands not managed by
 this framework, and so on. Instead, you can register the commands yourself by injecting the provided
-`List<SlashCommandBuilder>`. This injected list can directly be used as argument for methods like
+`Set<SlashCommandBuilder>`. This injected list can directly be used as argument for methods like
 `DiscordApi#bulkOverwriteGlobalApplicationCommands` or `DiscordApi#bulkOverwriteServerApplicationCommands`.
 The requirements described above regarding description and aliases are only enforced if you inject it somewhere.
 
@@ -224,7 +226,7 @@ public class SlashCommandRegisterer {
     DiscordApi discordApi;
 
     @Inject
-    List<SlashCommandBuilder> slashCommandBuilders;
+    Set<SlashCommandBuilder> slashCommandBuilders;
 
     void registerSlashCommands(@Observes @Initialized(ApplicationScoped.class) Object __) {
         discordApi
@@ -312,7 +314,7 @@ aliases to which the command reacts can be configured. If no aliases are configu
 or `Cmd` suffix / prefix stripped and the first letter lowercased is used as a default. If at least one alias is
 configured, only the explicitly configured ones are used.
 
-_Javacord slash command specific:_ When injecting a `List<SlashCommandBuilder>` anywhere, all aliases of commands
+_Javacord slash command specific:_ When injecting a `Set<SlashCommandBuilder>` anywhere, all aliases of commands
 implementing [`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] have to follow a pre-defined format that is described
 at [slash commands](#slash-commands).
 
@@ -338,7 +340,7 @@ being configured asynchronously if the underlying message framework dispatches m
 By overwriting the `Command#getDescription()` method or applying the [`@Description`][@Description JavaDoc] annotation,
 the description of the command can be configured. This description can be used, for example, in a custom help command.
 
-_Javacord slash command specific:_ When injecting a `List<SlashCommandBuilder>` anywhere, all commands implementing
+_Javacord slash command specific:_ When injecting a `Set<SlashCommandBuilder>` anywhere, all commands implementing
 [`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] have to provide a description.
 
 #### Command Restrictions

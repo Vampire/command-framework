@@ -19,6 +19,7 @@ package net.kautler.command.util;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -35,13 +36,14 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.javacord.api.interaction.SlashCommandOptionType.SUB_COMMAND;
 import static org.javacord.api.interaction.SlashCommandOptionType.SUB_COMMAND_GROUP;
 
 /**
- * A producer that produces a list of {@link SlashCommandBuilder}s for direct usage in methods like
- * {@link DiscordApi#bulkOverwriteGlobalApplicationCommands(List)} or
- * {@link DiscordApi#bulkOverwriteServerApplicationCommands(Server, List)}.
+ * A producer that produces a set of {@link SlashCommandBuilder}s for direct usage in methods like
+ * {@link DiscordApi#bulkOverwriteGlobalApplicationCommands(Set)} or
+ * {@link DiscordApi#bulkOverwriteServerApplicationCommands(Server, Set)}.
  *
  * <p>The result will contain all implementations of {@link SlashCommandJavacord} properly grouped
  * and aggregated according to subcommand groups and top-level commands.
@@ -56,17 +58,17 @@ class SlashCommandBuilderProducer {
 
     /**
      * Returns a list of {@link SlashCommandBuilder}s for direct usage in methods like
-     * {@link DiscordApi#bulkOverwriteGlobalApplicationCommands(List)} or
-     * {@link DiscordApi#bulkOverwriteServerApplicationCommands(Server, List)}.
+     * {@link DiscordApi#bulkOverwriteGlobalApplicationCommands(Set)} or
+     * {@link DiscordApi#bulkOverwriteServerApplicationCommands(Server, Set)}.
      *
      * <p>The result will contain all implementations of {@link SlashCommandJavacord} properly grouped
      * and aggregated according to subcommand groups and top-level commands.
      *
-     * @return a list of {@code SlashCommandBuilder}s
+     * @return a set of {@code SlashCommandBuilder}s
      */
     @Produces
     @ApplicationScoped
-    List<SlashCommandBuilder> getSlashCommandBuilders() {
+    Set<SlashCommandBuilder> getSlashCommandBuilders() {
         return commands
                 .stream()
                 .flatMap(slashCommand -> slashCommand
@@ -89,7 +91,7 @@ class SlashCommandBuilderProducer {
                     Map<String, List<Entry<AliasParts, SlashCommandJavacord>>> aggregationMap = slashCommand.getValue();
                     return createSlashCommandBuilderForCommand(command, aggregationMap);
                 })
-                .collect(toList());
+                .collect(toSet());
     }
 
     /**

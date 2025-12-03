@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ class PingIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.PingIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in private channel'(DiscordApi botDiscordApi) {
         given:
-            def owner = botDiscordApi.owner.join()
+            def owner = botDiscordApi.owner.get().join()
             def random = randomUUID()
             PingCommand.alias = "ping_$random"
             IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"

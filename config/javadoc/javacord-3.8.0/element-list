@@ -6,6 +6,7 @@ org.javacord.api.entity.activity
 org.javacord.api.entity.auditlog
 org.javacord.api.entity.channel
 org.javacord.api.entity.channel.internal
+org.javacord.api.entity.channel.thread
 org.javacord.api.entity.emoji
 org.javacord.api.entity.emoji.internal
 org.javacord.api.entity.intent
@@ -25,16 +26,17 @@ org.javacord.api.entity.server.invite
 org.javacord.api.entity.server.invite.internal
 org.javacord.api.entity.sticker
 org.javacord.api.entity.sticker.internal
+org.javacord.api.entity.team
 org.javacord.api.entity.user
 org.javacord.api.entity.webhook
 org.javacord.api.entity.webhook.internal
 org.javacord.api.event
 org.javacord.api.event.audio
 org.javacord.api.event.channel
-org.javacord.api.event.channel.group
 org.javacord.api.event.channel.server
 org.javacord.api.event.channel.server.invite
 org.javacord.api.event.channel.server.text
+org.javacord.api.event.channel.server.thread
 org.javacord.api.event.channel.server.voice
 org.javacord.api.event.channel.thread
 org.javacord.api.event.channel.user
@@ -56,8 +58,8 @@ org.javacord.api.internal
 org.javacord.api.listener
 org.javacord.api.listener.audio
 org.javacord.api.listener.channel
-org.javacord.api.listener.channel.group
 org.javacord.api.listener.channel.server
+org.javacord.api.listener.channel.server.forum
 org.javacord.api.listener.channel.server.invite
 org.javacord.api.listener.channel.server.text
 org.javacord.api.listener.channel.server.thread
@@ -72,6 +74,7 @@ org.javacord.api.listener.server.emoji
 org.javacord.api.listener.server.member
 org.javacord.api.listener.server.role
 org.javacord.api.listener.server.sticker
+org.javacord.api.listener.server.thread
 org.javacord.api.listener.user
 org.javacord.api.listener.webhook
 org.javacord.api.util

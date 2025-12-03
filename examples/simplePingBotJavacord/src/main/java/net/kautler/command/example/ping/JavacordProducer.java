@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import org.apache.logging.log4j.Logger;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 
+import static org.javacord.api.entity.intent.Intent.MESSAGE_CONTENT;
+
 @ApplicationScoped
 class JavacordProducer {
     @Inject
@@ -39,6 +41,7 @@ class JavacordProducer {
     DiscordApi produceDiscordApi() {
         return new DiscordApiBuilder()
                 .setToken(discordToken)
+                .addIntents(MESSAGE_CONTENT)
                 .login()
                 .whenComplete((discordApi, throwable) -> {
                     if (throwable != null) {

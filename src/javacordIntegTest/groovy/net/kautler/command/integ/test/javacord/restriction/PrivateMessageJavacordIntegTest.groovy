@@ -70,7 +70,7 @@ class PrivateMessageJavacordIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.PrivateMessageJavacordIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in private channel'(DiscordApi botDiscordApi) {
         given:
-            def owner = botDiscordApi.owner.join()
+            def owner = botDiscordApi.owner.get().join()
             def random = randomUUID()
             PingCommand.alias = "ping_$random"
             IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"

@@ -62,7 +62,7 @@ class BotOwnerJavacordSlashIntegTest extends Specification {
                     .join()
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.user != owner) &&
@@ -106,7 +106,7 @@ class BotOwnerJavacordSlashIntegTest extends Specification {
             ]
 
         when:
-            def owner = serverTextChannelAsBot.api.owner.join()
+            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             listenerManagers << owner.addSlashCommandCreateListener {
                 if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&

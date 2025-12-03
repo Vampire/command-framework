@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ class CombinedPingCommand {
         public void execute(CommandContext<? extends SlashCommandInteraction> commandContext) {
             SlashCommandInteraction slashCommandInteraction = commandContext.getMessage();
             doExecute(
-                    slashCommandInteraction.getOptionStringValueByName("nonce").orElse(null),
+                    slashCommandInteraction.getArgumentStringValueByName("nonce").orElse(null),
                     reply -> slashCommandInteraction
                             .createImmediateResponder()
                             .setContent(reply)

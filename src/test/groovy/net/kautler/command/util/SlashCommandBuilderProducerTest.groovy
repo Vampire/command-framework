@@ -95,7 +95,7 @@ class SlashCommandBuilderProducerTest extends Specification {
             .build()
 
     @Inject
-    Instance<List<SlashCommandBuilder>> slashCommandBuilders
+    Instance<Set<SlashCommandBuilder>> slashCommandBuilders
 
     def prepareCommands() {
         command1.with {

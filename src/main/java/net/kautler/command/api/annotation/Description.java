@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * An annotation with which a description of the command can be configured.
  * This description can for example be displayed in an own help command.
  *
- * <p>When injecting a {@link SlashCommandBuilder List&lt;SlashCommandBuilder&gt;} anywhere, all commands
+ * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} anywhere, all commands
  * implementing {@link SlashCommandJavacord} have to provide a description.
  *
  * <p>Alternatively to using this annotation the {@link Command#getDescription()} method can be overwritten.

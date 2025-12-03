@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Björn Kautler
+ * Copyright 2022-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,10 @@ class SlashCommandBuilderProducerWithoutCommandsTest extends Specification {
             .build()
 
     @Inject
-    List<SlashCommandBuilder> slashCommandBuilders
+    Set<SlashCommandBuilder> slashCommandBuilders
 
-    def 'no commands available should result in empty list'() {
+    def 'no commands available should result in empty set'() {
         expect:
-            slashCommandBuilders == []
+            slashCommandBuilders ==~ []
     }
 }

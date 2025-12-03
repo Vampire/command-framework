@@ -124,7 +124,7 @@ class NsfwChannelJavacordIntegTest extends Specification {
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
         when:
-            def owner = botDiscordApi.owner.join()
+            def owner = botDiscordApi.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = owner.addMessageCreateListener {
                 if (it.privateMessage && (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {

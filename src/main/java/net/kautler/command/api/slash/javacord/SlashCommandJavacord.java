@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Björn Kautler
+ * Copyright 2022-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import static java.util.Collections.emptyList;
 /**
  * A command that can be triggered by slash commands in Javacord.
  *
- * <p>When injecting a {@link SlashCommandBuilder List&lt;SlashCommandBuilder&gt;}, implementations of this interface
+ * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;}, implementations of this interface
  * must provide a description through the {@link Description @Description} annotation or an overwritten
  * {@link #getDescription()} method and all aliases have to consist of one to three slash separated parts,
  * so either {@code "command"}, {@code "command/subcommand"}, or {@code "command/subcommand-group/subcommand"}.
