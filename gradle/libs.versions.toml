@@ -20,7 +20,7 @@ jakarta-inject = "2.0.1"
 java = "8"
 javacord = "3.4.0"
 jda = "4.4.0_352"
-log4j = "2.20.0"
+log4j = "2.25.4"
 
 build-codenarc = "3.7.0-groovy-4.0"
 build-gradle-plugin-bndBuilder = "7.2.3"
@@ -46,7 +46,6 @@ build-spotbugs-plugin-sbContrib = "7.7.4"
 test-byteBuddy = "1.18.7"
 test-discordWebhooks = "0.8.4"
 test-groovy = "4.0.31"
-test-jansi = "1.18"
 test-junit = "5.14.3"
 test-objenesis = "3.5"
 test-pitest = "1.23.0"
@@ -85,7 +84,6 @@ spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", ve
 test-byteBuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "test-byteBuddy" }
 test-discordWebhooks = { module = "club.minnced:discord-webhooks", version.ref = "test-discordWebhooks" }
 test-groovy = { module = "org.apache.groovy:groovy", version.ref = "test-groovy" }
-test-jansi = { module = "org.fusesource.jansi:jansi", version.ref = "test-jansi" }
 test-javacord = { module = "org.javacord:javacord", version.ref = "javacord" }
 test-javacord-core = { module = "org.javacord:javacord-core", version.ref = "javacord" }
 test-junit-bom = { module = "org.junit:junit-bom", version.ref = "test-junit" }

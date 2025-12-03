@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ dependencies {
 
     runtimeOnly(libs.log4j.slf4j.impl)
     runtimeOnly(libs.log4j.core)
-    runtimeOnly(libs.jansi) { because("ANSI colors on Windows") }
 }
 
 java {

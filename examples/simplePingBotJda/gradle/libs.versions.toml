@@ -1,4 +1,4 @@
-# Copyright 2023 Björn Kautler
+# Copyright 2023-2026 Björn Kautler
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ jakarta-inject = "2.0.1"
 weld-se = "4.0.3.Final"
 jandex = "2.1.1.Final"
 jda = "4.4.0_352"
-log4j = "2.20.0"
-jansi = "1.18"
+log4j = "2.25.4"
 
 [libraries]
 commandFramework = { module = "net.kautler:command-framework" }
@@ -35,4 +34,3 @@ log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4
 log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
 log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core" }
-jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }

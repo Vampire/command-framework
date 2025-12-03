@@ -350,9 +350,6 @@ dependencies {
     integTestCommonRuntimeOnly(libs.test.weld.se.core) {
         because("CDI implementation")
     }
-    integTestCommonRuntimeOnly(libs.test.jansi) {
-        because("ANSI colors on Windows")
-    }
 }
 
 tasks.withType<GroovyCompile>().configureEach {
