@@ -195,6 +195,13 @@ tasks.dependencyUpdates {
             reject("Minimum supported version is Java 17")
         }
 
+        if ((candidate.group == libs.cdi.api.get().group) &&
+            (candidate.module == libs.cdi.api.get().name) &&
+            (candidate.version.substringBefore(".").toInt() > 3)
+        ) {
+            reject("Minimum supported version is Java 11")
+        }
+
         // branches above already rejected with appropriate reason
         return@rejectVersionIf false
     }

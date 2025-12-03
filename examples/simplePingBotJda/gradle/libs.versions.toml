@@ -14,7 +14,7 @@
 
 [versions]
 java = "8"
-cdi = "3.0.0"
+cdi = "3.0.1"
 jakarta-inject = "2.0.1"
 weld-se = "4.0.3.Final"
 jandex = "2.4.5.Final"
