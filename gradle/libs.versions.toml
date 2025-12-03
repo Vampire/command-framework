@@ -13,7 +13,7 @@
 # limitations under the License.
 
 [versions]
-antlr = "4.7.2"
+antlr = "4.13.2"
 cdi = "3.0.1"
 jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
