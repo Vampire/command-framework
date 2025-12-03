@@ -62,7 +62,6 @@ gradle.rootProject {
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        maven("https://m2.dv8tion.net/releases")
     }
     repositoriesMode = FAIL_ON_PROJECT_REPOS
 }

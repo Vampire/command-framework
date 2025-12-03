@@ -69,6 +69,14 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "()I",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
+            // removing cast after isInstance check cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.api.restriction.jda.NsfwChannelJda",
+                    "allowCommand",
+                    "(Lnet/kautler/command/api/CommandContext;)Z",
+                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.NakedReceiverMutator",
+                    "replaced call to java/util/Optional::map with receiver",
+                    29),
             // these two mutants change static state of the synthetic switch map field
             // work-around for https://github.com/pitest/pitest-rv-plugin/issues/3
             //new ExplicitMutationFilterDetails(

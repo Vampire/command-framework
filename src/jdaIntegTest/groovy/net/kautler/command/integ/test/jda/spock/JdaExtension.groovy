@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,10 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Produces
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.events.channel.text.TextChannelCreateEvent
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.events.channel.ChannelCreateEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.GatewayIntent
@@ -34,9 +35,11 @@ import spock.util.concurrent.BlockingVariable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+import static java.util.EnumSet.allOf
+import static java.util.EnumSet.noneOf
 import static java.util.UUID.randomUUID
 import static net.dv8tion.jda.api.Permission.ADMINISTRATOR
-import static net.dv8tion.jda.api.Permission.ALL_PERMISSIONS
+import static net.dv8tion.jda.api.entities.channel.ChannelType.TEXT
 import static org.spockframework.runtime.model.MethodInfo.MISSING_ARGUMENT
 
 @ApplicationScoped
@@ -161,8 +164,8 @@ class JdaExtension implements IGlobalExtension {
                 if (['textChannelAsBot', 'textChannelAsUser'].any { it in parameterNames }) {
                     textChannelAsBot = guildAsBot
                             .createTextChannel("command-framework integration test ${randomUUID()}")
-                            .addPermissionOverride(guildAsBot.publicRole, 0, ALL_PERMISSIONS)
-                            .addPermissionOverride(guildAsUser.selfMember, ALL_PERMISSIONS, 0)
+                            .addPermissionOverride(guildAsBot.publicRole, noneOf(Permission), allOf(Permission))
+                            .addPermissionOverride(guildAsUser.selfMember, allOf(Permission), noneOf(Permission))
                             .complete()
                 }
 
@@ -183,8 +186,9 @@ class JdaExtension implements IGlobalExtension {
                         case 'textChannelAsUser':
                             def textChannelAsUser = new BlockingVariable<TextChannel>(System.properties.testResponseTimeout as double)
                             eventListener = {
-                                if ((it instanceof TextChannelCreateEvent) &&
-                                        it.channel.idLong == textChannelAsBot.idLong) {
+                                if ((it instanceof ChannelCreateEvent) &&
+                                        (it.channelType == TEXT) &&
+                                        (it.channel.idLong == textChannelAsBot.idLong)) {
                                     textChannelAsUser.set(it.channel)
                                 }
                             }

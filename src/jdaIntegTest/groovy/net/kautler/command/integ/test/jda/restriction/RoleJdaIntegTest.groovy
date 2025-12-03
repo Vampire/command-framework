@@ -22,10 +22,10 @@ import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.role.RoleCreateEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.hooks.EventListener
@@ -146,53 +146,10 @@ class RoleJdaIntegTest extends Specification {
 
             guildAsBot
                     .modifyRolePositions()
-                    .sortOrder { left, right ->
-                        switch (left) {
-                            case lowerRole:
-                                switch (right) {
-                                    case lowerRole:
-                                        return 0
-
-                                    case middleRole:
-                                    case higherRole:
-                                        return -1
-
-                                    default:
-                                        return left <=> right
-                                }
-
-                            case middleRole:
-                                switch (right) {
-                                    case lowerRole:
-                                        return 1
-
-                                    case middleRole:
-                                        return 0
-
-                                    case higherRole:
-                                        return -1
-
-                                    default:
-                                        return left <=> right
-                                }
-
-                            case higherRole:
-                                switch (right) {
-                                    case lowerRole:
-                                    case middleRole:
-                                        return 1
-
-                                    case higherRole:
-                                        return 0
-
-                                    default:
-                                        return left <=> right
-                                }
-
-                            default:
-                                return left <=> right
-                        }
-                    }
+                    .selectPosition(lowerRole)
+                    .moveBelow(middleRole)
+                    .selectPosition(middleRole)
+                    .moveBelow(higherRole)
                     .complete()
 
             rolesUpdateReceived.get()
@@ -286,7 +243,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -391,7 +349,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -506,7 +465,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -606,7 +566,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -706,7 +667,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -749,7 +711,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -849,7 +812,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -892,7 +856,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -1007,7 +972,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -1055,7 +1021,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -1155,7 +1122,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -1198,7 +1166,8 @@ class RoleJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {

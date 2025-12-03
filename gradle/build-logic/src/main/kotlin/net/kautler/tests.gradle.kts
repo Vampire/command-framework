@@ -107,7 +107,7 @@ testing {
                 implementation(libs.test.javacord.core)
                 implementation(libs.jda) {
                     exclude(libs.opus.java.get().group, libs.opus.java.get().name)
-                    exclude(libs.jsr305.get().group, libs.jsr305.get().name)
+                    exclude(libs.tink.get().group, libs.tink.get().name)
                 }
                 implementation(project()) {
                     capabilities {
@@ -115,6 +115,7 @@ testing {
                     }
                 }
 
+                runtimeOnly(libs.test.log4j.slf4j2.impl)
                 runtimeOnly(libs.test.byteBuddy)
                 runtimeOnly(libs.test.objenesis)
             }
@@ -134,11 +135,11 @@ testing {
         val additionalMessageFrameworkDependencies = mapOf(
             "javacord" to listOf(
                 libs.test.discordWebhooks,
-                libs.test.log4j.slf4j.impl
+                libs.test.log4j.slf4j2.impl
             ),
             "jda" to listOf(
                 libs.test.discordWebhooks,
-                libs.test.log4j.slf4j.impl
+                libs.test.log4j.slf4j2.impl
             )
         )
 
@@ -210,6 +211,7 @@ testing {
 
                     implementation("${messageFrameworkDependencies[messageFramework]}:$version") {
                         exclude(libs.opus.java.get().group, libs.opus.java.get().name)
+                        exclude(libs.tink.get().group, libs.tink.get().name)
                     }
                     additionalMessageFrameworkDependencies[messageFramework]?.forEach {
                         implementation(it)

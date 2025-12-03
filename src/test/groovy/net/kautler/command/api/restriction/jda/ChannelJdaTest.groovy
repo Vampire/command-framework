@@ -17,7 +17,7 @@
 package net.kautler.command.api.restriction.jda
 
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.kautler.command.api.CommandContext
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
@@ -30,7 +30,7 @@ import java.util.regex.Pattern
 class ChannelJdaTest extends Specification {
     CommandContext<Message> commandContext = Stub {
         it.message >> Stub(Message) {
-            it.channel >> Stub(MessageChannel)
+            it.channel >> Stub(MessageChannelUnion)
         }
     }
 

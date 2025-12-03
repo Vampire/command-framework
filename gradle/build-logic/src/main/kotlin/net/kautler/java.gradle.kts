@@ -54,7 +54,7 @@ dependencies {
     val jdaSupportImplementation by configurations.existing
     jdaSupportImplementation(libs.jda) {
         exclude(libs.opus.java.get().group, libs.opus.java.get().name)
-        exclude(libs.jsr305.get().group, libs.jsr305.get().name)
+        exclude(libs.tink.get().group, libs.tink.get().name)
     }
 }
 

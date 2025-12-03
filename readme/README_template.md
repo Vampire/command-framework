@@ -263,9 +263,10 @@ class JdaProducer {
         try {
             return JDABuilder
                     .createLight(discordToken)
+                    .enableIntents(MESSAGE_CONTENT)
                     .build()
                     .awaitReady();
-        } catch (InterruptedException | LoginException e) {
+        } catch (InterruptedException e) {
             logger.error("Exception while logging in to Discord", e);
             return null;
         }

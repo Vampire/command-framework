@@ -21,7 +21,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 
-import static net.dv8tion.jda.api.entities.ChannelType.PRIVATE;
+import static net.dv8tion.jda.api.entities.channel.ChannelType.PRIVATE;
 
 /**
  * A restriction that allows a command for private messages and is evaluated by the JDA command handler.

@@ -18,7 +18,7 @@ cdi = "3.0.1"
 jakarta-inject = "2.0.1"
 weld-se = "4.0.3.Final"
 jandex = "2.4.5.Final"
-jda = "4.4.0_352"
+jda = "6.4.0"
 log4j = "2.25.4"
 
 [libraries]
@@ -28,9 +28,9 @@ inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jaka
 weld-se-core = { module = "org.jboss.weld.se:weld-se-core", version.ref = "weld-se" }
 jandex = { module = "org.jboss:jandex", version.ref = "jandex" }
 jda = { module = "net.dv8tion:JDA", version.ref = "jda" }
-jsr305 = { module = "com.google.code.findbugs:jsr305" }
 opus-java = { module = "club.minnced:opus-java" }
 log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4j" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
-log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl" }
+log4j-slf4j2-impl = { module = "org.apache.logging.log4j:log4j-slf4j2-impl" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core" }
+tink = { module = "com.google.crypto.tink:tink" }

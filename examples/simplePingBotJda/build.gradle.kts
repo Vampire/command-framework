@@ -32,12 +32,12 @@ dependencies {
 
     implementation(libs.jda) {
         exclude(libs.opus.java.get().group, libs.opus.java.get().name)
-        exclude(libs.jsr305.get().group, libs.jsr305.get().name)
+        exclude(libs.tink.get().group, libs.tink.get().name)
     }
     implementation(platform(libs.log4j.bom))
     implementation(libs.log4j.api)
 
-    runtimeOnly(libs.log4j.slf4j.impl)
+    runtimeOnly(libs.log4j.slf4j2.impl)
     runtimeOnly(libs.log4j.core)
 }
 

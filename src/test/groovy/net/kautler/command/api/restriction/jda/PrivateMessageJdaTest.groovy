@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
 
-import static net.dv8tion.jda.api.entities.ChannelType.PRIVATE
+import static net.dv8tion.jda.api.entities.channel.ChannelType.PRIVATE
 
 @EnableWeld
 class PrivateMessageJdaTest extends Specification {

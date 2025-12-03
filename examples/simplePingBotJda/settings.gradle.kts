@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ plugins {
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        maven("https://m2.dv8tion.net/releases")
     }
     repositoriesMode = FAIL_ON_PROJECT_REPOS
 }

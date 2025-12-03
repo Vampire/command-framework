@@ -204,7 +204,7 @@ ruleset {
     FinalClassWithProtectedMember
     ImplementationAsType
     Instanceof {
-        ignoreTypeNames = 'WeldClientProxy, GuildMemberRoleRemoveEvent, TextChannelCreateEvent'
+        ignoreTypeNames = 'WeldClientProxy, GuildMemberRoleRemoveEvent, ChannelCreateEvent'
     }
     LocaleSetDefault
     NestedForLoop

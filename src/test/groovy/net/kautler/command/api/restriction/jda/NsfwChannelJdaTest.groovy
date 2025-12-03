@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,14 @@ package net.kautler.command.api.restriction.jda
 
 import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.attribute.IAgeRestrictedChannel
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.kautler.command.api.CommandContext
 import org.jboss.weld.spock.EnableWeld
 import org.jboss.weld.spock.WeldInitiator
 import org.jboss.weld.spock.WeldSetup
 import spock.lang.Specification
 import spock.lang.Subject
-
-import static net.dv8tion.jda.api.entities.ChannelType.TEXT
 
 @EnableWeld
 class NsfwChannelJdaTest extends Specification {
@@ -47,8 +46,8 @@ class NsfwChannelJdaTest extends Specification {
     def 'nsfw channel "#nsfw" should #be allowed'() {
         given:
             with(commandContext.message) {
-                isFromType(TEXT) >> true
-                it.textChannel >> Stub(TextChannel) {
+                hasChannel() >> true
+                it.channel >> Stub(IAgeRestrictedChannel, additionalInterfaces: [MessageChannelUnion]) {
                     it.NSFW >> nsfw
                 }
             }
@@ -62,11 +61,22 @@ class NsfwChannelJdaTest extends Specification {
             false || false   | 'not be'
     }
 
-    def 'non-guild channel should not be allowed'() {
+    def 'non-channel message should not be allowed'() {
         given:
             with(commandContext.message) {
-                isFromType(TEXT) >> false
-                it.textChannel >> { throw new IllegalStateException() }
+                hasChannel() >> false
+                it.channel >> { throw new IllegalStateException() }
+            }
+
+        expect:
+            !nsfwChannelJda.allowCommand(commandContext)
+    }
+
+    def 'non-age-restricted channel should not be allowed'() {
+        given:
+            with(commandContext.message) {
+                hasChannel() >> true
+                it.channel >> Stub(MessageChannelUnion)
             }
 
         expect:

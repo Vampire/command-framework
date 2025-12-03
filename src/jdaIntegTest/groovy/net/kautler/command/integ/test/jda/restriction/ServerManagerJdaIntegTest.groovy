@@ -19,8 +19,8 @@ package net.kautler.command.integ.test.jda.restriction
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
-import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
@@ -93,7 +93,8 @@ class ServerManagerJdaIntegTest extends Specification {
             and:
                 def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
                 EventListener eventListener = {
-                    if ((it instanceof GuildMessageReceivedEvent) &&
+                    if ((it instanceof MessageReceivedEvent) &&
+                            it.fromGuild &&
                             (it.channel == textChannelAsBot) &&
                             (it.message.author == textChannelAsBot.JDA.selfUser) &&
                             (it.message.contentRaw == "pong_$random:")) {
@@ -135,7 +136,8 @@ class ServerManagerJdaIntegTest extends Specification {
             and:
                 def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
                 EventListener eventListener = {
-                    if ((it instanceof GuildMessageReceivedEvent) &&
+                    if ((it instanceof MessageReceivedEvent) &&
+                            it.fromGuild &&
                             (it.channel == textChannelAsBot) &&
                             (it.message.author == textChannelAsBot.JDA.selfUser) &&
                             (it.message.contentRaw == "pong_$random:")) {

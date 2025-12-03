@@ -26,8 +26,8 @@ import spock.util.mop.Use
 
 import java.util.regex.Pattern
 
-import static net.dv8tion.jda.api.entities.ChannelType.PRIVATE
-import static net.dv8tion.jda.api.entities.ChannelType.TEXT
+import static net.dv8tion.jda.api.entities.channel.ChannelType.PRIVATE
+import static net.dv8tion.jda.api.entities.channel.ChannelType.TEXT
 
 @Subject(GuildJda)
 class GuildJdaTest extends Specification {

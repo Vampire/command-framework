@@ -21,13 +21,9 @@ import jakarta.inject.Inject;
 import net.dv8tion.jda.api.entities.Message;
 import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandContext;
-import org.apache.logging.log4j.Logger;
 
 @ApplicationScoped
 class PingCommand implements Command<Message> {
-    @Inject
-    Logger logger;
-
     @Override
     public void execute(CommandContext<? extends Message> commandContext) {
         commandContext
@@ -38,6 +34,6 @@ class PingCommand implements Command<Message> {
                         .filter(nonce -> !nonce.isEmpty())
                         .map(nonce -> "pong: " + nonce)
                         .orElse("pong"))
-                .queue(null, throwable -> logger.error("Exception while executing ping command", throwable));
+                .queue();
     }
 }

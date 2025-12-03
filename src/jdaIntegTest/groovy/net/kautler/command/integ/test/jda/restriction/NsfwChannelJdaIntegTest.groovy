@@ -20,10 +20,9 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.events.channel.text.update.TextChannelUpdateNSFWEvent
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
-import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateNSFWEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
@@ -40,6 +39,7 @@ import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
 import static java.util.UUID.randomUUID
+import static net.dv8tion.jda.api.entities.channel.ChannelType.PRIVATE
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(NsfwChannelJda)
@@ -77,7 +77,7 @@ class NsfwChannelJdaIntegTest extends Specification {
             def nsfwFlagReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             List<EventListener> eventListeners = [
                     {
-                        if ((it instanceof TextChannelUpdateNSFWEvent) &&
+                        if ((it instanceof ChannelUpdateNSFWEvent) &&
                                 (it.channel == textChannelAsBot) &&
                                 it.newValue) {
                             nsfwFlagReceived.set(true)
@@ -99,7 +99,8 @@ class NsfwChannelJdaIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             eventListeners << ({
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -141,7 +142,8 @@ class NsfwChannelJdaIntegTest extends Specification {
             def owner = botJda.retrieveApplicationInfo().complete().owner
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof PrivateMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        (it.channelType == PRIVATE) &&
                         (it.message.author == owner) &&
                         (it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)

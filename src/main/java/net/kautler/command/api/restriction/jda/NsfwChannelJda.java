@@ -18,14 +18,13 @@ package net.kautler.command.api.restriction.jda;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.attribute.IAgeRestrictedChannel;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.restriction.Restriction;
 
 import java.util.Optional;
 
 import static java.lang.Boolean.FALSE;
-import static net.dv8tion.jda.api.entities.ChannelType.TEXT;
 
 /**
  * A restriction that allows a command for NSFW channels and is evaluated by the JDA command handler.
@@ -43,9 +42,11 @@ public class NsfwChannelJda implements Restriction<Message> {
     @Override
     public boolean allowCommand(CommandContext<? extends Message> commandContext) {
         return Optional.of(commandContext.getMessage())
-                .filter(msg -> msg.isFromType(TEXT))
-                .map(Message::getTextChannel)
-                .map(TextChannel::isNSFW)
+                .filter(Message::hasChannel)
+                .map(Message::getChannel)
+                .filter(IAgeRestrictedChannel.class::isInstance)
+                .map(IAgeRestrictedChannel.class::cast)
+                .map(IAgeRestrictedChannel::isNSFW)
                 .orElse(FALSE);
     }
 }

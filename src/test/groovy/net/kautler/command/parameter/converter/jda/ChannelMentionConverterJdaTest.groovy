@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package net.kautler.command.parameter.converter.jda
 import jakarta.inject.Inject
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.kautler.command.Internal
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
@@ -71,8 +71,8 @@ class ChannelMentionConverterJdaTest extends Specification {
             CommandContext<Message> commandContext = Stub {
                 it.message >> Stub(Message) {
                     it.JDA >> Mock(JDA) {
-                        getTextChannelById(1) >> channel
-                        0 * getTextChannelById(_)
+                        getGuildChannelById(1) >> channel
+                        0 * getGuildChannelById(_)
                     }
                 }
             }
@@ -86,8 +86,8 @@ class ChannelMentionConverterJdaTest extends Specification {
             CommandContext<Message> commandContext = Stub {
                 it.message >> Stub(Message) {
                     it.JDA >> Mock(JDA) {
-                        getTextChannelById(1) >> null
-                        0 * getTextChannelById(_)
+                        getGuildChannelById(1) >> null
+                        0 * getGuildChannelById(_)
                     }
                 }
             }

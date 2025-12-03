@@ -19,7 +19,7 @@ jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
 java = "8"
 javacord = "3.8.0"
-jda = "4.4.0_352"
+jda = "6.4.0"
 log4j = "2.25.4"
 
 build-codenarc = "3.7.0-groovy-4.0"
@@ -77,7 +77,6 @@ cdi-api = { module = "jakarta.enterprise:jakarta.enterprise.cdi-api", version.re
 inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject" }
 javacord-api = { module = "org.javacord:javacord-api", version.ref = "javacord" }
 jda = { module = "net.dv8tion:JDA", version.ref = "jda" }
-jsr305 = { module = "com.google.code.findbugs:jsr305" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 opus-java = { module = "club.minnced:opus-java" }
 spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "build-spotbugs" }
@@ -91,7 +90,7 @@ test-junit-platform-launcher = { module = "org.junit.platform:junit-platform-lau
 test-log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4j" }
 test-log4j-core = { module = "org.apache.logging.log4j:log4j-core" }
 test-log4j-core-test = { module = "org.apache.logging.log4j:log4j-core-test" }
-test-log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
+test-log4j-slf4j2-impl = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.ref = "log4j" }
 test-objenesis = { module = "org.objenesis:objenesis", version.ref = "test-objenesis" }
 test-pitest = { module = "org.pitest:pitest", version.ref = "test-pitest" }
 test-pitest-entry = { module = "org.pitest:pitest-entry", version.ref = "test-pitest" }
@@ -101,6 +100,7 @@ test-spock-core = { module = "org.spockframework:spock-core", version.ref = "tes
 test-weld-junit-common = { module = "org.jboss.weld:weld-junit-common", version.ref = "test-weld-spock" }
 test-weld-se-core = { module = "org.jboss.weld.se:weld-se-core", version.ref = "test-weld-se" }
 test-weld-spock = { module = "org.jboss.weld:weld-spock", version.ref = "test-weld-spock" }
+tink = { module = "com.google.crypto.tink:tink" }
 
 [plugins]
 convention-idea = { id = "net.kautler.idea" }

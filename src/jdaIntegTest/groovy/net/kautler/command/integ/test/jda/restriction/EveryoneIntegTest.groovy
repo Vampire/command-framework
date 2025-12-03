@@ -18,8 +18,8 @@ package net.kautler.command.integ.test.jda.restriction
 
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Vetoed
-import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
@@ -53,7 +53,8 @@ class EveryoneIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -94,7 +95,8 @@ class EveryoneIntegTest extends Specification {
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             EventListener eventListener = {
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == textChannelAsBot.JDA.selfUser) &&
                         (it.message.contentRaw == "pong_$random:")) {
@@ -130,7 +132,8 @@ class EveryoneIntegTest extends Specification {
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             List<EventListener> eventListeners = [
                     {
-                        if ((it instanceof GuildMessageReceivedEvent) &&
+                        if ((it instanceof MessageReceivedEvent) &&
+                                it.fromGuild &&
                                 (it.channel == textChannelAsBot) &&
                                 (it.message.author == textChannelAsBot.JDA.selfUser) &&
                                 (it.message.contentRaw == "pong_$random:")) {
@@ -144,7 +147,8 @@ class EveryoneIntegTest extends Specification {
             def owner = textChannelAsBot.JDA.retrieveApplicationInfo().complete().owner
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             eventListeners << ({
-                if ((it instanceof GuildMessageReceivedEvent) &&
+                if ((it instanceof MessageReceivedEvent) &&
+                        it.fromGuild &&
                         (it.channel == textChannelAsBot) &&
                         (it.message.author == owner) &&
                         (it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent)) {

@@ -19,7 +19,7 @@ package net.kautler.command.integ.test.jda.event
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
-import net.dv8tion.jda.api.entities.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
 import net.kautler.command.api.CommandContextTransformer.InPhase

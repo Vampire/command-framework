@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import org.apache.logging.log4j.Logger;
 
-import javax.security.auth.login.LoginException;
+import static net.dv8tion.jda.api.requests.GatewayIntent.MESSAGE_CONTENT;
 
 @ApplicationScoped
 class JdaProducer {
@@ -42,9 +42,10 @@ class JdaProducer {
         try {
             return JDABuilder
                     .createLight(discordToken)
+                    .enableIntents(MESSAGE_CONTENT)
                     .build()
                     .awaitReady();
-        } catch (InterruptedException | LoginException e) {
+        } catch (InterruptedException e) {
             logger.error("Exception while logging in to Discord", e);
             return null;
         }

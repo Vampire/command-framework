@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.Response
-import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.restaction.CacheRestAction
 import net.kautler.command.Internal
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.parameter.InvalidParameterFormatException
@@ -86,7 +86,7 @@ class UserMentionConverterJdaTest extends Specification {
             CommandContext<Message> commandContext = Stub {
                 it.message >> Stub(Message) {
                     it.JDA >> Mock(JDA) {
-                        retrieveUserById(1) >> Stub(RestAction) {
+                        retrieveUserById(1) >> Stub(CacheRestAction) {
                             complete() >> user
                         }
                         0 * retrieveUserById(_)
@@ -108,7 +108,7 @@ class UserMentionConverterJdaTest extends Specification {
             CommandContext<Message> commandContext = Stub {
                 it.message >> Stub(Message) {
                     it.JDA >> Mock(JDA) {
-                        retrieveUserById(1) >> Stub(RestAction) {
+                        retrieveUserById(1) >> Stub(CacheRestAction) {
                             complete() >> { throw ErrorResponseException.create(UNKNOWN_USER, Stub(Response)) }
                         }
                         0 * retrieveUserById(_)
@@ -136,7 +136,7 @@ class UserMentionConverterJdaTest extends Specification {
             CommandContext<Message> commandContext = Stub {
                 it.message >> Stub(Message) {
                     it.JDA >> Mock(JDA) {
-                        retrieveUserById(1) >> Stub(RestAction) {
+                        retrieveUserById(1) >> Stub(CacheRestAction) {
                             complete() >> { throw error }
                         }
                         0 * retrieveUserById(_)

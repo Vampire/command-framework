@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package net.kautler.command.parameter.converter.jda;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.kautler.command.Internal;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.parameter.InvalidParameterFormatException;
@@ -35,15 +35,15 @@ import static net.dv8tion.jda.api.entities.Message.MentionType.CHANNEL;
 
 /**
  * A parameter converter that reacts to the types {@code channel_mention} and {@code channelMention}
- * and converts the parameter to a JDA {@link TextChannel}.
+ * and converts the parameter to a JDA {@link GuildChannel}.
  */
 @ApplicationScoped
 @Internal
 @ParameterType("channel_mention")
 @ParameterType("channelMention")
-class ChannelMentionConverterJda implements ParameterConverter<Message, TextChannel> {
+class ChannelMentionConverterJda implements ParameterConverter<Message, GuildChannel> {
     @Override
-    public TextChannel convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
+    public GuildChannel convert(String parameter, String type, CommandContext<? extends Message> commandContext) {
         Matcher channelMatcher = CHANNEL.getPattern().matcher(parameter);
         if (!channelMatcher.matches()) {
             throw new InvalidParameterFormatException(format("'%s' is not a valid channel mention", parameter));
@@ -60,7 +60,7 @@ class ChannelMentionConverterJda implements ParameterConverter<Message, TextChan
         return Optional.ofNullable(commandContext
                 .getMessage()
                 .getJDA()
-                .getTextChannelById(channelId))
+                .getGuildChannelById(channelId))
                 .orElseThrow(() -> new InvalidParameterValueException(format("channel for id '%s' was not found", channelIdString)));
     }
 }

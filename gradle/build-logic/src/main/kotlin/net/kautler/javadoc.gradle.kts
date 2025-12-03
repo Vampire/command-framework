@@ -38,7 +38,8 @@ val libs = the<LibrariesForLibs>()
 val javadocLibraryData = listOf(
     JavadocLibraryData("cdi", libs.cdi.api),
     JavadocLibraryData("jakarta.inject-api", libs.inject.api),
-    JavadocLibraryData("javacord", libs.javacord.api)
+    JavadocLibraryData("javacord", libs.javacord.api),
+    JavadocLibraryData("jda", libs.jda)
 )
 
 val updateJavadocMetadata by tasks.registering
@@ -71,24 +72,6 @@ javadocLibraryData.forEach { javadocLibraryData ->
     updateJavadocMetadata {
         dependsOn(updateJavadocMetadataTask)
     }
-}
-
-val updateJdaJavadocMetadata by tasks.registering {
-    val textResourceFactory = resources.text
-    val destinationDir = layout.projectDirectory.dir(libs.jda.map { "config/javadoc/jda-${it.version}" }).get()
-    doLast {
-        destinationDir.asFile.mkdirs()
-
-        textResourceFactory.fromUri("https://ci.dv8tion.net/job/JDA/javadoc/element-list").asReader().use {
-            destinationDir.file("element-list").asFile.writer().use { writer ->
-                it.copyTo(writer)
-            }
-        }
-    }
-}
-
-updateJavadocMetadata {
-    dependsOn(updateJdaJavadocMetadata)
 }
 
 tasks.withType<Javadoc>().configureEach {
@@ -125,10 +108,6 @@ tasks.withType<Javadoc>().configureEach {
                 "${javadocLibraryData.destinationDir.get().asFile.toURI().toURL()}"
             )
         }
-        linksOffline(
-            "https://ci.dv8tion.net/job/JDA/javadoc/",
-            "${layout.projectDirectory.file("config/javadoc/jda-${libs.versions.jda.get()}").asFile.toURI().toURL()}"
-        )
         isUse = true
         isVersion = true
         isAuthor = true
