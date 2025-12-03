@@ -202,6 +202,13 @@ tasks.dependencyUpdates {
             reject("Minimum supported version is Java 11")
         }
 
+        if ((candidate.group == libs.annotation.api.get().group) &&
+            (candidate.module == libs.annotation.api.get().name) &&
+            (candidate.version.substringBefore(".").toInt() > 2)
+        ) {
+            reject("Minimum supported version is Java 11")
+        }
+
         // branches above already rejected with appropriate reason
         return@rejectVersionIf false
     }

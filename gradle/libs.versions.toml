@@ -15,7 +15,7 @@
 [versions]
 antlr = "4.7.2"
 cdi = "3.0.1"
-jakarta-annotation = "2.0.0"
+jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
 java = "8"
 javacord = "3.4.0"
