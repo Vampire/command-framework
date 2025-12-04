@@ -21,7 +21,6 @@ import jakarta.enterprise.inject.Vetoed
 import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
@@ -63,16 +62,14 @@ class MissingDependencyParameterParserIntegTest extends Specification {
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsUser.JDA.selfUser) &&
-                        (it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent)) {
-                    commandReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsUser.JDA.selfUser }
+                .filter { it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent }
+                .subscribe { commandReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -95,9 +92,7 @@ class MissingDependencyParameterParserIntegTest extends Specification {
             }
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
 
         and:
             getListAppender('Test Appender').@events.removeIf {

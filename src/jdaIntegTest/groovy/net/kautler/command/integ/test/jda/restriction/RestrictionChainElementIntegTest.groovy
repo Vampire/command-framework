@@ -21,7 +21,6 @@ import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
 import net.kautler.command.api.CommandContextTransformer.InPhase
@@ -97,16 +96,14 @@ class RestrictionChainElementIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -117,9 +114,7 @@ class RestrictionChainElementIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(True)
@@ -170,16 +165,14 @@ class RestrictionChainElementIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -190,9 +183,7 @@ class RestrictionChainElementIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
 
         where:
             boolean1 << [True, False]
@@ -221,16 +212,14 @@ class RestrictionChainElementIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -241,9 +230,7 @@ class RestrictionChainElementIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(True)

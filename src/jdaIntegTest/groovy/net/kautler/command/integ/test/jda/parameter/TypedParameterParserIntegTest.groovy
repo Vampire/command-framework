@@ -24,7 +24,6 @@ import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.Internal
 import net.kautler.command.api.Command
 import net.kautler.command.api.CommandContext
@@ -71,27 +70,27 @@ class TypedParameterParserIntegTest extends Specification {
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == """
-                            pong_$random:
-                            bam: $random1 [java.lang.String]
-                            bar: 2.3 [java.math.BigDecimal]
-                            baz: $textChannelAsBot.JDA.selfUser [${textChannelAsBot.JDA.selfUser.getClass().name}]
-                            boo: $random2 [java.lang.String]
-                            foo: 1 [java.math.BigInteger]
-                            hoo: [$random3, $random4] [java.util.ArrayList]
-                            loo: ${textChannelAsBot.guild.selfMember.roles.first()} [${textChannelAsBot.guild.selfMember.roles.first().getClass().name}]
-                            moo: $textChannelAsBot [${textChannelAsBot.getClass().name}]
-                            noo: [$random5, $random6, $random7] [java.util.ArrayList]
-                        """.stripIndent().trim())) {
-                    responseReceived.set(true)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter {
+                    it.message.contentRaw == """
+                        pong_$random:
+                        bam: $random1 [java.lang.String]
+                        bar: 2.3 [java.math.BigDecimal]
+                        baz: $textChannelAsBot.JDA.selfUser [${textChannelAsBot.JDA.selfUser.getClass().name}]
+                        boo: $random2 [java.lang.String]
+                        foo: 1 [java.math.BigInteger]
+                        hoo: [$random3, $random4] [java.util.ArrayList]
+                        loo: ${textChannelAsBot.guild.selfMember.roles.first()} [${textChannelAsBot.guild.selfMember.roles.first().getClass().name}]
+                        moo: $textChannelAsBot [${textChannelAsBot.getClass().name}]
+                        noo: [$random5, $random6, $random7] [java.util.ArrayList]
+                    """.stripIndent().trim()
                 }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -115,9 +114,7 @@ class TypedParameterParserIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(PingCommand)
@@ -133,20 +130,20 @@ class TypedParameterParserIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == """
-                            pong_$random:
-                            Wrong arguments for command `${IgnoreOtherTestsTransformer.expectedStart}`
-                            Usage: `${IgnoreOtherTestsTransformer.expectedStart} <foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention> <noo:string> <noo:string> <noo:string>`
-                        """.stripIndent().trim())) {
-                    responseReceived.set(true)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter {
+                    it.message.contentRaw == """
+                        pong_$random:
+                        Wrong arguments for command `${IgnoreOtherTestsTransformer.expectedStart}`
+                        Usage: `${IgnoreOtherTestsTransformer.expectedStart} <foo:number> <bar:decimal> <baz:user_mention> <bam:string> <boo> <hoo:strings> <loo:role_mention> <moo:channel_mention> <noo:string> <noo:string> <noo:string>`
+                    """.stripIndent().trim()
                 }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -157,9 +154,7 @@ class TypedParameterParserIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
 
         where:
             arguments << ['', 'foo', 'foo bar baz bam boo hoo loo moo noo noo noo doo']
@@ -178,18 +173,18 @@ class TypedParameterParserIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == """
-                            pong_$random:
-                        """.stripIndent().trim())) {
-                    responseReceived.set(true)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter {
+                    it.message.contentRaw == """
+                        pong_$random:
+                    """.stripIndent().trim()
                 }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -200,9 +195,7 @@ class TypedParameterParserIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(UsagelessPingCommand)
@@ -218,19 +211,19 @@ class TypedParameterParserIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == """
-                            pong_$random:
-                            Command `${IgnoreOtherTestsTransformer.expectedStart}` does not expect arguments
-                        """.stripIndent().trim())) {
-                    responseReceived.set(true)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter {
+                    it.message.contentRaw == """
+                        pong_$random:
+                        Command `${IgnoreOtherTestsTransformer.expectedStart}` does not expect arguments
+                    """.stripIndent().trim()
                 }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -241,9 +234,7 @@ class TypedParameterParserIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(PingCommand)
@@ -270,27 +261,27 @@ class TypedParameterParserIntegTest extends Specification {
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == """
-                            pong_$random:
-                            bam: custom: $random1 [java.lang.String]
-                            bar: 2.3 [java.math.BigDecimal]
-                            baz: $textChannelAsBot.JDA.selfUser [${textChannelAsBot.JDA.selfUser.getClass().name}]
-                            boo: $random2 [java.lang.String]
-                            foo: 1 [java.math.BigInteger]
-                            hoo: [$random3, $random4] [java.util.ArrayList]
-                            loo: ${textChannelAsBot.guild.selfMember.roles.first()} [${textChannelAsBot.guild.selfMember.roles.first().getClass().name}]
-                            moo: $textChannelAsBot [${textChannelAsBot.getClass().name}]
-                            noo: [custom: $random5, custom: $random6, custom: $random7] [java.util.ArrayList]
-                        """.stripIndent().trim())) {
-                    responseReceived.set(true)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter {
+                    it.message.contentRaw == """
+                        pong_$random:
+                        bam: custom: $random1 [java.lang.String]
+                        bar: 2.3 [java.math.BigDecimal]
+                        baz: $textChannelAsBot.JDA.selfUser [${textChannelAsBot.JDA.selfUser.getClass().name}]
+                        boo: $random2 [java.lang.String]
+                        foo: 1 [java.math.BigInteger]
+                        hoo: [$random3, $random4] [java.util.ArrayList]
+                        loo: ${textChannelAsBot.guild.selfMember.roles.first()} [${textChannelAsBot.guild.selfMember.roles.first().getClass().name}]
+                        moo: $textChannelAsBot [${textChannelAsBot.getClass().name}]
+                        noo: [custom: $random5, custom: $random6, custom: $random7] [java.util.ArrayList]
+                    """.stripIndent().trim()
                 }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -314,9 +305,7 @@ class TypedParameterParserIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(ListCustomConvertersCommand)
@@ -334,16 +323,14 @@ class TypedParameterParserIntegTest extends Specification {
                     new BlockingVariable<String>(System.properties.testResponseTimeout as double)
 
         and:
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw.startsWith('custom parameter converters:'))) {
-                    customParameterConverters.set(it.message.contentRaw)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw.startsWith('custom parameter converters:') }
+                .subscribe { customParameterConverters.set(it.message.contentRaw) }
 
         when:
             textChannelAsUser
@@ -354,9 +341,7 @@ class TypedParameterParserIntegTest extends Specification {
             customParameterConverters.get() == 'custom parameter converters:'
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @Vetoed

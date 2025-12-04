@@ -25,7 +25,6 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.channel.ChannelCreateEvent
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent
-import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.GatewayIntent
 import org.spockframework.runtime.extension.IGlobalExtension
 import org.spockframework.runtime.model.SpecInfo
@@ -137,13 +136,10 @@ class JdaExtension implements IGlobalExtension {
 
         spec.allFeatures.featureMethod*.addInterceptor { invocation ->
             def rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof GuildMemberRoleRemoveEvent) &&
-                        guildAsBot.retrieveMember(userJda.selfUser).complete().roles.empty) {
-                    rolesUpdateReceived.set(true)
-                }
-            }
-            botJda.addEventListener(eventListener)
+            def subscription = botJda
+                .listenOnce(GuildMemberRoleRemoveEvent)
+                .filter { guildAsBot.retrieveMember(userJda.selfUser).complete().roles.empty }
+                .subscribe { rolesUpdateReceived.set(true) }
             try {
                 if (guildAsBot.retrieveMember(userJda.selfUser).complete().roles.empty) {
                     rolesUpdateReceived.set(true)
@@ -155,7 +151,7 @@ class JdaExtension implements IGlobalExtension {
 
                 rolesUpdateReceived.get()
             } finally {
-                botJda.removeEventListener(eventListener)
+                subscription.cancel()
             }
 
             TextChannel textChannelAsBot
@@ -185,21 +181,18 @@ class JdaExtension implements IGlobalExtension {
 
                         case 'textChannelAsUser':
                             def textChannelAsUser = new BlockingVariable<TextChannel>(System.properties.testResponseTimeout as double)
-                            eventListener = {
-                                if ((it instanceof ChannelCreateEvent) &&
-                                        (it.channelType == TEXT) &&
-                                        (it.channel.idLong == textChannelAsBot.idLong)) {
-                                    textChannelAsUser.set(it.channel)
-                                }
-                            }
-                            userJda.addEventListener(eventListener)
+                            subscription = userJda
+                                .listenOnce(ChannelCreateEvent)
+                                .filter { it.channelType == TEXT }
+                                .filter { it.channel.idLong == textChannelAsBot.idLong }
+                                .subscribe { textChannelAsUser.set(it.channel.asTextChannel()) }
                             try {
                                 invocation.arguments[i] = guildAsUser.getTextChannelById(textChannelAsBot.idLong)
                                 if (invocation.arguments[i] == null) {
                                     invocation.arguments[i] = textChannelAsUser.get()
                                 }
                             } finally {
-                                userJda.removeEventListener(eventListener)
+                                subscription.cancel()
                             }
                             break
                     }

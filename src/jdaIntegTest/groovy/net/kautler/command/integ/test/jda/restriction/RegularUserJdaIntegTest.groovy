@@ -21,7 +21,6 @@ import jakarta.enterprise.event.ObservesAsync
 import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
 import net.kautler.command.api.CommandContextTransformer.InPhase
@@ -103,32 +102,28 @@ class RegularUserJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            List<EventListener> eventListeners = [
-                    {
-                        if ((it instanceof MessageReceivedEvent) &&
-                                it.fromGuild &&
-                                (it.channel == textChannelAsBot) &&
-                                (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                                (it.message.contentRaw == "pong_$random:")) {
-                            responseReceived.set(true)
-                        }
-                    } as EventListener
+            def subscriptions = [
+                textChannelAsBot
+                    .JDA
+                    .listenOnce(MessageReceivedEvent)
+                    .filter { it.fromGuild }
+                    .filter { it.channel == textChannelAsBot }
+                    .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                    .filter { it.message.contentRaw == "pong_$random:" }
+                    .subscribe { responseReceived.set(true) }
             ]
-            textChannelAsBot.JDA.addEventListener(eventListeners.last())
 
         when:
             def owner = textChannelAsBot.JDA.retrieveApplicationInfo().complete().owner
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            eventListeners << ({
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == owner) &&
-                        (it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent)) {
-                    commandReceived.set(true)
-                }
-            } as EventListener)
-            textChannelAsBot.JDA.addEventListener(eventListeners.last())
+            subscriptions << textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == owner }
+                .filter { it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent }
+                .subscribe { commandReceived.set(true) }
             textChannelAsBot
                     .sendMessage("$owner.asMention please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
                     .complete()
@@ -138,9 +133,7 @@ class RegularUserJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListeners) {
-                textChannelAsBot.JDA.removeEventListener(*eventListeners)
-            }
+            subscriptions?.each { it.cancel() }
     }
 
     @Vetoed

@@ -22,7 +22,6 @@ import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
 import net.kautler.command.api.CommandContextTransformer.InPhase
@@ -80,30 +79,24 @@ class PrivateMessageJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            List<EventListener> eventListeners = [
-                    {
-                        if ((it instanceof MessageReceivedEvent) &&
-                                (it.channelType == PRIVATE) &&
-                                (it.channel.user == owner) &&
-                                (it.message.author == botJda.selfUser) &&
-                                (it.message.contentRaw == "pong_$random:")) {
-                            responseReceived.set(true)
-                        }
-                    } as EventListener
+            def subscriptions = [
+                botJda
+                    .listenOnce(MessageReceivedEvent)
+                    .filter { it.channelType == PRIVATE }
+                    .filter { it.channel.user == owner }
+                    .filter { it.message.author == botJda.selfUser }
+                    .filter { it.message.contentRaw == "pong_$random:" }
+                    .subscribe { responseReceived.set(true) }
             ]
-            botJda.addEventListener(eventListeners.last())
 
         when:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            eventListeners << ({
-                if ((it instanceof MessageReceivedEvent) &&
-                        (it.channelType == PRIVATE) &&
-                        (it.message.author == owner) &&
-                        (it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent)) {
-                    commandReceived.set(true)
-                }
-            } as EventListener)
-            botJda.addEventListener(eventListeners.last())
+            subscriptions << botJda
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.channelType == PRIVATE }
+                .filter { it.message.author == owner }
+                .filter { it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent }
+                .subscribe { commandReceived.set(true) }
             owner
                     .openPrivateChannel()
                     .complete()
@@ -115,9 +108,7 @@ class PrivateMessageJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListeners) {
-                botJda.removeEventListener(*eventListeners)
-            }
+            subscriptions?.each { it.cancel() }
     }
 
     @Vetoed

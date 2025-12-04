@@ -28,7 +28,6 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.role.RoleCreateEvent
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
-import net.dv8tion.jda.api.hooks.EventListener
 import net.kautler.command.api.CommandContext
 import net.kautler.command.api.CommandContextTransformer
 import net.kautler.command.api.CommandContextTransformer.InPhase
@@ -67,14 +66,12 @@ class RoleJdaIntegTest extends Specification {
         def finalName = "$name ${randomUUID()}"
 
         def roleReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-        EventListener eventListener = {
-            if ((it instanceof RoleCreateEvent) &&
-                    (it.guild == guild) &&
-                    (it.role.name == finalName)) {
-                roleReceived.set(true)
-            }
-        }
-        guild.JDA.addEventListener(eventListener)
+        def subscription = guild
+            .JDA
+            .listenOnce(RoleCreateEvent)
+            .filter { it.guild == guild }
+            .filter { it.role.name == finalName }
+            .subscribe { roleReceived.set(true) }
         try {
             def role = guild
                     .createRole()
@@ -90,22 +87,18 @@ class RoleJdaIntegTest extends Specification {
 
             return role
         } finally {
-            if (eventListener) {
-                guild.JDA.removeEventListener(eventListener)
-            }
+            subscription.cancel()
         }
     }
 
     static addRoleToUser(User user, Role role) {
         def rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-        EventListener eventListener = {
-            if ((it instanceof GuildMemberRoleAddEvent) &&
-                    (it.roles.contains(role)) &&
-                    (it.user == user)) {
-                rolesUpdateReceived.set(true)
-            }
-        }
-        role.JDA.addEventListener(eventListener)
+        def subscription = role
+            .JDA
+            .listenOnce(GuildMemberRoleAddEvent)
+            .filter { it.roles.contains(role) }
+            .filter { it.user == user }
+            .subscribe { rolesUpdateReceived.set(true) }
         try {
             if (role.guild.getMembersWithRoles(role).user.contains(user)) {
                 rolesUpdateReceived.set(true)
@@ -118,9 +111,7 @@ class RoleJdaIntegTest extends Specification {
 
             rolesUpdateReceived.get()
         } finally {
-            if (eventListener) {
-                role.JDA.removeEventListener(eventListener)
-            }
+            subscription.cancel()
         }
     }
 
@@ -130,15 +121,13 @@ class RoleJdaIntegTest extends Specification {
         lowerRole = createRole(guildAsBot, 'lower role')
 
         def rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-        EventListener eventListener = {
-            if ((it instanceof RoleUpdatePositionEvent) &&
-                    (it.guild == guildAsBot) &&
-                    (lowerRole < middleRole) &&
-                    (middleRole < higherRole)) {
-                rolesUpdateReceived.set(true)
-            }
-        }
-        guildAsBot.JDA.addEventListener(eventListener)
+        def subscription = guildAsBot
+            .JDA
+            .listenOnce(RoleUpdatePositionEvent)
+            .filter { it.guild == guildAsBot }
+            .filter { lowerRole < middleRole }
+            .filter { middleRole < higherRole }
+            .subscribe { rolesUpdateReceived.set(true) }
         try {
             if ((lowerRole < middleRole) && (middleRole < higherRole)) {
                 rolesUpdateReceived.set(true)
@@ -154,9 +143,7 @@ class RoleJdaIntegTest extends Specification {
 
             rolesUpdateReceived.get()
         } finally {
-            if (eventListener) {
-                guildAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription.cancel()
         }
     }
 
@@ -242,16 +229,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -262,9 +247,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleRestriction)
@@ -348,16 +331,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -368,9 +349,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleCaseInsensitive)
@@ -464,16 +443,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -484,9 +461,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleRestriction)
@@ -565,16 +540,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -585,9 +558,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleOrHigher)
@@ -666,16 +637,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -686,9 +655,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleOrHigher)
@@ -710,16 +677,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -730,9 +695,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleOrHigher)
@@ -811,16 +774,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -831,9 +792,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleOrHigher)
@@ -855,16 +814,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -875,9 +832,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleOrHigherCaseInsensitive)
@@ -971,16 +926,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -991,9 +944,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleOrHigherCaseInsensitive)
@@ -1020,16 +971,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -1040,9 +989,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleOrHigher)
@@ -1121,16 +1068,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -1141,9 +1086,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @AddBean(RoleOrHigher)
@@ -1165,16 +1108,14 @@ class RoleJdaIntegTest extends Specification {
 
         and:
             def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-            EventListener eventListener = {
-                if ((it instanceof MessageReceivedEvent) &&
-                        it.fromGuild &&
-                        (it.channel == textChannelAsBot) &&
-                        (it.message.author == textChannelAsBot.JDA.selfUser) &&
-                        (it.message.contentRaw == "pong_$random:")) {
-                    responseReceived.set(true)
-                }
-            }
-            textChannelAsBot.JDA.addEventListener(eventListener)
+            def subscription = textChannelAsBot
+                .JDA
+                .listenOnce(MessageReceivedEvent)
+                .filter { it.fromGuild }
+                .filter { it.channel == textChannelAsBot }
+                .filter { it.message.author == textChannelAsBot.JDA.selfUser }
+                .filter { it.message.contentRaw == "pong_$random:" }
+                .subscribe { responseReceived.set(true) }
 
         when:
             textChannelAsUser
@@ -1185,9 +1126,7 @@ class RoleJdaIntegTest extends Specification {
             responseReceived.get()
 
         cleanup:
-            if (eventListener) {
-                textChannelAsBot.JDA.removeEventListener(eventListener)
-            }
+            subscription?.cancel()
     }
 
     @Vetoed
