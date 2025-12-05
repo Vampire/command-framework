@@ -212,76 +212,70 @@ testing {
                     messageFrameworkTestDependencies[messageFramework]?.let { it(version) }
                 }
 
-                targets.configureEach {
+                targets.named(name) {
                     testTask {
-                        messageFrameworkSemaphores[messageFramework]?.forEach {
-                            usesService(it)
-                        }
-                        finalizedBy(jacocoIntegTestReport)
-                        options {
-                            this as JUnitPlatformOptions
+                        useJUnitPlatform {
                             excludeTags("manual")
                         }
                     }
                     integTestTasks.add(testTask)
 
-                    val manualTestTask = tasks
-                        .register<Test>("manual${testTask.name.replaceFirstChar { it.uppercase() }}") {
-                            description = "Runs the manual ${testSourceSetName.replaceFirstChar { it.uppercase() }} integration tests."
-                            messageFrameworkSemaphores[messageFramework]?.forEach {
-                                usesService(it)
-                            }
-                            finalizedBy(jacocoIntegTestReport)
-                            useJUnitPlatform {
-                                includeTags("manual")
-                            }
-                        }
-                        .also(manualIntegTestTasks::add)
-
-                    val referenceSourceSet = sourceSets["${messageFramework}IntegTest"]
-                    listOf(testTask, manualTestTask).forEach { task ->
-                        task {
-                            group = VERIFICATION_GROUP
-                            testClassesDirs = referenceSourceSet.output.classesDirs
-                            classpath = (sources.runtimeClasspath + referenceSourceSet.output)
-                                .filter(File::exists)
-
-                            configure<JacocoTaskExtension> {
-                                // addPropertyAliases is already too big to be instrumented further
-                                excludes!!.add("groovyjarjarantlr4.v4.unicode.UnicodeData")
-                            }
-
-                            systemProperty("testResponseTimeout", testResponseTimeout)
-                            systemProperty("testManualCommandTimeout", testManualCommandTimeout)
-
-                            if (messageFramework in listOf("javacord", "jda")) {
-                                systemProperty("testDiscordToken1", testDiscordToken1 ?: "")
-                                systemProperty("testDiscordToken2", testDiscordToken2 ?: "")
-                                systemProperty("testDiscordServerId", testDiscordServerId ?: "")
-
-                                val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
-                                val rootProjectName = rootProject.name
-                                val testDiscordToken1WithoutDelegate = testDiscordToken1
-                                val testDiscordToken2WithoutDelegate = testDiscordToken2
-                                val testDiscordServerIdWithoutDelegate = testDiscordServerId
-                                doFirst("verify Discord tokens and server id are set") {
-                                    testDiscordToken1WithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordToken1", rootProjectName)
-                                    testDiscordToken2WithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordToken2", rootProjectName)
-                                    testDiscordServerIdWithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordServerId", rootProjectName)
-                                }
-                            }
-
-                            finalizedBy(integTestReport)
-                            shouldRunAfter(tasks.test)
-                        }
-                    }
-
                     integTest {
                         dependsOn(testTask)
                     }
+                }
+
+                targets.register("manual${name.replaceFirstChar { it.uppercase() }}") {
+                    testTask {
+                        useJUnitPlatform {
+                            includeTags("manual")
+                        }
+                    }
+                    manualIntegTestTasks.add(testTask)
 
                     manualIntegTest {
-                        dependsOn(manualTestTask)
+                        dependsOn(testTask)
+                    }
+                }
+
+                targets.configureEach {
+                    testTask {
+                        messageFrameworkSemaphores[messageFramework]?.forEach {
+                            usesService(it)
+                        }
+
+                        val referenceSourceSet = sourceSets["${messageFramework}IntegTest"]
+                        testClassesDirs = referenceSourceSet.output.classesDirs
+                        classpath = (sources.runtimeClasspath + referenceSourceSet.output)
+
+                        configure<JacocoTaskExtension> {
+                            // addPropertyAliases is already too big to be instrumented further
+                            excludes!!.add("groovyjarjarantlr4.v4.unicode.UnicodeData")
+                        }
+
+                        systemProperty("testResponseTimeout", testResponseTimeout)
+                        systemProperty("testManualCommandTimeout", testManualCommandTimeout)
+
+                        if (messageFramework in listOf("javacord", "jda")) {
+                            systemProperty("testDiscordToken1", testDiscordToken1 ?: "")
+                            systemProperty("testDiscordToken2", testDiscordToken2 ?: "")
+                            systemProperty("testDiscordServerId", testDiscordServerId ?: "")
+
+                            val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
+                            val rootProjectName = rootProject.name
+                            val testDiscordToken1WithoutDelegate = testDiscordToken1
+                            val testDiscordToken2WithoutDelegate = testDiscordToken2
+                            val testDiscordServerIdWithoutDelegate = testDiscordServerId
+                            doFirst("verify Discord tokens and server id are set") {
+                                testDiscordToken1WithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordToken1", rootProjectName)
+                                testDiscordToken2WithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordToken2", rootProjectName)
+                                testDiscordServerIdWithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordServerId", rootProjectName)
+                            }
+                        }
+
+                        finalizedBy(jacocoIntegTestReport)
+                        finalizedBy(integTestReport)
+                        shouldRunAfter(tasks.test)
                     }
                 }
             }
