@@ -59,7 +59,7 @@ val generateModuleInfo by tasks.registering {
 
     val javaVersion = libs.versions.java
     doLast("generate module info") {
-        StaticJavaParser.getConfiguration().languageLevel = LanguageLevel.valueOf("JAVA_${javaVersion.get()}")
+        StaticJavaParser.getParserConfiguration().languageLevel = LanguageLevel.valueOf("JAVA_${javaVersion.get()}")
 
         val moduleInfoFile = CompilationUnit()
             .setStorage(moduleInfoFilePath.get().asFile.toPath())

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Björn Kautler
+ * Copyright 2025-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ fun JavaPluginExtension.registerMainFeature(
         outgoing.artifacts.addAllLater(apiElements.map { it.outgoing.artifacts })
         outgoing.variants.clear()
         outgoing.variants.addAllLater(apiElements.map { it.outgoing.variants })
-        extendsFrom(apiElements.get())
+        extendsFrom(apiElements)
     }
 
     val runtimeElements by configurations.existing
@@ -47,10 +47,10 @@ fun JavaPluginExtension.registerMainFeature(
         outgoing.artifacts.addAllLater(runtimeElements.map { it.outgoing.artifacts })
         outgoing.variants.clear()
         outgoing.variants.addAllLater(runtimeElements.map { it.outgoing.variants })
-        extendsFrom(runtimeElements.get())
+        extendsFrom(runtimeElements)
     }
 
     val compileOnly by configurations.existing {
-        extendsFrom(configurations.getByName("${featureName}CompileClasspath"))
+        extendsFrom(configurations.named("${featureName}CompileClasspath"))
     }
 }

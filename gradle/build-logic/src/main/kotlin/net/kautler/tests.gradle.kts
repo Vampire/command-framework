@@ -397,9 +397,6 @@ val compilePitestJava by tasks.existing(JavaCompile::class) {
 
 pitest {
     pitestVersion = libs.versions.test.pitest.asProvider()
-    jvmPath = javaToolchains
-        .launcherFor { languageVersion = JavaLanguageVersion.of(libs.versions.test.pitest.java.get()) }
-        .map { it.executablePath }
     mutators = listOf(
         "INVERT_NEGS",
         "MATH",
@@ -453,7 +450,7 @@ pitest {
 
 val pitestLaunchDependencies = configurations.dependencyScope("pitestLaunchDependencies")
 val pitestLaunchClasspath = configurations.resolvable("pitestLaunchClasspath") {
-    extendsFrom(pitestLaunchDependencies.get())
+    extendsFrom(pitestLaunchDependencies)
 }
 
 dependencies {
@@ -465,6 +462,9 @@ dependencies {
 }
 
 tasks.pitest {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(libs.versions.test.pitest.java.get())
+    }
     launchClasspath.from(pitestLaunchClasspath)
 
     val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter

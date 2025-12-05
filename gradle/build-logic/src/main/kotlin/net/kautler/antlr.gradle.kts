@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,9 +68,6 @@ tasks.withType<AntlrTask>().configureEach {
 val generate by tasks.existing
 sourceSets.configureEach {
     val generateGrammarSource = tasks.named<AntlrTask>(getTaskName("generate", "GrammarSource"))
-
-    // work-around for https://github.com/gradle/gradle/issues/19555
-    java.srcDir(generateGrammarSource.map { files() })
 
     generate {
         dependsOn(generateGrammarSource)

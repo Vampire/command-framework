@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,6 +242,7 @@ tasks.dependencyUpdates {
         // embedded Kotlin version and not be upgraded independently
         add(group = "org.jetbrains.kotlin", name = "kotlin-assignment-compiler-plugin-embeddable")
         add(group = "org.jetbrains.kotlin", name = "kotlin-bom")
+        add(group = "org.jetbrains.kotlin", name = "kotlin-build-tools-compat")
         add(group = "org.jetbrains.kotlin", name = "kotlin-build-tools-impl")
         add(group = "org.jetbrains.kotlin", name = "kotlin-compiler-embeddable")
         add(group = "org.jetbrains.kotlin", name = "kotlin-reflect")

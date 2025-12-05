@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2025 Björn Kautler
+ * Copyright 2020-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,10 @@ plugins {
 
 val dependencyUpdatesResultsDependencies = configurations.dependencyScope("dependencyUpdatesResultsDependencies")
 val dependencyUpdatesResults = configurations.resolvable("dependencyUpdatesResults") {
-    extendsFrom(dependencyUpdatesResultsDependencies.get())
+    extendsFrom(dependencyUpdatesResultsDependencies)
     attributes {
-        attribute(CATEGORY_ATTRIBUTE, objects.named(VERIFICATION))
-        attribute(VERIFICATION_TYPE_ATTRIBUTE, objects.named("dependency-updates-result"))
+        attribute(CATEGORY_ATTRIBUTE, named(VERIFICATION))
+        attribute(VERIFICATION_TYPE_ATTRIBUTE, named("dependency-updates-result"))
     }
 }
 
