@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -447,9 +447,8 @@ pitest {
     timeoutConstInMillis = SECONDS.toMillis(30).toInt()
     mutationThreshold = 100
     maxSurviving = 0
-    // part of work-around for https://github.com/szpak/gradle-pitest-plugin/issues/342
-    //inputCharset = UTF_8
-    //outputCharset = UTF_8
+    inputCharset = UTF_8
+    outputCharset = UTF_8
 }
 
 val pitestLaunchDependencies = configurations.dependencyScope("pitestLaunchDependencies")
@@ -466,16 +465,6 @@ dependencies {
 }
 
 tasks.pitest {
-    // part of work-around for https://github.com/szpak/gradle-pitest-plugin/issues/342
-    argumentProviders.add(
-        CommandLineArgumentProvider {
-            listOf(
-                "--inputEncoding=$UTF_8",
-                "--outputEncoding=$UTF_8"
-            )
-        }
-    )
-
     launchClasspath.from(pitestLaunchClasspath)
 
     val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter

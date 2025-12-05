@@ -27,7 +27,7 @@ build-gradle-plugin-bndBuilder = "7.2.3"
 # fix or remove component metadata rule in gradle/build-logic/settings.gradle.kts on update
 build-gradle-plugin-github = "4.0.0"
 build-gradle-plugin-nexus-publish = "2.0.0"
-build-gradle-plugin-pitest = "1.15.0"
+build-gradle-plugin-pitest = "1.19.0"
 build-gradle-plugin-release = "3.1.0"
 build-gradle-plugin-spotbugs = "6.4.8"
 build-gradle-plugin-versions = "0.53.0"
