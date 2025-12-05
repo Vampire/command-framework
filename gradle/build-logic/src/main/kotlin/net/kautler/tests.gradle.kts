@@ -127,20 +127,20 @@ testing {
             }
         }
 
-        val messageFrameworkDependencies = mapOf(
-            "javacord" to libs.test.javacord.asProvider().map { "${it.group}:${it.name}" }.get(),
-            "jda" to libs.jda.map { "${it.group}:${it.name}" }.get()
-        )
-
-        val additionalMessageFrameworkDependencies = mapOf(
-            "javacord" to listOf(
-                libs.test.discordWebhooks,
-                libs.test.log4j.slf4j2.impl
-            ),
-            "jda" to listOf(
-                libs.test.discordWebhooks,
-                libs.test.log4j.slf4j2.impl
-            )
+        val messageFrameworkTestDependencies: Map<String, JvmComponentDependencies.(String) -> Unit> = mapOf(
+            "javacord" to { version ->
+                implementation(libs.test.javacord.asProvider().map { "${it.group}:${it.name}:$version" }.get())
+                implementation(libs.test.discordWebhooks)
+                implementation(libs.test.log4j.slf4j2.impl)
+            },
+            "jda" to { version ->
+                implementation(libs.jda.map { "${it.group}:${it.name}:$version" }.get()) {
+                    exclude(libs.opus.java.get().group, libs.opus.java.get().name)
+                    exclude(libs.tink.get().group, libs.tink.get().name)
+                }
+                implementation(libs.test.discordWebhooks)
+                implementation(libs.test.log4j.slf4j2.impl)
+            }
         )
 
         val discordSemaphore = gradle.sharedServices.registerIfAbsent("discordSemaphore", TaskSemaphore::class) {
@@ -209,13 +209,7 @@ testing {
 
                     runtimeOnly(libs.antlr.runtime)
 
-                    implementation("${messageFrameworkDependencies[messageFramework]}:$version") {
-                        exclude(libs.opus.java.get().group, libs.opus.java.get().name)
-                        exclude(libs.tink.get().group, libs.tink.get().name)
-                    }
-                    additionalMessageFrameworkDependencies[messageFramework]?.forEach {
-                        implementation(it)
-                    }
+                    messageFrameworkTestDependencies[messageFramework]?.let { it(version) }
                 }
 
                 targets.configureEach {
