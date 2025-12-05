@@ -18,6 +18,13 @@ import org.gradle.api.initialization.resolve.RepositoriesMode.FAIL_ON_PROJECT_RE
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+    id("com.gradle.develocity") version "4.3"
+}
+
+develocity {
+    buildScan {
+        publishing.onlyIf { false }
+    }
 }
 
 dependencyResolutionManagement {
