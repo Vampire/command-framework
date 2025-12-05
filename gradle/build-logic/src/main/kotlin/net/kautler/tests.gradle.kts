@@ -19,6 +19,7 @@ package net.kautler
 import net.kautler.util.ProblemsProvider
 import net.kautler.util.Property.Companion.double
 import net.kautler.util.Property.Companion.optionalString
+import net.kautler.util.TaskSemaphore
 import net.kautler.util.verifyPropertyIsSet
 import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.language.base.plugins.LifecycleBasePlugin.VERIFICATION_GROUP
@@ -139,6 +140,19 @@ testing {
             )
         )
 
+        val discordSemaphore = gradle.sharedServices.registerIfAbsent("discordSemaphore", TaskSemaphore::class) {
+            maxParallelUsages = 1
+        }
+
+        val messageFrameworkSemaphores = mapOf(
+            "javacord" to listOf(
+                discordSemaphore
+            ),
+            "jda" to listOf(
+                discordSemaphore
+            )
+        )
+
         val testResponseTimeout by double(10.0)
         val testManualCommandTimeout by double(10 * 60.0)
         val testDiscordToken1 by optionalString()
@@ -201,6 +215,9 @@ testing {
 
                 targets.configureEach {
                     testTask {
+                        messageFrameworkSemaphores[messageFramework]?.forEach {
+                            usesService(it)
+                        }
                         finalizedBy(jacocoIntegTestReport)
                         options {
                             this as JUnitPlatformOptions
@@ -212,6 +229,9 @@ testing {
                     val manualTestTask = tasks
                         .register<Test>("manual${testTask.name.replaceFirstChar { it.uppercase() }}") {
                             description = "Runs the manual ${testSourceSetName.replaceFirstChar { it.uppercase() }} integration tests."
+                            messageFrameworkSemaphores[messageFramework]?.forEach {
+                                usesService(it)
+                            }
                             finalizedBy(jacocoIntegTestReport)
                             useJUnitPlatform {
                                 includeTags("manual")
