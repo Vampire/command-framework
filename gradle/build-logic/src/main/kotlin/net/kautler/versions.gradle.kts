@@ -209,6 +209,27 @@ tasks.dependencyUpdates {
             reject("Minimum supported version is Java 11")
         }
 
+        if ((candidate.group == libs.test.weld.spock.get().group) &&
+            (candidate.module == libs.test.weld.spock.get().name) &&
+            (candidate.version.substringBefore(".").toInt() > 3)
+        ) {
+            reject("Minimum supported version is Java 11")
+        }
+
+        if ((candidate.group == libs.test.weld.junit.common.get().group) &&
+            (candidate.module == libs.test.weld.junit.common.get().name) &&
+            (candidate.version.substringBefore(".").toInt() > 3)
+        ) {
+            reject("Minimum supported version is Java 11")
+        }
+
+        if ((candidate.group == libs.test.weld.se.core.get().group) &&
+            (candidate.module == libs.test.weld.se.core.get().name) &&
+            (candidate.version.substringBefore(".").toInt() > 4)
+        ) {
+            reject("Minimum supported version is Java 11")
+        }
+
         // branches above already rejected with appropriate reason
         return@rejectVersionIf false
     }
