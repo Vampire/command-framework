@@ -21,6 +21,13 @@ plugins {
     alias(libs.plugins.versions)
 }
 
+java {
+    toolchain {
+        // work-around for https://youtrack.jetbrains.com/issue/KT-81077
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 dependencies {
     // Enforce the embedded Kotlin version for build logic
     implementation(enforcedPlatform(kotlin("bom")))
