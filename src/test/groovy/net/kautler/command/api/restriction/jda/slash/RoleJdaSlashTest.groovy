@@ -1,0 +1,361 @@
+/*
+ * Copyright 2025-2026 Björn Kautler
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package net.kautler.command.api.restriction.jda.slash
+
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Role
+import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction
+import net.kautler.command.api.CommandContext
+import org.powermock.reflect.Whitebox
+import spock.lang.Specification
+import spock.lang.Subject
+import spock.util.mop.Use
+
+import java.util.regex.Pattern
+
+import static net.dv8tion.jda.api.entities.channel.ChannelType.PRIVATE
+import static net.dv8tion.jda.api.entities.channel.ChannelType.TEXT
+
+@Subject(RoleJdaSlash)
+class RoleJdaSlashTest extends Specification {
+    static higherRoleId = 1
+
+    static lowerRoleId = 2
+
+    static higherRoleName = 'higher'
+
+    static lowerRoleName = 'lower'
+
+    CommandContext<SlashCommandInteraction> commandContext = Stub {
+        it.message >> Stub(SlashCommandInteraction) {
+            it.channelType >> PRIVATE
+            it.member >> null
+            it.guild >> { throw new IllegalStateException() }
+        }
+    }
+
+    Role higherRole = Stub {
+        it.idLong >> higherRoleId
+        it.name >> higherRoleName
+    }
+
+    Role lowerRole = Stub {
+        it.idLong >> lowerRoleId
+        it.name >> lowerRoleName
+    }
+
+    Guild guild = Stub {
+        it.roles >> [higherRole, lowerRole]
+        getRoleById(higherRoleId) >> higherRole
+        getRoleById(lowerRoleId) >> lowerRole
+        getRoleById(_) >> null
+        getRolesByName(higherRoleName, false) >> [higherRole]
+        getRolesByName(lowerRoleName, false) >> [lowerRole]
+        getRolesByName({ it.equalsIgnoreCase(higherRoleName) }, true) >> [higherRole]
+        getRolesByName({ it.equalsIgnoreCase(lowerRoleName) }, true) >> [lowerRole]
+    }
+
+    CommandContext<SlashCommandInteraction> guildCommandContext = Stub {
+        it.message >> Stub(SlashCommandInteraction) {
+            it.channelType >> TEXT
+            it.member >> Stub(Member)
+            it.guild >> guild
+        }
+    }
+
+    def setup() {
+        higherRole.compareTo(lowerRole) >> 1
+        lowerRole.compareTo(higherRole) >> -1
+    }
+
+    def 'exact role with ID "#expectedRoleId" should #be allowed for roles #actualRoles'() {
+        given:
+            RoleJdaSlash roleJdaSlash = Spy(constructorArgs: [expectedRoleId])
+            actualRoles = actualRoles.collect { this."$it" }
+
+        and:
+            guildCommandContext.message.member.roles >> actualRoles
+
+        expect:
+            !roleJdaSlash.allowCommand(commandContext)
+            roleJdaSlash.allowCommand(guildCommandContext) == allowed
+
+        where:
+            expectedRoleId << [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
+            allowed = (('higherRole' in actualRoles) && (expectedRoleId == higherRoleId)) ||
+                    (('lowerRole' in actualRoles) && (expectedRoleId == lowerRoleId))
+            be = allowed ? 'be' : 'not be'
+    }
+
+    def 'at least role with ID "#expectedRoleId" should #be allowed for roles #actualRoles'() {
+        given:
+            RoleJdaSlash roleJdaSlash = Spy(constructorArgs: [false, expectedRoleId])
+            actualRoles = actualRoles.collect { this."$it" }
+
+        and:
+            guildCommandContext.message.member.roles >> actualRoles
+
+        expect:
+            !roleJdaSlash.allowCommand(commandContext)
+            roleJdaSlash.allowCommand(guildCommandContext) == allowed
+
+        where:
+            expectedRoleId << [Long.MIN_VALUE, higherRoleId, lowerRoleId, Long.MAX_VALUE]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
+            allowed = (('higherRole' in actualRoles) && (expectedRoleId in [higherRoleId, lowerRoleId])) ||
+                    (('lowerRole' in actualRoles) && (expectedRoleId == lowerRoleId))
+            be = allowed ? 'be' : 'not be'
+    }
+
+    def 'exact role with name "#expectedRoleName" should #be allowed case-sensitive for roles #actualRoles'() {
+        given:
+            RoleJdaSlash roleJdaSlash = Spy(constructorArgs: [expectedRoleName])
+            actualRoles = actualRoles.collect { this."$it" }
+
+        and:
+            guildCommandContext.message.member.roles >> actualRoles
+
+        expect:
+            !roleJdaSlash.allowCommand(commandContext)
+            roleJdaSlash.allowCommand(guildCommandContext) == allowed
+
+        where:
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
+            allowed = (('higherRole' in actualRoles) && (expectedRoleName == higherRoleName)) ||
+                    (('lowerRole' in actualRoles) && (expectedRoleName == lowerRoleName))
+            be = allowed ? 'be' : 'not be'
+    }
+
+    def 'at least role with name "#expectedRoleName" should #be allowed case-sensitive for roles #actualRoles'() {
+        given:
+            RoleJdaSlash roleJdaSlash = Spy(constructorArgs: [false, expectedRoleName])
+            actualRoles = actualRoles.collect { this."$it" }
+
+        and:
+            guildCommandContext.message.member.roles >> actualRoles
+
+        expect:
+            !roleJdaSlash.allowCommand(commandContext)
+            roleJdaSlash.allowCommand(guildCommandContext) == allowed
+
+        where:
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
+            allowed = (('higherRole' in actualRoles) && (expectedRoleName in [higherRoleName, lowerRoleName])) ||
+                    (('lowerRole' in actualRoles) && (expectedRoleName == lowerRoleName))
+            be = allowed ? 'be' : 'not be'
+    }
+
+    def 'exact role with name "#expectedRoleName" should #be allowed case-insensitive for roles #actualRoles'() {
+        given:
+            RoleJdaSlash roleJdaSlash = Spy(constructorArgs: [expectedRoleName, false])
+            actualRoles = actualRoles.collect { this."$it" }
+
+        and:
+            guildCommandContext.message.member.roles >> actualRoles
+
+        expect:
+            !roleJdaSlash.allowCommand(commandContext)
+            roleJdaSlash.allowCommand(guildCommandContext) == allowed
+
+        where:
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
+            allowed = (('higherRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(higherRoleName)) ||
+                    (('lowerRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(lowerRoleName))
+            be = allowed ? 'be' : 'not be'
+    }
+
+    def 'at least role with name "#expectedRoleName" should #be allowed case-insensitive for roles #actualRoles'() {
+        given:
+            RoleJdaSlash roleJdaSlash = Spy(constructorArgs: [false, expectedRoleName, false])
+            actualRoles = actualRoles.collect { this."$it" }
+
+        and:
+            guildCommandContext.message.member.roles >> actualRoles
+
+        expect:
+            !roleJdaSlash.allowCommand(commandContext)
+            roleJdaSlash.allowCommand(guildCommandContext) == allowed
+
+        where:
+            expectedRoleName << [higherRoleName, higherRoleName.toUpperCase(), higherRoleName.capitalize(), "$higherRoleName ", " $higherRoleName",
+                                 lowerRoleName, lowerRoleName.toUpperCase(), lowerRoleName.capitalize(), "$lowerRoleName ", " $lowerRoleName"]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
+            allowed = (('higherRole' in actualRoles) && (expectedRoleName.toLowerCase() in [higherRoleName, lowerRoleName]*.toLowerCase())) ||
+                    (('lowerRole' in actualRoles) && expectedRoleName.equalsIgnoreCase(lowerRoleName))
+            be = allowed ? 'be' : 'not be'
+    }
+
+    def 'exact role with pattern "#expectedRolePattern" should #be allowed for roles #actualRoles'() {
+        given:
+            RoleJdaSlash roleJdaSlash = Spy(constructorArgs: [expectedRolePattern])
+            actualRoles = actualRoles.collect { this."$it" }
+
+        and:
+            guildCommandContext.message.member.roles >> actualRoles
+
+        expect:
+            !roleJdaSlash.allowCommand(commandContext)
+            roleJdaSlash.allowCommand(guildCommandContext) == allowed
+
+        where:
+            expectedRolePattern << [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
+                                    ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
+            allowed = (('higherRole' in actualRoles) && (higherRoleName ==~ expectedRolePattern)) ||
+                    (('lowerRole' in actualRoles) && (lowerRoleName ==~ expectedRolePattern))
+            be = allowed ? 'be' : 'not be'
+    }
+
+    def 'at least role with pattern "#expectedRolePattern" should #be allowed for roles #actualRoles'() {
+        given:
+            RoleJdaSlash roleJdaSlash = Spy(constructorArgs: [false, expectedRolePattern])
+            actualRoles = actualRoles.collect { this."$it" }
+
+        and:
+            guildCommandContext.message.member.roles >> actualRoles
+
+        expect:
+            !roleJdaSlash.allowCommand(commandContext)
+            roleJdaSlash.allowCommand(guildCommandContext) == allowed
+
+        where:
+            expectedRolePattern << [~/H.*/, ~/H\w*/, ~/(?i)H\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/,
+                                    ~/L.*/, ~/L\w*/, ~/(?i)L\w*/, ~/.+/, ~/.*/, ~/[^\w\W]/]
+        combined:
+            actualRoles << [['higherRole'], ['lowerRole'], ['higherRole', 'lowerRole'], []]
+
+        and:
+            allowed = (('higherRole' in actualRoles) && [higherRoleName, lowerRoleName].any { it ==~ expectedRolePattern }) ||
+                    (('lowerRole' in actualRoles) && (lowerRoleName ==~ expectedRolePattern))
+            be = allowed ? 'be' : 'not be'
+    }
+
+    @Use(Whitebox)
+    def 'invariant violation [roleId: #roleId, roleName: #roleName, caseSensitive: #caseSensitive, rolePattern: #rolePattern] is checked'() {
+        given:
+            def roleJdaSlashParameters = new RoleJdaSlash.Parameters(
+                true, roleId, roleName, caseSensitive, rolePattern)
+
+        when:
+            roleJdaSlashParameters.ensureInvariants()
+
+        then:
+            IllegalStateException ise = thrown()
+            ise.message ==~ errorMessage
+
+        and:
+            if (ise.message.startsWith('Only one of')) {
+                def detail = ise.message[ise.message.indexOf('(')..-1]
+                assert (roleId == 0) ^ detail.contains('roleId')
+                assert (roleName == null) ^ detail.contains('roleName')
+                assert (rolePattern == null) ^ detail.contains('rolePattern')
+            }
+
+        where:
+            roleId | roleName | caseSensitive | rolePattern || errorMessage
+            1      | null     | false         | null        || ~/If roleName is not set, caseSensitive should be true/
+            0      | null     | true          | null        || ~/One of roleId, roleName and rolePattern should be given/
+            1      | 'foo'    | true          | null        || ~/Only one of roleId, roleName and rolePattern should be given \(.*\)/
+            1      | null     | true          | ~/foo/      || ~/Only one of roleId, roleName and rolePattern should be given \(.*\)/
+            0      | 'foo'    | true          | ~/foo/      || ~/Only one of roleId, roleName and rolePattern should be given \(.*\)/
+            1      | 'foo'    | true          | ~/foo/      || ~/Only one of roleId, roleName and rolePattern should be given \(.*\)/
+    }
+
+    def 'invariant violation is checked by constructor with #parameterType parameter'() {
+        when:
+            constructorCaller()
+
+        then:
+            IllegalStateException ise = thrown()
+            ise.message ==~ errorMessage
+
+        where:
+            __
+            ; constructorCaller                               | parameterType                 || errorMessage
+            ; { new TestRoleJdaSlash(0) }                     | 'long'                        || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJdaSlash(null as String) }        | 'String'                      || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJdaSlash(null, true) }            | 'String and boolean'          || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJdaSlash(null as Pattern) }       | 'Pattern'                     || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJdaSlash(true, 0) }               | 'boolean and long'            || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJdaSlash(true, null as String) }  | 'boolean and String'          || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJdaSlash(true, null, true) }      | 'boolean, String and boolean' || ~/One of roleId, roleName and rolePattern should be given/
+            ; { new TestRoleJdaSlash(true, null as Pattern) } | 'boolean and Pattern'         || ~/One of roleId, roleName and rolePattern should be given/
+    }
+
+    private static class TestRoleJdaSlash extends RoleJdaSlash {
+        TestRoleJdaSlash(long roleId) {
+            super(roleId)
+        }
+
+        TestRoleJdaSlash(String roleName) {
+            super(roleName as String)
+        }
+
+        TestRoleJdaSlash(String roleName, boolean caseSensitive) {
+            super(roleName, caseSensitive)
+        }
+
+        TestRoleJdaSlash(Pattern rolePattern) {
+            super(rolePattern as Pattern)
+        }
+
+        TestRoleJdaSlash(boolean exact, long roleId) {
+            super(exact, roleId)
+        }
+
+        TestRoleJdaSlash(boolean exact, String roleName) {
+            super(exact, roleName as String)
+        }
+
+        TestRoleJdaSlash(boolean exact, String roleName, boolean caseSensitive) {
+            super(exact, roleName, caseSensitive)
+        }
+
+        TestRoleJdaSlash(boolean exact, Pattern rolePattern) {
+            super(exact, rolePattern as Pattern)
+        }
+    }
+}

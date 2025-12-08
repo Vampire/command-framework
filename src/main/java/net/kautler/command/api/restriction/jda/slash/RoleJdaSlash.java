@@ -1,0 +1,437 @@
+/*
+ * Copyright 2025-2026 Björn Kautler
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package net.kautler.command.api.restriction.jda.slash;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import net.dv8tion.jda.api.entities.ISnowflake;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction;
+import net.kautler.command.api.CommandContext;
+import net.kautler.command.api.restriction.Restriction;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.StringJoiner;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import static java.lang.Boolean.FALSE;
+import static java.lang.String.format;
+import static java.util.Comparator.naturalOrder;
+
+/**
+ * A restriction that allows a command for certain roles and is evaluated by the JDA slash command handler.
+ * To use it, create a trivial subclass of this class and make it a discoverable CDI bean,
+ * for example by annotating it with {@link ApplicationScoped @ApplicationScoped}.
+ */
+public abstract class RoleJdaSlash implements Restriction<SlashCommandInteraction> {
+    /**
+     * Whether the role needs to be matched exactly or whether a higher role would also be sufficient.
+     */
+    private final boolean exact;
+
+    /**
+     * The ID of the role for which a command is allowed.
+     */
+    private final long roleId;
+
+    /**
+     * The name of the role for which a command is allowed.
+     */
+    private final String roleName;
+
+    /**
+     * Whether the {@code roleName} should be case-sensitive or not.
+     * This does not apply to the {@code rolePattern},
+     * where an embedded flag can be used to control case sensitivity.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
+     */
+    private final boolean caseSensitive;
+
+    /**
+     * The pattern role names are matched against to determine whether a command is allowed.
+     */
+    private final Pattern rolePattern;
+
+    /**
+     * Constructs a new role restriction for checking the role ID
+     * for an exact role match.
+     *
+     * @param roleId the ID of the role for which a command should be allowed
+     */
+    protected RoleJdaSlash(long roleId) {
+        this(new Parameters(true, roleId, null, true, null).ensureInvariants());
+    }
+
+    /**
+     * Constructs a new role restriction for checking the role name case-sensitively against a fixed name
+     * for an exact role match.
+     *
+     * @param roleName the case-sensitive name of the role for which a command should be allowed
+     */
+    protected RoleJdaSlash(String roleName) {
+        this(new Parameters(true, 0, roleName, true, null).ensureInvariants());
+    }
+
+    /**
+     * Constructs a new role restriction for checking the role name against a fixed name
+     * for an exact role match.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
+     *
+     * @param roleName      the name of the role for which a command should be allowed
+     * @param caseSensitive whether the name should be matched case-sensitively or not
+     */
+    protected RoleJdaSlash(String roleName, boolean caseSensitive) {
+        this(new Parameters(true, 0, roleName, caseSensitive, null).ensureInvariants());
+    }
+
+    /**
+     * Constructs a new role restriction for checking the role name against a regular expression
+     * for an exact role match.
+     *
+     * @param rolePattern the pattern against which the role name is matched
+     *                    to determine for whom a command should be allowed
+     */
+    protected RoleJdaSlash(Pattern rolePattern) {
+        this(new Parameters(true, 0, null, true, rolePattern).ensureInvariants());
+    }
+
+    /**
+     * Constructs a new role restriction for checking the role ID.
+     *
+     * @param exact  whether the role needs to be matched exactly or whether a higher role would also be sufficient
+     * @param roleId the ID of the role for which a command should be allowed
+     */
+    protected RoleJdaSlash(boolean exact, long roleId) {
+        this(new Parameters(exact, roleId, null, true, null).ensureInvariants());
+    }
+
+    /**
+     * Constructs a new role restriction for checking the role name case-sensitively against a fixed name.
+     *
+     * @param exact    whether the role needs to be matched exactly or whether a higher role would also be sufficient
+     * @param roleName the case-sensitive name of the role for which a command should be allowed
+     */
+    protected RoleJdaSlash(boolean exact, String roleName) {
+        this(new Parameters(exact, 0, roleName, true, null).ensureInvariants());
+    }
+
+    /**
+     * Constructs a new role restriction for checking the role name against a fixed name.
+     *
+     * <p><b>WARNING:</b> Case-insensitive matching means that for example
+     *                    {@code Admın} and {@code Admin} are considered the same
+     *                    as well as {@code BACKUP} and {@code BACKUP}.
+     *
+     * @param exact         whether the role needs to be matched exactly or whether a higher role would also be
+     *                      sufficient
+     * @param roleName      the name of the role for which a command should be allowed
+     * @param caseSensitive whether the name should be matched case-sensitively or not
+     */
+    protected RoleJdaSlash(boolean exact, String roleName, boolean caseSensitive) {
+        this(new Parameters(exact, 0, roleName, caseSensitive, null).ensureInvariants());
+    }
+
+    /**
+     * Constructs a new role restriction for checking the role name against a regular expression
+     * for an exact role match.
+     *
+     * @param exact       whether the role needs to be matched exactly or whether a higher role would also be sufficient
+     * @param rolePattern the pattern against which the role name is matched
+     *                    to determine for whom a command should be allowed
+     */
+    protected RoleJdaSlash(boolean exact, Pattern rolePattern) {
+        this(new Parameters(exact, 0, null, true, rolePattern).ensureInvariants());
+    }
+
+    /**
+     * Constructs a new role restriction.
+     *
+     * @param parameters the parameters to construct the channel restriction
+     */
+    private RoleJdaSlash(Parameters parameters) {
+        exact = parameters.exact;
+        roleId = parameters.roleId;
+        roleName = parameters.roleName;
+        caseSensitive = parameters.caseSensitive;
+        rolePattern = parameters.rolePattern;
+    }
+
+    @Override
+    public boolean allowCommand(CommandContext<? extends SlashCommandInteraction> commandContext) {
+        SlashCommandInteraction slashCommandInteraction = commandContext.getMessage();
+        return ((roleName == null) && (rolePattern == null))
+                ? allowCommandByRoleId(slashCommandInteraction)
+                : allowCommandByRoleName(slashCommandInteraction);
+    }
+
+    /**
+     * Returns whether a command is allowed according to the configured role ID.
+     *
+     * @param slashCommandInteraction the slash command interaction of the command to check
+     * @return whether a command is allowed according to the configured role ID
+     */
+    private boolean allowCommandByRoleId(SlashCommandInteraction slashCommandInteraction) {
+        return exact
+                ? allowCommandByExactRoleId(slashCommandInteraction)
+                : allowCommandByAtLeastRoleId(slashCommandInteraction);
+    }
+
+    /**
+     * Returns whether a command is allowed according to the configured role ID exactly.
+     *
+     * @param slashCommandInteraction the slash command interaction of the command to check
+     * @return whether a command is allowed according to the configured role ID exactly
+     */
+    private boolean allowCommandByExactRoleId(SlashCommandInteraction slashCommandInteraction) {
+        return Optional.ofNullable(slashCommandInteraction.getMember())
+                .map(Member::getRoles)
+                .map(Collection::stream)
+                .map(roles -> roles.mapToLong(ISnowflake::getIdLong))
+                .map(roleIds -> roleIds.anyMatch(roleId -> roleId == this.roleId))
+                .orElse(FALSE);
+    }
+
+    /**
+     * Returns whether a command is allowed according to the configured role ID by having the role or a higher role.
+     *
+     * @param slashCommandInteraction the slash command interaction of the command to check
+     * @return whether a command is allowed according to the configured role ID by having the role or a higher role
+     */
+    private boolean allowCommandByAtLeastRoleId(SlashCommandInteraction slashCommandInteraction) {
+        return Optional.of(slashCommandInteraction)
+                .filter(msg -> msg.getChannelType().isGuild())
+                .map(SlashCommandInteraction::getGuild)
+                .flatMap(guild -> Optional.ofNullable(guild.getRoleById(roleId))
+                        .flatMap(role -> slashCommandInteraction
+                                .getMember()
+                                .getRoles()
+                                .stream()
+                                .max(naturalOrder())
+                                .map(highestAuthorRole -> highestAuthorRole.compareTo(role) >= 0)
+                        )
+                )
+                .orElse(FALSE);
+    }
+
+    /**
+     * Returns whether a command is allowed according to the configured role name or pattern.
+     *
+     * @param slashCommandInteraction the slash command interaction of the command to check
+     * @return whether a command is allowed according to the configured role name or pattern
+     */
+    private boolean allowCommandByRoleName(SlashCommandInteraction slashCommandInteraction) {
+        return exact
+                ? allowCommandByExactRoleName(slashCommandInteraction)
+                : allowCommandByAtLeastRoleName(slashCommandInteraction);
+    }
+
+    /**
+     * Returns whether a command is allowed according to the configured role name or pattern exactly.
+     *
+     * @param slashCommandInteraction the slash command interaction of the command to check
+     * @return whether a command is allowed according to the configured role name or pattern exactly
+     */
+    private boolean allowCommandByExactRoleName(SlashCommandInteraction slashCommandInteraction) {
+        return Optional.ofNullable(slashCommandInteraction.getMember())
+                .map(Member::getRoles)
+                .map(Collection::stream)
+                .map(roles -> roles.map(Role::getName))
+                .map(roleNames -> roleNames.anyMatch(roleName -> {
+                    if (this.roleName == null) {
+                        return rolePattern.matcher(roleName).matches();
+                    } else if (caseSensitive) {
+                        return this.roleName.equals(roleName);
+                    } else {
+                        return this.roleName.equalsIgnoreCase(roleName);
+                    }
+                }))
+                .orElse(FALSE);
+    }
+
+    /**
+     * Returns whether a command is allowed according to the configured role name or pattern by having the role
+     * or a higher role.
+     *
+     * @param slashCommandInteraction the slash command interaction of the command to check
+     * @return whether a command is allowed according to the configured role name or pattern by having the role
+     *         or a higher role
+     */
+    private boolean allowCommandByAtLeastRoleName(SlashCommandInteraction slashCommandInteraction) {
+        return Optional.of(slashCommandInteraction)
+                .filter(msg -> msg.getChannelType().isGuild())
+                .map(SlashCommandInteraction::getGuild)
+                .flatMap(guild -> {
+                    Stream<Role> roleStream;
+                    if (this.roleName == null) {
+                        roleStream = guild.getRoles().stream()
+                                .filter(role -> rolePattern.matcher(role.getName()).matches());
+                    } else {
+                        roleStream = guild.getRolesByName(roleName, !caseSensitive).stream();
+                    }
+                    return roleStream
+                            .min(naturalOrder())
+                            .flatMap(role -> slashCommandInteraction
+                                    .getMember()
+                                    .getRoles()
+                                    .stream()
+                                    .max(naturalOrder())
+                                    .map(highestAuthorRole -> highestAuthorRole.compareTo(role) >= 0)
+                            );
+                })
+                .orElse(FALSE);
+    }
+
+    /**
+     * A set of parameters to construct a role restriction for JDA with slash commands.
+     */
+    private static class Parameters {
+        /**
+         * Whether the role needs to be matched exactly or whether a higher role would also be sufficient.
+         */
+        private final boolean exact;
+
+        /**
+         * The ID of the role for which a command is allowed.
+         */
+        private final long roleId;
+
+        /**
+         * The name of the role for which a command is allowed.
+         */
+        private final String roleName;
+
+        /**
+         * Whether the {@code roleName} should be case-sensitive or not.
+         * This does not apply to the {@code rolePattern},
+         * where an embedded flag can be used to control case sensitivity.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
+         */
+        private final boolean caseSensitive;
+
+        /**
+         * The pattern role names are matched against to determine whether a command is allowed.
+         */
+        private final Pattern rolePattern;
+
+        /**
+         * Constructs a new role restriction parameters instance.
+         *
+         * <p><b>WARNING:</b> Case-insensitive matching means that for example
+         *                    {@code Admın} and {@code Admin} are considered the same
+         *                    as well as {@code BACKUP} and {@code BACKUP}.
+         *
+         * @param exact         whether the role needs to be matched exactly or whether a higher role would also be
+         *                      sufficient
+         * @param roleId        the ID of the role for which a command should be allowed
+         * @param roleName      the name of the role for which a command should be allowed
+         * @param caseSensitive whether the name should be matched case-sensitively or not
+         * @param rolePattern   the pattern against which the role name is matched
+         *                      to determine for whom a command should be allowed
+         */
+        private Parameters(boolean exact, long roleId, String roleName,
+                           boolean caseSensitive, Pattern rolePattern) {
+            this.exact = exact;
+            this.roleId = roleId;
+            this.roleName = roleName;
+            this.caseSensitive = caseSensitive;
+            this.rolePattern = rolePattern;
+        }
+
+        /**
+         * Checks the invariants of this instance and raises
+         * an {@link IllegalStateException} if they are violated.
+         *
+         * @return this instance
+         */
+        private Parameters ensureInvariants() {
+            ensureAtMostOneConditionIsSet();
+            ensureAtLeastOneConditionIsSet();
+            ensureCaseSensitiveIfNameIsNotSet();
+            return this;
+        }
+
+        /**
+         * Checks that at most one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtMostOneConditionIsSet() {
+            boolean roleIdSet = roleId != 0;
+            boolean roleNameSet = roleName != null;
+            boolean rolePatternSet = rolePattern != null;
+
+            boolean roleNamelySet = roleNameSet || rolePatternSet;
+            boolean roleIdAndNamelySet = roleIdSet && roleNamelySet;
+            boolean bothRoleNamelySet = roleNameSet && rolePatternSet;
+            boolean multipleConditionsSet = roleIdAndNamelySet || bothRoleNamelySet;
+
+            if (multipleConditionsSet) {
+                StringJoiner stringJoiner = new StringJoiner(", ");
+                if (roleIdSet) {
+                    stringJoiner.add("roleId");
+                }
+                if (roleNameSet) {
+                    stringJoiner.add("roleName");
+                }
+                if (rolePatternSet) {
+                    stringJoiner.add("rolePattern");
+                }
+                throw new IllegalStateException(format(
+                    "Only one of roleId, roleName and rolePattern should be given (%s)",
+                    stringJoiner));
+            }
+        }
+
+        /**
+         * Checks that at least one condition is set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureAtLeastOneConditionIsSet() {
+            boolean roleIdSet = roleId != 0;
+            boolean roleNameSet = roleName != null;
+            boolean rolePatternSet = rolePattern != null;
+
+            boolean roleNamelySet = roleNameSet || rolePatternSet;
+
+            boolean atLeastOneConditionSet = roleIdSet || roleNamelySet;
+
+            if (!atLeastOneConditionSet) {
+                throw new IllegalStateException(
+                    "One of roleId, roleName and rolePattern should be given");
+            }
+        }
+
+        /**
+         * Checks that {@link #caseSensitive} is {@code true} if {@link #roleName}
+         * is not set and raises an {@link IllegalStateException} otherwise.
+         */
+        private void ensureCaseSensitiveIfNameIsNotSet() {
+            if ((roleName == null) && !caseSensitive) {
+                throw new IllegalStateException(
+                    "If roleName is not set, caseSensitive should be true");
+            }
+        }
+    }
+}

@@ -150,7 +150,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
 
     @Inject
     @Subject
-    CommandHandlerJavacordSlash commandHandlerJavacord
+    CommandHandlerJavacordSlash commandHandlerJavacordSlash
 
     @Inject
     Instance<DiscordApi> discordApiInstance
@@ -166,7 +166,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
 
     def 'an injector method for any command context transformers should exist and forward to the common base class'() {
         given:
-            CommandHandlerJavacordSlash commandHandlerJavacord = Spy(useObjenesis: true)
+            CommandHandlerJavacordSlash commandHandlerJavacordSlash = Spy(useObjenesis: true)
             Instance<CommandContextTransformer<? super SlashCommandInteraction>> commandContextTransformers = Stub()
 
         when:
@@ -184,15 +184,15 @@ class CommandHandlerJavacordSlashTest extends Specification {
             commandContextTransformerInjectors.size() == 1
 
         when:
-            commandContextTransformerInjectors.first().invoke(commandHandlerJavacord, commandContextTransformers)
+            commandContextTransformerInjectors.first().invoke(commandHandlerJavacordSlash, commandContextTransformers)
 
         then:
-            1 * commandHandlerJavacord.doSetCommandContextTransformers(commandContextTransformers) >> { }
+            1 * commandHandlerJavacordSlash.doSetCommandContextTransformers(commandContextTransformers) >> { }
     }
 
     def 'an injector method for available restrictions should exist and forward to the common base class'() {
         given:
-            CommandHandlerJavacordSlash commandHandlerJavacord = Spy(useObjenesis: true)
+            CommandHandlerJavacordSlash commandHandlerJavacordSlash = Spy(useObjenesis: true)
             Instance<Restriction<? super SlashCommandInteraction>> availableRestrictions = Stub()
 
         when:
@@ -209,15 +209,15 @@ class CommandHandlerJavacordSlashTest extends Specification {
             restrictionsInjectors.size() == 1
 
         when:
-            restrictionsInjectors.first().invoke(commandHandlerJavacord, availableRestrictions)
+            restrictionsInjectors.first().invoke(commandHandlerJavacordSlash, availableRestrictions)
 
         then:
-            1 * commandHandlerJavacord.doSetAvailableRestrictions(availableRestrictions) >> { }
+            1 * commandHandlerJavacordSlash.doSetAvailableRestrictions(availableRestrictions) >> { }
     }
 
     def 'an injector method for commands should exist and forward to the common base class'() {
         given:
-            CommandHandlerJavacordSlash commandHandlerJavacord = Spy(useObjenesis: true)
+            CommandHandlerJavacordSlash commandHandlerJavacordSlash = Spy(useObjenesis: true)
             Instance<Command<? super SlashCommandInteraction>> commands = Stub()
 
         when:
@@ -234,14 +234,14 @@ class CommandHandlerJavacordSlashTest extends Specification {
             commandsInjectors.size() == 1
 
         when:
-            commandsInjectors.first().invoke(commandHandlerJavacord, commands)
+            commandsInjectors.first().invoke(commandHandlerJavacordSlash, commands)
 
         then:
-            1 * commandHandlerJavacord.doSetCommands(commands) >> { }
+            1 * commandHandlerJavacordSlash.doSetCommands(commands) >> { }
     }
 
     @Use(ContextualInstanceCategory)
-    def 'post construct method should register message create listener and forward to the common base class'() {
+    def 'post construct method should register slash command create listener and forward to the common base class'() {
         given:
             slashCommandInteraction.with {
                 it.commandName >> 'test'
@@ -252,7 +252,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
                     it.stringValue >> Optional.of('foo')
                 }]
             }
-            def commandHandlerJavacord = Spy(commandHandlerJavacord.ci())
+            def commandHandlerJavacordSlash = Spy(commandHandlerJavacordSlash.ci())
 
         when:
             CommandHandlerJavacordSlash
@@ -260,7 +260,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
                     .findAll { it.getAnnotation(PostConstruct) }
                     .each {
                         it.accessible = true
-                        it.invoke(commandHandlerJavacord)
+                        it.invoke(commandHandlerJavacordSlash)
                     }
 
         then:
@@ -274,18 +274,18 @@ class CommandHandlerJavacordSlashTest extends Specification {
                     listenerManager
                 }
             }
-            3 * commandHandlerJavacord.doHandleMessage(new CommandContext.Builder(slashCommandInteraction, '/test foo')
+            3 * commandHandlerJavacordSlash.doHandleMessage(new CommandContext.Builder(slashCommandInteraction, '/test foo')
                     .withPrefix('/')
                     .withAlias('test')
                     .withParameterString('foo')
                     .build()) >> { }
-            0 * commandHandlerJavacord.doHandleMessage(*_)
+            0 * commandHandlerJavacordSlash.doHandleMessage(*_)
     }
 
     @Use(ContextualInstanceCategory)
     def 'injected discord apis should be logged properly [discordApisUnsatisfied: #discordApisUnsatisfied, discordApiCollectionsUnsatisfied: #discordApiCollectionsUnsatisfied]'(iterationIdentifier) {
         given:
-            commandHandlerJavacord.ci().with {
+            commandHandlerJavacordSlash.ci().with {
                 it.discordApis = Spy(discordApiInstance)
                 it.discordApis.unsatisfied >> discordApisUnsatisfied
 
@@ -299,7 +299,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
                     .findAll { it.getAnnotation(PostConstruct) }
                     .each {
                         it.accessible = true
-                        it.invoke(commandHandlerJavacord.ci())
+                        it.invoke(commandHandlerJavacordSlash.ci())
                     }
 
         then:
@@ -326,7 +326,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             def commandNotAllowedEventFired = new BlockingVariable<Boolean>(5)
 
         when:
-            commandHandlerJavacord.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
+            commandHandlerJavacordSlash.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
             commandNotAllowedEventFired.get()
 
         then:
@@ -356,7 +356,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             def commandNotAllowedEventFired = new BlockingVariable<Boolean>(5)
 
         when:
-            commandHandlerJavacord.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
+            commandHandlerJavacordSlash.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
             commandNotAllowedEventFired.get()
 
         then:
@@ -386,7 +386,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             def commandNotAllowedEventFired = new BlockingVariable<Boolean>(5)
 
         when:
-            commandHandlerJavacord.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
+            commandHandlerJavacordSlash.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
             commandNotAllowedEventFired.get()
 
         then:
@@ -420,7 +420,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             def commandNotAllowedEventFired = new BlockingVariable<Boolean>(5)
 
         when:
-            commandHandlerJavacord.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
+            commandHandlerJavacordSlash.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
             commandNotAllowedEventFired.get()
 
         then:
@@ -454,7 +454,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             def commandNotAllowedEventFired = new BlockingVariable<Boolean>(5)
 
         when:
-            commandHandlerJavacord.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
+            commandHandlerJavacordSlash.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
             commandNotAllowedEventFired.get()
 
         then:
@@ -478,7 +478,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             def commandNotFoundEventReceived = new BlockingVariable<Boolean>(5)
 
         when:
-            commandHandlerJavacord.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
+            commandHandlerJavacordSlash.ci().handleSlashCommandCreateEvent(slashCommandCreateEvent)
             commandNotFoundEventReceived.get()
 
         then:
@@ -503,7 +503,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             }
 
         when:
-            commandHandlerJavacord.executeAsync(new CommandContext.Builder(slashCommandInteraction, '/ ').build()) { }
+            commandHandlerJavacordSlash.executeAsync(new CommandContext.Builder(slashCommandInteraction, '/ ').build()) { }
 
         then:
             1 * threadPool.executorService >> Stub(ExecutorService)
@@ -516,7 +516,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             def executingThread = new BlockingVariable<Thread>(5)
 
         when:
-            commandHandlerJavacord.executeAsync(new CommandContext.Builder(slashCommandInteraction, '/ ').build()) {
+            commandHandlerJavacordSlash.executeAsync(new CommandContext.Builder(slashCommandInteraction, '/ ').build()) {
                 executingThread.set(currentThread())
             }
 
@@ -533,7 +533,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             slashCommandInteraction.api >> discordApi
 
         when:
-            commandHandlerJavacord.executeAsync(new CommandContext.Builder(slashCommandInteraction, '/ ').build()) { }
+            commandHandlerJavacordSlash.executeAsync(new CommandContext.Builder(slashCommandInteraction, '/ ').build()) { }
 
         and:
             discordApi.disconnect()
@@ -559,7 +559,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
             def exception = new Exception()
 
         when:
-            commandHandlerJavacord.executeAsync(new CommandContext.Builder(slashCommandInteraction, '/ ').build()) {
+            commandHandlerJavacordSlash.executeAsync(new CommandContext.Builder(slashCommandInteraction, '/ ').build()) {
                 throw exception
             }
 
@@ -615,7 +615,7 @@ class CommandHandlerJavacordSlashTest extends Specification {
     def 'parameterConverterTypeLiteralByMessageType should return proper mapping'() {
         when:
             def parameterConverterTypeLiteralByMessageType =
-                    commandHandlerJavacord.parameterConverterTypeLiteralByMessageType
+                    commandHandlerJavacordSlash.parameterConverterTypeLiteralByMessageType
 
         then:
             parameterConverterTypeLiteralByMessageType.key == SlashCommandInteraction
@@ -625,22 +625,22 @@ class CommandHandlerJavacordSlashTest extends Specification {
     @Use(ContextualInstanceCategory)
     def 'toString should start with class name'() {
         expect:
-            commandHandlerJavacord.toString().startsWith("${commandHandlerJavacord.ci().getClass().simpleName}[")
+            commandHandlerJavacordSlash.toString().startsWith("${commandHandlerJavacordSlash.ci().getClass().simpleName}[")
     }
 
     @Use(ContextualInstanceCategory)
     def 'toString should contain field name and value for "#field.name"'() {
         when:
-            def toStringResult = commandHandlerJavacord.toString()
+            def toStringResult = commandHandlerJavacordSlash.toString()
 
         then:
             toStringResult.contains("$field.name=")
             field.type == String ?
-                    toStringResult.contains("'${field.get(commandHandlerJavacord.ci())}'") :
-                    toStringResult.contains(String.valueOf(field.get(commandHandlerJavacord.ci())))
+                    toStringResult.contains("'${field.get(commandHandlerJavacordSlash.ci())}'") :
+                    toStringResult.contains(String.valueOf(field.get(commandHandlerJavacordSlash.ci())))
 
         where:
-            field << getAllInstanceFields(newInstance(getField(getClass(), 'commandHandlerJavacord').type))
+            field << getAllInstanceFields(newInstance(getField(getClass(), 'commandHandlerJavacordSlash').type))
                     .findAll {
                         !(it.name in [
                                 'logger',

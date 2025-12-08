@@ -77,6 +77,14 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "org.pitest.mutationtest.engine.gregor.mutators.experimental.NakedReceiverMutator",
                     "replaced call to java/util/Optional::map with receiver",
                     29),
+            // removing cast after isInstance check cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.api.restriction.jda.slash.NsfwChannelJdaSlash",
+                    "allowCommand",
+                    "(Lnet/kautler/command/api/CommandContext;)Z",
+                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.NakedReceiverMutator",
+                    "replaced call to java/util/Optional::map with receiver",
+                    25),
             // these two mutants change static state of the synthetic switch map field
             // work-around for https://github.com/pitest/pitest-rv-plugin/issues/3
             //new ExplicitMutationFilterDetails(
@@ -290,6 +298,21 @@ public class ExplicitMutationFilter implements MutationInterceptor {
                     "(Lorg/javacord/api/event/interaction/SlashCommandCreateEvent;)V",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
+            // giving a 4 instead of 3 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.handler.CommandHandlerJdaSlash",
+                    "onSlashCommandInteraction",
+                    "(Lnet/dv8tion/jda/api/events/interaction/command/SlashCommandInteractionEvent;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 3 with 4"),
+            // giving a 3 instead of 2 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.handler.CommandHandlerJdaSlash",
+                    "onSlashCommandInteraction",
+                    "(Lnet/dv8tion/jda/api/events/interaction/command/SlashCommandInteractionEvent;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3",
+                    31, 96),
             // the "true" (1) is just a dummy parameter for finalizer attack prevention and cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.util.lazy.LazyReferenceByFunction",
@@ -323,6 +346,30 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             // not assigning null to final field in constructor cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.util.SlashCommandBuilderProducer$AliasParts",
+                    "<init>",
+                    "(Ljava/lang/String;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.MemberVariableMutator",
+                    "Removed assignment to member variable subcommand",
+                    38),
+            // giving a 3 instead of 2 element array to String.format cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.SlashCommandDatasProducer$AliasParts",
+                    "<init>",
+                    "(Ljava/lang/String;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
+                    "Substituted 2 with 3",
+                    96),
+            // not assigning null to final field in constructor cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.SlashCommandDatasProducer$AliasParts",
+                    "<init>",
+                    "(Ljava/lang/String;)V",
+                    "org.pitest.mutationtest.engine.gregor.mutators.experimental.MemberVariableMutator",
+                    "Removed assignment to member variable subcommandGroup",
+                    33, 54),
+            // not assigning null to final field in constructor cannot be killed
+            new ExplicitMutationFilterDetails(
+                    "net.kautler.command.util.SlashCommandDatasProducer$AliasParts",
                     "<init>",
                     "(Ljava/lang/String;)V",
                     "org.pitest.mutationtest.engine.gregor.mutators.experimental.MemberVariableMutator",

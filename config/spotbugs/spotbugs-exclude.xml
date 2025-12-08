@@ -63,6 +63,10 @@
                     <Class name="net.kautler.command.api.restriction.jda.GuildJda$Parameters"/>
                     <Class name="net.kautler.command.api.restriction.jda.RoleJda$Parameters"/>
                     <Class name="net.kautler.command.api.restriction.jda.UserJda$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.jda.slash.ChannelJdaSlash$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.jda.slash.GuildJdaSlash$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.jda.slash.RoleJdaSlash$Parameters"/>
+                    <Class name="net.kautler.command.api.restriction.jda.slash.UserJdaSlash$Parameters"/>
                 </Or>
                 <Or>
                     <Method name="ensureAtLeastOneConditionIsSet" params="" returns="void"/>
@@ -113,7 +117,10 @@
 
     <!-- false-positive, the found state is just an internal performance cache -->
     <Match>
-        <Class name="net.kautler.command.api.restriction.jda.BotOwnerJda"/>
+        <Or>
+            <Class name="net.kautler.command.api.restriction.jda.BotOwnerJda"/>
+            <Class name="net.kautler.command.api.restriction.jda.slash.BotOwnerJdaSlash"/>
+        </Or>
         <Bug pattern="IMC_IMMATURE_CLASS_NO_TOSTRING"/>
     </Match>
 
@@ -186,6 +193,22 @@
             </And>
             <And>
                 <Class name="net.kautler.command.api.restriction.jda.UserJda"/>
+                <Method name="lambda$allowCommandByUserName$1" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.jda.slash.ChannelJdaSlash"/>
+                <Method name="allowCommandByChannelName" params="net.dv8tion.jda.api.entities.channel.middleman.MessageChannel" returns="boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.jda.slash.GuildJdaSlash"/>
+                <Method name="lambda$allowCommandByGuildName$1" params="java.lang.String" returns="java.lang.Boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.jda.slash.RoleJdaSlash"/>
+                <Method name="lambda$null$8" params="java.lang.String" returns="boolean"/>
+            </And>
+            <And>
+                <Class name="net.kautler.command.api.restriction.jda.slash.UserJdaSlash"/>
                 <Method name="lambda$allowCommandByUserName$1" params="java.lang.String" returns="java.lang.Boolean"/>
             </And>
         </Or>

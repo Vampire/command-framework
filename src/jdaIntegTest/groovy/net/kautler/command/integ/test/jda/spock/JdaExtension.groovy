@@ -47,7 +47,9 @@ class JdaExtension implements IGlobalExtension {
     @ApplicationScoped
     static JDA botJda
 
-    private static Guild guildAsBot
+    @Produces
+    @ApplicationScoped
+    static Guild guildAsBot
 
     private static JDA userJda
 

@@ -31,8 +31,6 @@ import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.javacord.PingSlashIntegTest.SlashCommandRegisterer
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
-import org.javacord.api.entity.permission.Permissions
-import org.javacord.api.entity.permission.PermissionsBuilder
 import org.javacord.api.entity.permission.Role
 import org.javacord.api.entity.server.Server
 import org.javacord.api.entity.user.User
@@ -46,6 +44,7 @@ import spock.util.concurrent.BlockingVariable
 import static java.util.UUID.randomUUID
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
 import static net.kautler.command.integ.test.javacord.PingSlashIntegTest.ParameterlessPingCommand
+import static net.kautler.command.integ.test.javacord.restriction.RoleJavacordIntegTest.createRole
 
 @Subject(RoleJavacordSlash)
 @Tag('manual')
@@ -64,39 +63,6 @@ class RoleJavacordSlashIntegTest extends DiscordGebSpec {
 
     @Shared
     Role lowerRole
-
-    static Role createRole(Server server, String name) {
-        createRole(server, name, new PermissionsBuilder().build())
-    }
-
-    static Role createRole(Server server, String name, Permissions permissions) {
-        def finalName = "$name ${randomUUID()}"
-
-        def roleReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
-        def listenerManager = server.addRoleCreateListener {
-            if (it.role.name == finalName) {
-                roleReceived.set(true)
-            }
-        }
-        try {
-            def role = server
-                    .createRoleBuilder()
-                    .setName(finalName)
-                    .setPermissions(permissions)
-                    .create()
-                    .join()
-
-            if (server.roles.contains(role)) {
-                roleReceived.set(true)
-            }
-
-            roleReceived.get()
-
-            return role
-        } finally {
-            listenerManager?.remove()
-        }
-    }
 
     static addRoleToUser(User user, Role role) {
         def rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)

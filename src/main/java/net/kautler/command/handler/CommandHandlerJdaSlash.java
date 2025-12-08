@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,19 +26,20 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.GenericEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.hooks.SubscribeEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.kautler.command.Internal;
 import net.kautler.command.api.Command;
 import net.kautler.command.api.CommandContext;
 import net.kautler.command.api.CommandContextTransformer;
 import net.kautler.command.api.CommandHandler;
-import net.kautler.command.api.event.jda.CommandNotAllowedEventJda;
-import net.kautler.command.api.event.jda.CommandNotFoundEventJda;
+import net.kautler.command.api.event.jda.CommandNotAllowedEventJdaSlash;
+import net.kautler.command.api.event.jda.CommandNotFoundEventJdaSlash;
 import net.kautler.command.api.parameter.ParameterConverter;
 import net.kautler.command.api.restriction.Restriction;
 import org.apache.logging.log4j.Logger;
@@ -48,13 +49,14 @@ import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A command handler that handles JDA messages.
+ * A command handler that handles JDA slash command interactions.
  */
 @ApplicationScoped
-class CommandHandlerJda extends CommandHandler<Message> implements EventListener {
+class CommandHandlerJdaSlash extends CommandHandler<SlashCommandInteraction> implements EventListener {
     /**
      * The logger for this command handler.
      */
@@ -98,13 +100,13 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * A CDI event for firing command not allowed events.
      */
     @Inject
-    Event<CommandNotAllowedEventJda> commandNotAllowedEvent;
+    Event<CommandNotAllowedEventJdaSlash> commandNotAllowedEvent;
 
     /**
      * A CDI event for firing command not found events.
      */
     @Inject
-    Event<CommandNotFoundEventJda> commandNotFoundEvent;
+    Event<CommandNotFoundEventJdaSlash> commandNotFoundEvent;
 
     /**
      * Sets the command context transformers for this command handler.
@@ -113,7 +115,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      */
     @Inject
     void setCommandContextTransformers(
-            @Any Instance<CommandContextTransformer<? super Message>> commandContextTransformers) {
+            @Any Instance<CommandContextTransformer<? super SlashCommandInteraction>> commandContextTransformers) {
         doSetCommandContextTransformers(commandContextTransformers);
     }
 
@@ -123,7 +125,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * @param availableRestrictions the available restrictions for this command handler
      */
     @Inject
-    void setAvailableRestrictions(Instance<Restriction<? super Message>> availableRestrictions) {
+    void setAvailableRestrictions(Instance<Restriction<? super SlashCommandInteraction>> availableRestrictions) {
         doSetAvailableRestrictions(availableRestrictions);
     }
 
@@ -133,7 +135,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
      * @param commands the available commands for this command handler
      */
     @Inject
-    void setCommands(Instance<Command<? super Message>> commands) {
+    void setCommands(Instance<Command<? super SlashCommandInteraction>> commands) {
         doSetCommands(commands);
     }
 
@@ -144,7 +146,7 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     void addListener() {
         if (jdas.isUnsatisfied() && jdaCollections.isUnsatisfied()
                 && shardManagers.isUnsatisfied() && shardManagerCollections.isUnsatisfied()) {
-            logger.info("No JDA, Collection<JDA>, ShardManager or Collection<ShardManager> injected, CommandHandlerJda will not be used.");
+            logger.info("No JDA, Collection<JDA>, ShardManager or Collection<ShardManager> injected, CommandHandlerJdaSlash will not be used.");
         } else {
             logger.info(this::constructWillBeUsedLogMessage);
             Stream.concat(
@@ -174,8 +176,8 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
         }
         return injectedObjects
                 .build()
-                .collect(joining(", ", "", " injected, CommandHandlerJda will be used."))
-                .replaceFirst(",(?=(?>[^,]* injected, CommandHandlerJda will be used\\.$))", " and");
+                .collect(joining(", ", "", " injected, CommandHandlerJdaSlash will be used."))
+                .replaceFirst(",(?=(?>[^,]* injected, CommandHandlerJdaSlash will be used\\.$))", " and");
     }
 
     /**
@@ -195,41 +197,63 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
 
     @Override
     public void onEvent(GenericEvent event) {
-        if (event instanceof MessageReceivedEvent) {
-            onMessageReceived((MessageReceivedEvent) event);
+        if (event instanceof SlashCommandInteractionEvent) {
+            onSlashCommandInteraction((SlashCommandInteractionEvent) event);
         }
     }
 
     /**
-     * Handles the actual messages received.
+     * Handles the actual slash command interactions received.
      *
-     * @param messageReceivedEvent the message received event
+     * @param slashCommandInteractionEvent the slash command interaction event
      */
     @SubscribeEvent
-    private void onMessageReceived(MessageReceivedEvent messageReceivedEvent) {
-        Message message = messageReceivedEvent.getMessage();
-        doHandleMessage(new CommandContext.Builder<>(message, message.getContentRaw()).build());
+    private void onSlashCommandInteraction(SlashCommandInteractionEvent slashCommandInteractionEvent) {
+        SlashCommandInteraction slashCommandInteraction = slashCommandInteractionEvent.getInteraction();
+
+        String commandName = slashCommandInteraction.getName();
+        String alias;
+        if (slashCommandInteraction.getSubcommandName() == null) {
+            alias = commandName;
+        } else if (slashCommandInteraction.getSubcommandGroup() == null) {
+            alias = format("%s/%s", commandName, slashCommandInteraction.getSubcommandName());
+        } else {
+            alias = format("%s/%s/%s", commandName, slashCommandInteraction.getSubcommandGroup(), slashCommandInteraction.getSubcommandName());
+        }
+
+        String parameterString = slashCommandInteraction
+                .getOptions()
+                .stream()
+                .map(OptionMapping::getAsString)
+                .collect(joining(" "));
+
+        doHandleMessage(new CommandContext
+                .Builder<>(slashCommandInteraction, format("/%s %s", alias, parameterString).trim())
+                .withPrefix("/")
+                .withAlias(alias)
+                .withParameterString(parameterString)
+                .build());
     }
 
     @Override
-    protected void fireCommandNotAllowedEvent(CommandContext<Message> commandContext) {
-        commandNotAllowedEvent.fireAsync(new CommandNotAllowedEventJda(commandContext));
+    protected void fireCommandNotAllowedEvent(CommandContext<SlashCommandInteraction> commandContext) {
+        commandNotAllowedEvent.fireAsync(new CommandNotAllowedEventJdaSlash(commandContext));
     }
 
     @Override
-    protected void fireCommandNotFoundEvent(CommandContext<Message> commandContext) {
-        commandNotFoundEvent.fireAsync(new CommandNotFoundEventJda(commandContext));
+    protected void fireCommandNotFoundEvent(CommandContext<SlashCommandInteraction> commandContext) {
+        commandNotFoundEvent.fireAsync(new CommandNotFoundEventJdaSlash(commandContext));
     }
 
     @Override
-    public Entry<Class<Message>, TypeLiteral<ParameterConverter<? super Message, ?>>> getParameterConverterTypeLiteralByMessageType() {
-        return new SimpleEntry<>(Message.class, new JdaParameterConverterTypeLiteral());
+    public Entry<Class<SlashCommandInteraction>, TypeLiteral<ParameterConverter<? super SlashCommandInteraction, ?>>> getParameterConverterTypeLiteralByMessageType() {
+        return new SimpleEntry<>(SlashCommandInteraction.class, new JdaSlashParameterConverterTypeLiteral());
     }
 
     /**
-     * A parameter converter type literal for JDA.
+     * A parameter converter type literal for JDA with slash commands.
      */
-    private static class JdaParameterConverterTypeLiteral extends TypeLiteral<ParameterConverter<? super Message, ?>> {
+    private static class JdaSlashParameterConverterTypeLiteral extends TypeLiteral<ParameterConverter<? super SlashCommandInteraction, ?>> {
         /**
          * The serial version UID of this class.
          */

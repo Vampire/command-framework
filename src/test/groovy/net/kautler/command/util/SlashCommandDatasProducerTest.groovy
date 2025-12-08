@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 Björn Kautler
+ * Copyright 2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ package net.kautler.command.util
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Instance
 import jakarta.inject.Inject
-import net.kautler.command.api.slash.javacord.SlashCommandJavacord
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
+import net.kautler.command.api.slash.jda.SlashCommandJda
 import net.kautler.test.ContextualInstanceCategory
-import org.javacord.api.interaction.SlashCommandBuilder
 import org.jboss.weld.junit.MockBean
 import org.jboss.weld.spock.EnableWeld
 import org.jboss.weld.spock.WeldInitiator
@@ -30,64 +31,62 @@ import spock.lang.Specification
 import spock.lang.Subject
 import spock.util.mop.Use
 
-import static org.javacord.api.interaction.SlashCommandOption.createStringOption
-import static org.javacord.api.interaction.SlashCommandOptionType.SUB_COMMAND
-import static org.javacord.api.interaction.SlashCommandOptionType.SUB_COMMAND_GROUP
+import static net.dv8tion.jda.api.interactions.commands.OptionType.STRING
 
 @EnableWeld
-@Subject(SlashCommandBuilderProducer)
-class SlashCommandBuilderProducerTest extends Specification {
-    SlashCommandJavacord command1 = Mock()
+@Subject(SlashCommandDatasProducer)
+class SlashCommandDatasProducerTest extends Specification {
+    SlashCommandJda command1 = Stub()
 
-    SlashCommandJavacord command2 = Mock()
+    SlashCommandJda command2 = Stub()
 
-    SlashCommandJavacord command3 = Mock()
+    SlashCommandJda command3 = Stub()
 
-    SlashCommandJavacord command4 = Mock()
+    SlashCommandJda command4 = Stub()
 
-    SlashCommandJavacord command5 = Mock()
+    SlashCommandJda command5 = Stub()
 
-    SlashCommandJavacord command6 = Mock()
+    SlashCommandJda command6 = Stub()
 
-    SlashCommandJavacord command7 = Mock()
+    SlashCommandJda command7 = Stub()
 
     @WeldSetup
     def weld = WeldInitiator
-            .from(SlashCommandBuilderProducer)
+            .from(SlashCommandDatasProducer)
             .addBeans(
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .types(SlashCommandJavacord)
+                            .types(SlashCommandJda)
                             .creating(command1)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .types(SlashCommandJavacord)
+                            .types(SlashCommandJda)
                             .creating(command2)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .types(SlashCommandJavacord)
+                            .types(SlashCommandJda)
                             .creating(command3)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .types(SlashCommandJavacord)
+                            .types(SlashCommandJda)
                             .creating(command4)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .types(SlashCommandJavacord)
+                            .types(SlashCommandJda)
                             .creating(command5)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .types(SlashCommandJavacord)
+                            .types(SlashCommandJda)
                             .creating(command6)
                             .build(),
                     MockBean.builder()
                             .scope(ApplicationScoped)
-                            .types(SlashCommandJavacord)
+                            .types(SlashCommandJda)
                             .creating(command7)
                             .build()
             )
@@ -95,39 +94,49 @@ class SlashCommandBuilderProducerTest extends Specification {
             .build()
 
     @Inject
-    Instance<Set<SlashCommandBuilder>> slashCommandBuilders
+    Instance<Collection<SlashCommandData>> slashCommandDatas
 
     def prepareCommands() {
         command1.with {
             it.aliases >> ['foo/bar1/test1']
             it.description >> ['The command foo/bar1/test1']
-            it.options >> [createStringOption('foo-bar1-test1-option', 'The foo/bar1/test1 option', false)]
+            it.prepareSubcommandData(_) >> { SubcommandData subcommandData ->
+                subcommandData.addOption(STRING, 'foo-bar1-test1-option', 'The foo/bar1/test1 option')
+            }
         }
         command2.with {
             it.aliases >> ['foo/bar1/test2']
             it.description >> ['The command foo/bar1/test2']
+            it.prepareSubcommandData(_) >> { it.first() }
         }
         command3.with {
             it.aliases >> ['foo/bar2/test1']
             it.description >> ['The command foo/bar2/test1']
+            it.prepareSubcommandData(_) >> { it.first() }
         }
         command4.with {
             it.aliases >> ['foo/bar2/test2']
             it.description >> ['The command foo/bar2/test2']
+            it.prepareSubcommandData(_) >> { it.first() }
         }
         command5.with {
             it.aliases >> ['foo/test1']
             it.description >> ['The command foo/test1']
-            it.options >> [createStringOption('foo-test1-option', 'The foo/test1 option', true)]
+            it.prepareSubcommandData(_) >> { SubcommandData subcommandData ->
+                subcommandData.addOption(STRING, 'foo-test1-option', 'The foo/test1 option', true)
+            }
         }
         command6.with {
             it.aliases >> ['foo/test2']
             it.description >> ['The command foo/test2']
+            it.prepareSubcommandData(_) >> { it.first() }
         }
         command7.with {
             it.aliases >> ['bar']
             it.description >> ['The command bar']
-            it.options >> [createStringOption('bar-option', 'The bar option', false)]
+            it.prepareSlashCommandData(_) >> { SlashCommandData slashCommandData ->
+                slashCommandData.addOption(STRING, 'bar-option', 'The bar option')
+            }
         }
     }
 
@@ -136,76 +145,62 @@ class SlashCommandBuilderProducerTest extends Specification {
             prepareCommands()
 
         when:
-            def slashCommandBuilders = slashCommandBuilders.get()
+            def slashCommandDatas = slashCommandDatas.get()
 
         then:
-            slashCommandBuilders.size() == 2
-            slashCommandBuilders*.delegate*.name ==~ ['bar', 'foo']
-            with(slashCommandBuilders.find { it.delegate.name == 'foo' }) {
-                with(it.delegate) {
-                    it.options.size() == 4
-                    it.options*.name ==~ ['bar1', 'bar2', 'test1', 'test2']
-                    with(it.options.find { it.name == 'bar1' }) {
-                        it.type == SUB_COMMAND_GROUP
-                        it.options.size() == 2
-                        it.options*.name ==~ ['test1', 'test2']
-                        with(it.options.find { it.name == 'test1' }) {
-                            it.type == SUB_COMMAND
-                            it.description == 'The command foo/bar1/test1'
-                            it.options.size() == 1
-                            with(it.options.first()) {
-                                it.name == 'foo-bar1-test1-option'
-                                it.description == 'The foo/bar1/test1 option'
-                                !it.required
-                            }
-                        }
-                        with(it.options.find { it.name == 'test2' }) {
-                            it.type == SUB_COMMAND
-                            it.description == 'The command foo/bar1/test2'
-                            it.options.size() == 0
-                        }
-                    }
-                    with(it.options.find { it.name == 'bar2' }) {
-                        it.type == SUB_COMMAND_GROUP
-                        it.options.size() == 2
-                        it.options*.name ==~ ['test1', 'test2']
-                        with(it.options.find { it.name == 'test1' }) {
-                            it.type == SUB_COMMAND
-                            it.description == 'The command foo/bar2/test1'
-                            it.options.size() == 0
-                        }
-                        with(it.options.find { it.name == 'test2' }) {
-                            it.type == SUB_COMMAND
-                            it.description == 'The command foo/bar2/test2'
-                            it.options.size() == 0
-                        }
-                    }
-                    with(it.options.find { it.name == 'test1' }) {
-                        it.type == SUB_COMMAND
-                        it.description == 'The command foo/test1'
+            slashCommandDatas.size() == 2
+            slashCommandDatas*.name ==~ ['bar', 'foo']
+            with(slashCommandDatas.find { it.name == 'foo' }) { SlashCommandData it ->
+                it.subcommandGroups*.name ==~ ['bar1', 'bar2']
+                it.subcommands*.name ==~ ['test1', 'test2']
+                with(it.subcommandGroups.find { it.name == 'bar1' }) {
+                    it.subcommands*.name ==~ ['test1', 'test2']
+                    with(it.subcommands.find { it.name == 'test1' }) {
+                        it.description == 'The command foo/bar1/test1'
                         it.options.size() == 1
                         with(it.options.first()) {
-                            it.name == 'foo-test1-option'
-                            it.description == 'The foo/test1 option'
-                            it.required
+                            it.name == 'foo-bar1-test1-option'
+                            it.description == 'The foo/bar1/test1 option'
+                            !it.required
                         }
                     }
-                    with(it.options.find { it.name == 'test2' }) {
-                        it.type == SUB_COMMAND
-                        it.description == 'The command foo/test2'
+                    with(it.subcommands.find { it.name == 'test2' }) {
+                        it.description == 'The command foo/bar1/test2'
                         it.options.size() == 0
                     }
                 }
-            }
-            with(slashCommandBuilders.find { it.delegate.name == 'bar' }) {
-                with(it.delegate) {
-                    it.description == 'The command bar'
+                with(it.subcommandGroups.find { it.name == 'bar2' }) {
+                    it.subcommands*.name ==~ ['test1', 'test2']
+                    with(it.subcommands.find { it.name == 'test1' }) {
+                        it.description == 'The command foo/bar2/test1'
+                        it.options.size() == 0
+                    }
+                    with(it.subcommands.find { it.name == 'test2' }) {
+                        it.description == 'The command foo/bar2/test2'
+                        it.options.size() == 0
+                    }
+                }
+                with(it.subcommands.find { it.name == 'test1' }) {
+                    it.description == 'The command foo/test1'
                     it.options.size() == 1
                     with(it.options.first()) {
-                        it.name == 'bar-option'
-                        it.description == 'The bar option'
-                        !it.required
+                        it.name == 'foo-test1-option'
+                        it.description == 'The foo/test1 option'
+                        it.required
                     }
+                }
+                with(it.subcommands.find { it.name == 'test2' }) {
+                    it.description == 'The command foo/test2'
+                    it.options.size() == 0
+                }
+            }
+            with(slashCommandDatas.find { it.name == 'bar' }) {
+                it.description == 'The command bar'
+                it.options.size() == 1
+                with(it.options.first()) {
+                    it.name == 'bar-option'
+                    it.description == 'The bar option'
+                    !it.required
                 }
             }
     }
@@ -218,7 +213,7 @@ class SlashCommandBuilderProducerTest extends Specification {
             prepareCommands()
 
         when:
-            slashCommandBuilders.get().ci()
+            slashCommandDatas.get().ci()
 
         then:
             IllegalStateException ise = thrown()
@@ -242,7 +237,7 @@ class SlashCommandBuilderProducerTest extends Specification {
             prepareCommands()
 
         when:
-            slashCommandBuilders.get().ci()
+            slashCommandDatas.get().ci()
 
         then:
             IllegalStateException ise = thrown()

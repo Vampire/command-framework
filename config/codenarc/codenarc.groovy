@@ -191,6 +191,29 @@ ruleset {
                 'net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest$PingCommand',
                 'net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest$PingCommandCaseInsensitive',
                 'net.kautler.command.integ.test.javacord.spock.JavacordExtension',
+                'net.kautler.command.integ.test.jda.event.CommandNotAllowedEventJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.event.CommandNotFoundEventJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.event.CommandNotFoundEventJdaSlashIntegTest$SlashCommandRegisterer',
+                'net.kautler.command.integ.test.jda.PingSlashIntegTest$AsynchronousPingCommand',
+                'net.kautler.command.integ.test.jda.PingSlashIntegTest$ParameterlessPingCommand',
+                'net.kautler.command.integ.test.jda.PingSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.PingSlashIntegTest$PingFooBarCommand',
+                'net.kautler.command.integ.test.jda.PingSlashIntegTest$PingFooCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.BotOwnerJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.ChannelJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.ChannelJdaSlashIntegTest$PingCommandCaseInsensitive',
+                'net.kautler.command.integ.test.jda.restriction.slash.GuildJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.GuildJdaSlashIntegTest$PingCommandCaseInsensitive',
+                'net.kautler.command.integ.test.jda.restriction.slash.GuildOwnerJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.NsfwChannelJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.PrivateMessageJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.RoleJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.RoleJdaSlashIntegTest$PingCommandCaseInsensitive',
+                'net.kautler.command.integ.test.jda.restriction.slash.RoleJdaSlashIntegTest$PingCommandInexact',
+                'net.kautler.command.integ.test.jda.restriction.slash.RoleJdaSlashIntegTest$PingCommandInexactCaseInsensitive',
+                'net.kautler.command.integ.test.jda.restriction.slash.ServerManagerJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.UserJdaSlashIntegTest$PingCommand',
+                'net.kautler.command.integ.test.jda.restriction.slash.UserJdaSlashIntegTest$PingCommandCaseInsensitive',
                 'net.kautler.command.integ.test.jda.spock.JdaExtension'
         ].join(', ')
     }
@@ -340,7 +363,8 @@ ruleset {
         doNotApplyToClassNames = [
                 'net.kautler.command.api.restriction.javacord.RoleJavacordTest',
                 'net.kautler.command.api.restriction.javacord.slash.RoleJavacordSlashTest',
-                'net.kautler.command.api.restriction.jda.RoleJdaTest'
+                'net.kautler.command.api.restriction.jda.RoleJdaTest',
+                'net.kautler.command.api.restriction.jda.slash.RoleJdaSlashTest'
         ].join(', ')
     }
     ExplicitCallToDivMethod
@@ -549,7 +573,9 @@ ruleset {
         doNotApplyToClassNames = [
                 'net.kautler.command.integ.test.VersionIntegTest$VersionHolder',
                 'net.kautler.command.integ.test.javacord.PingSlashIntegTest$SlashCommandRegisterer',
-                'net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest$SlashCommandRegisterer'
+                'net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest$SlashCommandRegisterer',
+                'net.kautler.command.integ.test.jda.PingSlashIntegTest$SlashCommandRegisterer',
+                'net.kautler.command.integ.test.jda.event.CommandNotFoundEventJdaSlashIntegTest$SlashCommandRegisterer'
         ].join(', ')
     }
     UnusedObject

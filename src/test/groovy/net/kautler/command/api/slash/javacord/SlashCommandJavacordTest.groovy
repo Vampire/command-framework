@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Björn Kautler
+ * Copyright 2022-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.javacord.api.interaction.SlashCommandInteraction
 import spock.lang.Specification
 import spock.lang.Subject
 
-@Subject(SlashCommandJavacordTest)
+@Subject(SlashCommandJavacord)
 class SlashCommandJavacordTest extends Specification {
     def testee = new SlashCommandJavacord() {
         @Override

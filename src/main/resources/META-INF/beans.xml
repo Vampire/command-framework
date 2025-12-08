@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright 2019-2022 Björn Kautler
+  ~ Copyright 2019-2025 Björn Kautler
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -52,10 +52,19 @@
         <exclude name="net.kautler.command.api.restriction.jda.*">
             <if-class-not-available name="net.dv8tion.jda.api.JDA"/>
         </exclude>
+        <exclude name="net.kautler.command.api.restriction.jda.slash.*">
+            <if-class-not-available name="net.dv8tion.jda.api.JDA"/>
+        </exclude>
         <exclude name="net.kautler.command.handler.CommandHandlerJda">
             <if-class-not-available name="net.dv8tion.jda.api.JDA"/>
         </exclude>
+        <exclude name="net.kautler.command.handler.CommandHandlerJdaSlash">
+            <if-class-not-available name="net.dv8tion.jda.api.JDA"/>
+        </exclude>
         <exclude name="net.kautler.command.parameter.converter.jda.*">
+            <if-class-not-available name="net.dv8tion.jda.api.JDA"/>
+        </exclude>
+        <exclude name="net.kautler.command.util.SlashCommandDatasProducer">
             <if-class-not-available name="net.dv8tion.jda.api.JDA"/>
         </exclude>
     </scan>

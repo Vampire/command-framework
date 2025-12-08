@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package net.kautler.command.api.restriction.jda
+package net.kautler.command.api.restriction.jda.slash
 
 import jakarta.inject.Inject
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.ApplicationInfo
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction
 import net.dv8tion.jda.api.requests.RestAction
 import net.kautler.command.api.CommandContext
 import org.jboss.weld.spock.EnableWeld
@@ -30,20 +30,20 @@ import spock.lang.Specification
 import spock.lang.Subject
 
 @EnableWeld
-class BotOwnerJdaTest extends Specification {
+class BotOwnerJdaSlashTest extends Specification {
     @WeldSetup
     def weld = WeldInitiator
-            .from(BotOwnerJda)
+            .from(BotOwnerJdaSlash)
             .inject(this)
             .build()
 
     @Inject
     @Subject
-    BotOwnerJda botOwnerJda
+    BotOwnerJdaSlash botOwnerJdaSlash
 
-    CommandContext<Message> commandContext = Stub {
-        it.message >> Stub(Message) {
-            it.author >> Stub(User)
+    CommandContext<SlashCommandInteraction> commandContext = Stub {
+        it.message >> Stub(SlashCommandInteraction) {
+            it.user >> Stub(User)
             it.JDA >> Stub(JDA) {
                 retrieveApplicationInfo() >> Stub(RestAction) {
                     complete() >> Stub(ApplicationInfo) {
@@ -56,16 +56,16 @@ class BotOwnerJdaTest extends Specification {
         }
     }
 
-    def 'message author with ID #messageAuthorId should #be allowed'() {
+    def 'user with ID #userId should #be allowed'() {
         given:
-            commandContext.message.author.idLong >> messageAuthorId
+            commandContext.message.user.idLong >> userId
 
         expect:
-            botOwnerJda.allowCommand(commandContext) == allowed
+            botOwnerJdaSlash.allowCommand(commandContext) == allowed
 
         where:
-            messageAuthorId || allowed | be
-            2               || true    | 'be'
-            3               || false   | 'not be'
+            userId || allowed | be
+            2      || true    | 'be'
+            3      || false   | 'not be'
     }
 }

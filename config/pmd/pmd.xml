@@ -37,6 +37,7 @@
                         or pmd-java:typeIsExactly('net.kautler.command.api.parameter.ParameterParser')
                         or pmd-java:typeIsExactly('net.kautler.command.api.restriction.Restriction')
                         or pmd-java:typeIsExactly('net.kautler.command.api.slash.javacord.SlashCommandJavacord')
+                        or pmd-java:typeIsExactly('net.kautler.command.api.slash.jda.SlashCommandJda')
                     ]
                 </value>
             </property>
@@ -73,10 +74,13 @@
             <property name="violationSuppressXPath">
                 <value>
                     .[
-                        (: false positive, work-around for https://github.com/pmd/pmd/issues/6274 :)
-                        ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.util.SlashCommandBuilderProducer')]
-                        and ancestor::MethodDeclaration/@Name = 'getSlashCommandBuilders'
-                        and ancestor::MethodCall/@MethodName = "groupingBy"
+                        (: false positives, work-around for https://github.com/pmd/pmd/issues/6274 :)
+                        (ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.util.SlashCommandBuilderProducer')]
+                         and ancestor::MethodDeclaration/@Name = 'getSlashCommandBuilders'
+                         and ancestor::MethodCall/@MethodName = "groupingBy")
+                        or (ancestor::ClassDeclaration[pmd-java:typeIsExactly('net.kautler.command.util.SlashCommandDatasProducer')]
+                            and ancestor::MethodDeclaration/@Name = 'getSlashCommandDatas'
+                            and ancestor::MethodCall/@MethodName = "groupingBy")
                     ]
                 </value>
             </property>

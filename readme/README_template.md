@@ -32,9 +32,11 @@ Table of Contents
 * [Usage](#usage)
   * [Message Framework](#message-framework)
     * [Javacord](#javacord)
-      * [Text Commands](#text-commands)
-      * [Slash Commands](#slash-commands)
+      * [Text Commands](#javacord-text-commands)
+      * [Slash Commands](#javacord-slash-commands)
     * [JDA](#jda)
+      * [Text Commands](#jda-text-commands)
+      * [Slash Commands](#jda-slash-commands)
   * [Creating Commands](#creating-commands)
     * [Command Aliases](#command-aliases)
     * [Asynchronous Command Execution](#asynchronous-command-execution)
@@ -83,7 +85,7 @@ Supported Message Frameworks
 The following message frameworks are currently supported out of the box:
 
 * [Javacord](#javacord) (text and slash commands)
-* [JDA](#jda) (text commands)
+* [JDA](#jda) (text and slash commands)
 
 If you want to have support for an additional framework, do not hesitate to open a pull request or feature request
 issue.
@@ -153,7 +155,7 @@ Usage
 
 #### Javacord
 
-##### Text Commands
+##### <a name="javacord-text-commands"/>Text Commands
 
 For the [Javacord][Javacord Website] support, include Javacord as implementation dependency and create a CDI producer
 that produces either one `DiscordApi`, or if you use sharding a `Collection<DiscordApi>` with all shards where you want
@@ -192,9 +194,9 @@ class JavacordProducer {
 _**Tested versions:**_
 $testedJavacordVersions
 
-##### Slash Commands
+##### <a name="javacord-slash-commands"/>Slash Commands
 
-For slash commands you need to do the same as for [Text Commands](#text-commands).
+For slash commands you need to do the same as for [Text Commands](#javacord-text-commands).
 
 Additionally, the [commands](#creating-commands) have to implement
 [`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] instead of `Command`. Furthermore, they must have a
@@ -241,6 +243,8 @@ $testedJavacordVersions
 
 #### JDA
 
+##### <a name="jda-text-commands"/>Text Commands
+
 For the [JDA][JDA Website] support, include JDA as implementation dependency and create a CDI producer that produces
 either one `JDA`, of if you use sharding a `Collection<JDA>`, a `ShardManager` or a `Collection<ShardManager>` with all
 shards where you want commands to be handled. You should also have a disposer method that properly shuts down the
@@ -263,7 +267,8 @@ class JdaProducer {
         try {
             return JDABuilder
                     .createLight(discordToken)
-                    .enableIntents(MESSAGE_CONTENT)
+                    // comment in the next line when using text commands 
+                    //.enableIntents(MESSAGE_CONTENT)
                     .build()
                     .awaitReady();
         } catch (InterruptedException e) {
@@ -274,6 +279,56 @@ class JdaProducer {
 
     private void disposeJda(@Disposes JDA jda) {
         jda.shutdown();
+    }
+}
+```
+
+_**Tested versions:**_
+$testedJdaVersions
+
+##### <a name="jda-slash-commands"/>Slash Commands
+
+For slash commands you need to do the same as for [Text Commands](#jda-text-commands).
+
+Additionally, the [commands](#creating-commands) have to implement
+[`SlashCommandJda`][SlashCommandJda JavaDoc] instead of `Command`. Furthermore, they must have a
+[description](#command-description) defined, and all [aliases](#command-aliases) have to consist of one to three
+slash separated parts, so either `command`, `command/subcommand`, or `command/subcommand-group/subcommand`.
+
+If your command needs parameters or you want to do other customizations of the `SlashCommandData`, you overwrite the
+`SlashCommandJda#prepareSlashCommandData` method, which just returns the argument in its default implementation.
+In the implementation of the method you can then use the full API for JDA slash commands. For subcommands you instead
+overwrite the `SlashCommandJda#prepareSubcommandData` method, which has the same default implementation and customizes
+a `SubcommandData`.
+
+When using [command context transformers](#customizing-the-command-recognition-and-resolution-process) with slash
+commands, all phases before `BEFORE_COMMAND_COMPUTATION` are skipped by the command handler already.
+
+Finally, this framework does not register the slash commands with Discord for you automatically, because you
+might want to register them globally, or per server, or you might want to add further commands not managed by
+this framework, and so on. Instead, you can register the commands yourself by injecting the provided
+`Collection<SlashCommandData>`. This injected collection can directly be used as argument for methods like
+`CommandListUpdateAction#addCommands`.
+The requirements described above regarding description and aliases are only enforced if you inject it somewhere.
+
+A fully self-contained example containing a text, a slash, and a combined command can be found at
+`examples/simplePingBotJda`.
+
+_**Example:**_
+```java
+@ApplicationScoped
+public class SlashCommandRegisterer {
+    @Inject
+    JDA jda;
+
+    @Inject
+    Collection<SlashCommandData> slashCommandDatas;
+
+    void registerSlashCommands(@Observes @Initialized(ApplicationScoped.class) Object __) {
+        jda
+                .updateCommands()
+                .addCommands(slashCommandDatas)
+                .queue();
     }
 }
 ```
@@ -315,9 +370,13 @@ aliases to which the command reacts can be configured. If no aliases are configu
 or `Cmd` suffix / prefix stripped and the first letter lowercased is used as a default. If at least one alias is
 configured, only the explicitly configured ones are used.
 
-_Javacord slash command specific:_ When injecting a `Set<SlashCommandBuilder>` anywhere, all aliases of commands
-implementing [`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] have to follow a pre-defined format that is described
-at [slash commands](#slash-commands).
+_Javacord slash command specific:_ When injecting a `Set<SlashCommandBuilder>` or a supertype anywhere, all aliases of
+commands implementing [`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] have to follow a pre-defined format that is
+described at [Javacord slash commands](#javacord-slash-commands).
+
+_JDA slash command specific:_ When injecting a `Collection<SlashCommandData>` or a supertype anywhere, all aliases of
+commands implementing [`SlashCommandJda`][SlashCommandJda JavaDoc] have to follow a pre-defined format that is
+described at [JDA slash commands](#jda-slash-commands).
 
 #### Asynchronous Command Execution
 
@@ -341,8 +400,11 @@ being configured asynchronously if the underlying message framework dispatches m
 By overwriting the `Command#getDescription()` method or applying the [`@Description`][@Description JavaDoc] annotation,
 the description of the command can be configured. This description can be used, for example, in a custom help command.
 
-_Javacord slash command specific:_ When injecting a `Set<SlashCommandBuilder>` anywhere, all commands implementing
-[`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] have to provide a description.
+_Javacord slash command specific:_ When injecting a `Set<SlashCommandBuilder>` or a supertype anywhere, all commands
+implementing [`SlashCommandJavacord`][SlashCommandJavacord JavaDoc] have to provide a description.
+
+_JDA slash command specific:_ When injecting a `Collection<SlashCommandData>` or a supertype anywhere, all commands
+implementing [`SlashCommandJda`][SlashCommandJda JavaDoc] have to provide a description.
 
 #### Command Restrictions
 
@@ -901,6 +963,8 @@ limitations under the License.
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/restriction/javacord/ServerJavacord.html
 [SlashCommandJavacord JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/slash/javacord/SlashCommandJavacord.html
+[SlashCommandJda JavaDoc]:
+    https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/slash/jda/SlashCommandJda.html
 [@Usage JavaDoc]:
     https://www.javadoc.io/page/net.kautler/command-framework/latest/net/kautler/command/api/annotation/Usage.html
 [UserJavacord JavaDoc]:

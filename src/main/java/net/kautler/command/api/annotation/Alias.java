@@ -16,8 +16,10 @@
 
 package net.kautler.command.api.annotation;
 
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.kautler.command.api.Command;
 import net.kautler.command.api.slash.javacord.SlashCommandJavacord;
+import net.kautler.command.api.slash.jda.SlashCommandJda;
 import org.javacord.api.interaction.SlashCommandBuilder;
 
 import java.lang.annotation.Documented;
@@ -34,9 +36,13 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * If no alias is configured, the class name, stripped by {@code Command} or {@code Cmd}
  * suffix and / or prefix if present and the first letter lowercased is used as default.
  *
- * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} anywhere, all aliases
+ * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} or a supertype anywhere, all aliases
  * of commands implementing {@link SlashCommandJavacord} have to follow a pre-defined format that is described
  * at {@code SlashCommandJavacord}.
+ *
+ * <p>When injecting a {@link SlashCommandData Collection&lt;SlashCommandData&gt;} or a supertype anywhere, all aliases
+ * of commands implementing {@link SlashCommandJda} have to follow a pre-defined format that is described
+ * at {@code SlashCommandJda}.
  *
  * <p>Alternatively to using this annotation the {@link Command#getAliases()} method can be overwritten.
  * If that method is overwritten and this annotation is used, the method overwrite takes precedence.

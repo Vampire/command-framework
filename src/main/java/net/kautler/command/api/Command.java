@@ -16,6 +16,7 @@
 
 package net.kautler.command.api;
 
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.kautler.command.InvalidAnnotationCombinationException;
 import net.kautler.command.api.annotation.Alias;
 import net.kautler.command.api.annotation.Asynchronous;
@@ -35,6 +36,7 @@ import net.kautler.command.api.restriction.javacord.RoleJavacord;
 import net.kautler.command.api.restriction.javacord.ServerJavacord;
 import net.kautler.command.api.restriction.javacord.UserJavacord;
 import net.kautler.command.api.slash.javacord.SlashCommandJavacord;
+import net.kautler.command.api.slash.jda.SlashCommandJda;
 import org.javacord.api.interaction.SlashCommandBuilder;
 
 import java.util.Arrays;
@@ -67,9 +69,13 @@ public interface Command<M> {
     /**
      * Returns the aliases for this command.
      *
-     * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} anywhere, all aliases
-     * of commands implementing {@link SlashCommandJavacord} have to follow a pre-defined format that is described
-     * at {@code SlashCommandJavacord}.
+     * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} or a supertype anywhere, all
+     * aliases of commands implementing {@link SlashCommandJavacord} have to follow a pre-defined format that is
+     * described at {@code SlashCommandJavacord}.
+     *
+     * <p>When injecting a {@link SlashCommandData Collection&lt;SlashCommandData&gt;} or a supertype anywhere, all
+     * aliases of commands implementing {@link SlashCommandJda} have to follow a pre-defined format that is
+     * described at {@code SlashCommandJda}.
      *
      * <p>The default implementation of this method returns the aliases configured using the {@link Alias @Alias}
      * annotation. If no alias is configured by annotation, the class name, stripped by {@code Command} or {@code Cmd}
@@ -105,8 +111,11 @@ public interface Command<M> {
      * Returns the description of this command.
      * This description can for example be displayed in an own help command.
      *
-     * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} anywhere, all commands
-     * implementing {@link SlashCommandJavacord} have to provide a description.
+     * <p>When injecting a {@link SlashCommandBuilder Set&lt;SlashCommandBuilder&gt;} or a supertype anywhere, all
+     * commands implementing {@link SlashCommandJavacord} have to provide a description.
+     *
+     * <p>When injecting a {@link SlashCommandData Collection&lt;SlashCommandData&gt;} or a supertype anywhere, all
+     * commands implementing {@link SlashCommandJda} have to provide a description.
      *
      * <p>The default implementation of this method returns the description configured using the
      * {@link Description @Description} annotation. If no description is configured by annotation,
