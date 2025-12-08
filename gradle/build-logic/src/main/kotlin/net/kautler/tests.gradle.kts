@@ -16,6 +16,7 @@
 
 package net.kautler
 
+import net.kautler.util.LogLevelInfoEnabled
 import net.kautler.util.ProblemsProvider
 import net.kautler.util.Property.Companion.double
 import net.kautler.util.Property.Companion.optionalString
@@ -437,7 +438,9 @@ pitest {
         //"UOI3", "UOI4"
     )
     targetTests = listOf("net.kautler.*Test")
-    verbosity = "${if (logger.isInfoEnabled) VERBOSE_NO_SPINNER else NO_SPINNER}"
+    verbosity = providers
+        .of(LogLevelInfoEnabled::class) { }
+        .map { "${if (it) VERBOSE_NO_SPINNER else NO_SPINNER}" }
     outputFormats = listOf(
         "HTML",
         "XML",
