@@ -19,6 +19,7 @@ package net.kautler
 import org.gradle.accessors.dm.LibrariesForLibs
 
 plugins {
+    `jvm-toolchains`
     codenarc
 }
 
@@ -35,6 +36,9 @@ tasks.withType<CodeNarc>().configureEach {
     val sourceSetName = name.removePrefix("codenarc").replaceFirstChar { it.lowercase() }
     compilationClasspath = sourceSets[sourceSetName].let {
         it.compileClasspath + it.output
+    }
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(libs.versions.test.integtest.java.get())
     }
 }
 

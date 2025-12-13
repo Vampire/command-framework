@@ -26,15 +26,17 @@ import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacordSlash
 import net.kautler.command.api.restriction.javacord.slash.UserJavacordSlash
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.javacord.PingSlashIntegTest.SlashCommandRegisterer
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
 import spock.lang.ResourceLock
-import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
+import static java.lang.Long.parseUnsignedLong
 import static java.util.UUID.randomUUID
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COMMAND_COMPUTATION
 import static net.kautler.command.integ.test.javacord.PingSlashIntegTest.ParameterlessPingCommand
@@ -42,7 +44,7 @@ import static net.kautler.command.integ.test.javacord.PingSlashIntegTest.Paramet
 @Subject(UserJavacordSlash)
 @Tag('manual')
 @AddBean(SlashCommandRegisterer)
-class UserJavacordSlashIntegTest extends Specification {
+class UserJavacordSlashIntegTest extends DiscordGebSpec {
     @AddBean(User)
     @AddBean(PingCommand)
     @AddBean(IgnoreOtherTestsTransformer)
@@ -59,19 +61,20 @@ class UserJavacordSlashIntegTest extends Specification {
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            def listenerManager = owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -90,13 +93,13 @@ class UserJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if correct user by id'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            User.criterion = serverTextChannelAsBot.api.ownerId.get()
+            User.criterion = parseUnsignedLong(System.properties.testDiscordUserId)
 
         and:
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -107,19 +110,20 @@ class UserJavacordSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -139,10 +143,11 @@ class UserJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not correct user by name'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def userName = serverTextChannelAsBot.api.owner.get().join().name.toUpperCase()
-            if (userName == serverTextChannelAsBot.api.owner.get().join().name) {
-                userName = serverTextChannelAsBot.api.owner.get().join().name.toLowerCase()
-                assert userName != serverTextChannelAsBot.api.owner.get().join().name: 'Could not determine a name that is unequal normally but equal case-insensitively'
+            def user = serverTextChannelAsBot.api.getUserById(System.properties.testDiscordUserId).join()
+            def userName = user.name.toUpperCase()
+            if (userName == user.name) {
+                userName = user.name.toLowerCase()
+                assert userName != user.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             User.criterion = userName
 
@@ -151,19 +156,20 @@ class UserJavacordSlashIntegTest extends Specification {
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            def listenerManager = owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -182,13 +188,13 @@ class UserJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if correct user by name'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            User.criterion = serverTextChannelAsBot.api.owner.get().join().name
+            User.criterion = serverTextChannelAsBot.api.getUserById(System.properties.testDiscordUserId).join().name
 
         and:
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -199,19 +205,20 @@ class UserJavacordSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -238,19 +245,20 @@ class UserJavacordSlashIntegTest extends Specification {
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommandCaseInsensitive.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            def listenerManager = owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommandCaseInsensitive.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -269,18 +277,19 @@ class UserJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.UserJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if correct user by name case-insensitively'(ServerTextChannel serverTextChannelAsBot) {
         given:
-            def userName = serverTextChannelAsBot.api.owner.get().join().name.toUpperCase()
-            if (userName == serverTextChannelAsBot.api.owner.get().join().name) {
-                userName = serverTextChannelAsBot.api.owner.get().join().name.toLowerCase()
-                assert userName != serverTextChannelAsBot.api.owner.get().join().name: 'Could not determine a name that is unequal normally but equal case-insensitively'
+            def user = serverTextChannelAsBot.api.getUserById(System.properties.testDiscordUserId).join()
+            def userName = user.name.toUpperCase()
+            if (userName == user.name) {
+                userName = user.name.toLowerCase()
+                assert userName != user.name: 'Could not determine a name that is unequal normally but equal case-insensitively'
             }
             UserCaseInsensitive.userName = userName
 
         and:
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommandCaseInsensitive.alias}"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -291,19 +300,20 @@ class UserJavacordSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommandCaseInsensitive.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -330,19 +340,20 @@ class UserJavacordSlashIntegTest extends Specification {
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            def listenerManager = owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -365,9 +376,9 @@ class UserJavacordSlashIntegTest extends Specification {
 
         and:
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -378,19 +389,20 @@ class UserJavacordSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:

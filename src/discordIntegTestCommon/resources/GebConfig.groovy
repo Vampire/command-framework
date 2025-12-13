@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 Björn Kautler
+ * Copyright 2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-runner {
-    parallel {
-        enabled true
+driver = 'firefox'
+cacheDriverPerThread = true
+baseUrl = 'https://discord.com/'
+atCheckWaiting = true
+requirePageAtCheckers = true
+autoClearCookies = false
 
-        if (System.properties.testParallelism) {
-            fixed(System.properties.testParallelism as int)
-        }
-    }
+waiting {
+    timeout = 60
 }

@@ -29,6 +29,8 @@ import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.CommandHandler
 import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.event.javacord.CommandNotFoundEventJavacordSlash
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.javacord.PingSlashIntegTest.ParameterlessPingCommand
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.DiscordApi
@@ -37,7 +39,6 @@ import org.javacord.api.entity.server.Server
 import org.javacord.api.interaction.SlashCommand
 import org.javacord.api.interaction.SlashCommandBuilder
 import spock.lang.ResourceLock
-import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
@@ -50,7 +51,7 @@ import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COM
 @Subject(CommandHandler)
 @Subject(CommandNotFoundEventJavacordSlash)
 @Tag('manual')
-class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
+class CommandNotFoundEventJavacordSlashIntegTest extends DiscordGebSpec {
     @AddBean(PingCommand)
     @AddBean(SlashCommandRegisterer)
     @ResourceLock('net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest.PingCommand.alias')
@@ -62,19 +63,20 @@ class CommandNotFoundEventJavacordSlashIntegTest extends Specification {
             def commandNotFoundEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotFoundEventReceived = commandNotFoundEventReceived
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            def listenerManager = owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == SlashCommandRegisterer.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `/${SlashCommandRegisterer.alias}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand("/${SlashCommandRegisterer.alias}")
+            }
             commandReceived.get()
 
         then:

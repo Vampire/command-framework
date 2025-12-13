@@ -28,6 +28,8 @@ import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.Asynchronous
 import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.slash.javacord.SlashCommandJavacord
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.DiscordApi
 import org.javacord.api.entity.channel.ServerTextChannel
@@ -38,7 +40,6 @@ import org.javacord.api.interaction.SlashCommandInteraction
 import org.javacord.api.interaction.SlashCommandOption
 import org.javacord.api.util.logging.ExceptionLogger
 import spock.lang.ResourceLock
-import spock.lang.Specification
 import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
 
@@ -49,7 +50,7 @@ import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_COM
 
 @Tag('manual')
 @AddBean(SlashCommandRegisterer)
-class PingSlashIntegTest extends Specification {
+class PingSlashIntegTest extends DiscordGebSpec {
     @AddBean(PingCommand)
     @AddBean(IgnoreOtherTestsTransformer)
     @ResourceLock('net.kautler.command.integ.test.javacord.PingSlashIntegTest.PingCommand.alias')
@@ -58,9 +59,9 @@ class PingSlashIntegTest extends Specification {
         given:
             def random1 = randomUUID()
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias} $random1"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -71,19 +72,20 @@ class PingSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         (it.slashCommandInteraction.arguments.first().stringValue.get() == "$random1")) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -101,9 +103,9 @@ class PingSlashIntegTest extends Specification {
     def 'asynchronous ping command should respond if in server channel'(ServerTextChannel serverTextChannelAsBot) {
         given:
             IgnoreOtherTestsTransformer.expectedContent = "/${AsynchronousPingCommand.alias}"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -114,19 +116,20 @@ class PingSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == AsynchronousPingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -144,9 +147,9 @@ class PingSlashIntegTest extends Specification {
     def 'ping command without parameters should respond properly'(ServerTextChannel serverTextChannelAsBot) {
         given:
             IgnoreOtherTestsTransformer.expectedContent = "/${ParameterlessPingCommand.alias}"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -157,19 +160,20 @@ class PingSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == ParameterlessPingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -187,9 +191,9 @@ class PingSlashIntegTest extends Specification {
     def 'ping subcommand should respond properly'(ServerTextChannel serverTextChannelAsBot) {
         given:
             IgnoreOtherTestsTransformer.expectedContent = "/${PingFooCommand.alias}"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -200,11 +204,10 @@ class PingSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingFooCommand.alias.split('/')[0]) &&
                         (it.slashCommandInteraction.getOptionByIndex(0).map {
                             it.subcommandOrGroup && it.name == PingFooCommand.alias.split('/')[1]
@@ -213,9 +216,11 @@ class PingSlashIntegTest extends Specification {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent.replaceAll('(?<!^)/', ' ')}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -233,9 +238,9 @@ class PingSlashIntegTest extends Specification {
     def 'ping grouped subcommand should respond properly'(ServerTextChannel serverTextChannelAsBot) {
         given:
             IgnoreOtherTestsTransformer.expectedContent = "/${PingFooBarCommand.alias}"
-            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
         and:
+            def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def listenerManagers = [
                     serverTextChannelAsBot.addMessageCreateListener {
                         if (it.message.author.webhook &&
@@ -246,11 +251,10 @@ class PingSlashIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+            listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingFooBarCommand.alias.split('/')[0]) &&
                         (it.slashCommandInteraction.getOptionByIndex(0).map {
                             it.subcommandOrGroup && it.name == PingFooBarCommand.alias.split('/')[1] &&
@@ -262,9 +266,11 @@ class PingSlashIntegTest extends Specification {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent.replaceAll('(?<!^)/', ' ')}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:

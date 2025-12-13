@@ -45,13 +45,16 @@ build-spotbugs-plugin-sbContrib = "7.7.4"
 
 test-byteBuddy = "1.18.7"
 test-discordWebhooks = "0.8.4"
+test-geb = "8.0.1"
 test-groovy = "4.0.31"
+test-integtest-java = "17"
 test-junit = "5.14.3"
 test-objenesis = "3.5"
 test-pitest = "1.23.0"
 test-pitest-java = "11"
 test-pitest-plugin-rv = "0.1"
 test-powermock = "2.0.9"
+test-selenium-firefoxDriver = "4.41.0"
 test-spock = "2.4-groovy-4.0"
 test-weld-se = "4.0.3.Final"
 test-weld-spock = "3.1.0.Final"
@@ -82,6 +85,8 @@ opus-java = { module = "club.minnced:opus-java" }
 spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "build-spotbugs" }
 test-byteBuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "test-byteBuddy" }
 test-discordWebhooks = { module = "club.minnced:discord-webhooks", version.ref = "test-discordWebhooks" }
+test-geb-core = { module = "org.apache.groovy.geb:geb-core", version.ref = "test-geb" }
+test-geb-spock = { module = "org.apache.groovy.geb:geb-spock", version.ref = "test-geb" }
 test-groovy = { module = "org.apache.groovy:groovy", version.ref = "test-groovy" }
 test-javacord = { module = "org.javacord:javacord", version.ref = "javacord" }
 test-javacord-core = { module = "org.javacord:javacord-core", version.ref = "javacord" }
@@ -96,6 +101,7 @@ test-pitest = { module = "org.pitest:pitest", version.ref = "test-pitest" }
 test-pitest-entry = { module = "org.pitest:pitest-entry", version.ref = "test-pitest" }
 test-pitest-plugin-rv = { module = "org.pitest:pitest-rv-plugin", version.ref = "test-pitest-plugin-rv" }
 test-powermock-reflect = { module = "org.powermock:powermock-reflect", version.ref = "test-powermock" }
+test-selenium-firefoxDriver = { module = "org.seleniumhq.selenium:selenium-firefox-driver", version.ref = "test-selenium-firefoxDriver" }
 test-spock-core = { module = "org.spockframework:spock-core", version.ref = "test-spock" }
 test-weld-junit-common = { module = "org.jboss.weld:weld-junit-common", version.ref = "test-weld-spock" }
 test-weld-se-core = { module = "org.jboss.weld.se:weld-se-core", version.ref = "test-weld-se" }

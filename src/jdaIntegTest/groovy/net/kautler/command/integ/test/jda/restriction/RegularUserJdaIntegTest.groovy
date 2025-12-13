@@ -27,10 +27,11 @@ import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
 import net.kautler.command.api.restriction.jda.RegularUserJda
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.jda.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import spock.lang.ResourceLock
-import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
@@ -39,7 +40,7 @@ import static java.util.UUID.randomUUID
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(RegularUserJda)
-class RegularUserJdaIntegTest extends Specification {
+class RegularUserJdaIntegTest extends DiscordGebSpec {
     @AddBean(PingCommand)
     @AddBean(IgnoreOtherTestsTransformer)
     @ResourceLock('net.kautler.command.integ.test.jda.restriction.RegularUserJdaIntegTest.PingCommand.alias')
@@ -113,20 +114,21 @@ class RegularUserJdaIntegTest extends Specification {
                     .subscribe { responseReceived.set(true) }
             ]
 
-        when:
-            def owner = textChannelAsBot.JDA.retrieveApplicationInfo().complete().owner
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             subscriptions << textChannelAsBot
                 .JDA
                 .listenOnce(MessageReceivedEvent)
                 .filter { it.fromGuild }
                 .filter { it.channel == textChannelAsBot }
-                .filter { it.message.author == owner }
+                .filter { it.message.author.id == System.properties.testDiscordUserId }
                 .filter { it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent }
                 .subscribe { commandReceived.set(true) }
-            textChannelAsBot
-                    .sendMessage("$owner.asMention please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .complete()
+
+        when:
+            to(new ChannelPage(serverId: textChannelAsBot.guild.idLong, channelId: textChannelAsBot.idLong)).with {
+                sendMessage(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:

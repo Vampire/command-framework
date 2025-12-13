@@ -28,10 +28,11 @@ import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.jda.CommandNotAllowedEventJda
 import net.kautler.command.api.restriction.jda.PrivateMessageJda
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.jda.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import spock.lang.ResourceLock
-import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
@@ -41,7 +42,7 @@ import static net.dv8tion.jda.api.entities.channel.ChannelType.PRIVATE
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(PrivateMessageJda)
-class PrivateMessageJdaIntegTest extends Specification {
+class PrivateMessageJdaIntegTest extends DiscordGebSpec {
     @AddBean(PingCommand)
     @AddBean(IgnoreOtherTestsTransformer)
     @ResourceLock('net.kautler.command.integ.test.jda.restriction.PrivateMessageJdaIntegTest.PingCommand.alias')
@@ -72,7 +73,7 @@ class PrivateMessageJdaIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.jda.restriction.PrivateMessageJdaIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should respond if in private channel'(JDA botJda) {
         given:
-            def owner = botJda.retrieveApplicationInfo().complete().owner
+            def user = botJda.retrieveUserById(System.properties.testDiscordUserId).complete()
             def random = randomUUID()
             PingCommand.alias = "ping_$random"
             IgnoreOtherTestsTransformer.expectedContent = "!${PingCommand.alias}"
@@ -83,25 +84,30 @@ class PrivateMessageJdaIntegTest extends Specification {
                 botJda
                     .listenOnce(MessageReceivedEvent)
                     .filter { it.channelType == PRIVATE }
-                    .filter { it.channel.user == owner }
+                    .filter { it.channel.user == user }
                     .filter { it.message.author == botJda.selfUser }
                     .filter { it.message.contentRaw == "pong_$random:" }
                     .subscribe { responseReceived.set(true) }
             ]
 
-        when:
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             subscriptions << botJda
                 .listenOnce(MessageReceivedEvent)
                 .filter { it.channelType == PRIVATE }
-                .filter { it.message.author == owner }
+                .filter { it.message.author == user }
                 .filter { it.message.contentRaw == IgnoreOtherTestsTransformer.expectedContent }
                 .subscribe { commandReceived.set(true) }
-            owner
-                    .openPrivateChannel()
-                    .complete()
-                    .sendMessage("$owner.asMention please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .complete()
+
+        when:
+            user
+                .openPrivateChannel()
+                .flatMap { it.sendMessage('ensure channel is present for user') }
+                .flatMap { it.delete() }
+                .complete()
+            to(new ChannelPage(channelId: user.openPrivateChannel().complete().idLong)).with {
+                sendMessage(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:

@@ -26,6 +26,8 @@ import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacordSlash
 import net.kautler.command.api.restriction.javacord.slash.ServerManagerJavacordSlash
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.javacord.PingSlashIntegTest.SlashCommandRegisterer
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
@@ -48,7 +50,7 @@ import static org.javacord.api.entity.permission.PermissionType.MANAGE_SERVER
 @Subject(ServerManagerJavacordSlash)
 @Tag('manual')
 @AddBean(SlashCommandRegisterer)
-class ServerManagerJavacordSlashIntegTest extends Specification {
+class ServerManagerJavacordSlashIntegTest extends DiscordGebSpec {
     @AddBean(PingCommand)
     @AddBean(IgnoreOtherTestsTransformer)
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.ServerManagerJavacordSlashIntegTest.PingCommand.alias')
@@ -56,31 +58,26 @@ class ServerManagerJavacordSlashIntegTest extends Specification {
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.ServerManagerJavacordSlashIntegTest.IgnoreOtherTestsTransformer.expectedContent')
     def 'ping command should not respond if not server manager'(ServerTextChannel serverTextChannelAsBot) {
         given:
+            def user = serverTextChannelAsBot.api.getUserById(System.properties.testDiscordUserId).join()
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
+            assert !serverTextChannelAsBot.server.canManage(user)
 
         and:
-            serverTextChannelAsBot
-                    .createUpdater()
-                    .removePermissionOverwrite(serverTextChannelAsBot.server.everyoneRole)
-                    .update()
-                    .join()
-
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.user != owner) &&
-                        (it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+                if ((it.slashCommandInteraction.user == user) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please make someone else send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
@@ -110,13 +107,13 @@ class ServerManagerJavacordSlashIntegTest extends Specification {
                         serverTextChannelAsBot.server,
                         'server manager',
                         new PermissionsBuilder().setAllowed(MANAGE_SERVER).build())
-                addRoleToUser(serverTextChannelAsBot.api.owner.get().join(), serverManagerRole)
+                addRoleToUser(serverTextChannelAsBot.api.getUserById(System.properties.testDiscordUserId).join(), serverManagerRole)
 
             and:
                 IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
-                def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
             and:
+                def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
                 def listenerManagers = [
                         serverTextChannelAsBot.addMessageCreateListener {
                             if (it.message.author.webhook &&
@@ -127,19 +124,24 @@ class ServerManagerJavacordSlashIntegTest extends Specification {
                         }
                 ]
 
-            when:
-                def owner = serverTextChannelAsBot.api.owner.get().join()
+            and:
                 def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-                listenerManagers << owner.addSlashCommandCreateListener {
-                    if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+                listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                    if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                             (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                             !it.slashCommandInteraction.arguments) {
                         commandReceived.set(true)
                     }
                 }
-                serverTextChannelAsBot
-                        .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                        .join()
+
+            when:
+                // work-around for https://issues.apache.org/jira/browse/GROOVY-11822
+                // and https://github.com/apache/groovy-geb/pull/297
+                new DiscordGebSpec()
+                    // work-around for https://issues.apache.org/jira/browse/GROOVY-11823
+                    .browser
+                    .to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id))
+                    .with { sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent) }
                 commandReceived.get()
 
             then:
@@ -161,13 +163,13 @@ class ServerManagerJavacordSlashIntegTest extends Specification {
                         serverTextChannelAsBot.server,
                         'administrator',
                         new PermissionsBuilder().setAllowed(ADMINISTRATOR).build())
-                addRoleToUser(serverTextChannelAsBot.api.owner.get().join(), administratorRole)
+                addRoleToUser(serverTextChannelAsBot.api.getUserById(System.properties.testDiscordUserId).join(), administratorRole)
 
             and:
                 IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
-                def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
 
             and:
+                def responseReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
                 def listenerManagers = [
                         serverTextChannelAsBot.addMessageCreateListener {
                             if (it.message.author.webhook &&
@@ -178,19 +180,24 @@ class ServerManagerJavacordSlashIntegTest extends Specification {
                         }
                 ]
 
-            when:
-                def owner = serverTextChannelAsBot.api.owner.get().join()
+            and:
                 def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-                listenerManagers << owner.addSlashCommandCreateListener {
-                    if ((it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+                listenerManagers << serverTextChannelAsBot.addSlashCommandCreateListener {
+                    if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                             (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                             !it.slashCommandInteraction.arguments) {
                         commandReceived.set(true)
                     }
                 }
-                serverTextChannelAsBot
-                        .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                        .join()
+
+            when:
+                // work-around for https://issues.apache.org/jira/browse/GROOVY-11822
+                // and https://github.com/apache/groovy-geb/pull/297
+                new DiscordGebSpec()
+                    // work-around for https://issues.apache.org/jira/browse/GROOVY-11823
+                    .browser
+                    .to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id))
+                    .with { sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent) }
                 commandReceived.get()
 
             then:

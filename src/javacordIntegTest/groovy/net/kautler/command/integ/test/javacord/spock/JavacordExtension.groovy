@@ -45,7 +45,7 @@ class JavacordExtension implements IGlobalExtension {
 
     @Produces
     @ApplicationScoped
-    private static Server serverAsBot
+    static Server serverAsBot
 
     private static DiscordApi userDiscordApi
 
@@ -104,24 +104,29 @@ class JavacordExtension implements IGlobalExtension {
             throw new IllegalArgumentException('Bot with testDiscordToken1 must have higher role than highest role of bot with testDiscordToken2')
         }
 
-        // make sure the owner has not roles to begin with,
-        // so all roles deleted further below were added by some test
-        if (botDiscordApi
-                .owner
-                .get()
-                .join()
-                .getRoles(serverAsBot) != [serverAsBot.everyoneRole]) {
-            throw new IllegalArgumentException('The owner of bot with testDiscordToken1 must not have any roles in the test server')
+        if (serverAsBot
+                .getHighestRole(botDiscordApi.yourself)
+                .flatMap { highestBotRole ->
+                    serverAsBot
+                            .getHighestRole(botDiscordApi.getUserById(System.properties.testDiscordUserId).join())
+                            .map { it >= highestBotRole }
+                }
+                .orElse(FALSE)) {
+            throw new IllegalArgumentException('Bot with testDiscordToken1 must have higher role than highest role of user with testDiscordUserId')
         }
 
-        threadPool = Executors.newFixedThreadPool(runnerConfiguration.parallel.parallelExecutionConfiguration.parallelism)
+        if (runnerConfiguration.parallel.enabled) {
+            threadPool = Executors.newFixedThreadPool(runnerConfiguration.parallel.parallelExecutionConfiguration.parallelism)
+        }
     }
 
     @Override
     void visitSpec(SpecInfo spec) {
         // work-around for https://github.com/junit-team/junit5/issues/3108
-        spec.allFeatures*.addIterationInterceptor {
-            threadPool.submit(it::proceed).get()
+        if (runnerConfiguration.parallel.enabled) {
+            spec.allFeatures*.addIterationInterceptor {
+                threadPool.submit(it::proceed).get()
+            }
         }
 
         (spec.setupSpecMethods + spec.cleanupSpecMethods)*.addInterceptor { invocation ->
@@ -171,24 +176,20 @@ class JavacordExtension implements IGlobalExtension {
                 listenerManager?.remove()
             }
 
-            // remove all roles from owner
-            // this is necessary for RoleJavacordSlashIntegTest
-            // if these get automated somehow with another account,
-            // this can be removed or rather changed to modify that account
             rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             listenerManager = serverAsBot.addUserRoleRemoveListener {
-                if (serverAsBot.getRoles(botDiscordApi.owner.get().join()) == [serverAsBot.everyoneRole]) {
+                if (serverAsBot.getRoles(botDiscordApi.getUserById(System.properties.testDiscordUserId).join()) == [serverAsBot.everyoneRole]) {
                     rolesUpdateReceived.set(true)
                 }
             }
             try {
-                if (serverAsBot.getRoles(botDiscordApi.owner.get().join()) == [serverAsBot.everyoneRole]) {
+                if (serverAsBot.getRoles(botDiscordApi.getUserById(System.properties.testDiscordUserId).join()) == [serverAsBot.everyoneRole]) {
                     rolesUpdateReceived.set(true)
                 }
 
                 serverAsBot
                         .createUpdater()
-                        .removeAllRolesFromUser(botDiscordApi.owner.get().join())
+                        .removeAllRolesFromUser(botDiscordApi.getUserById(System.properties.testDiscordUserId).join())
                         .update()
                         .join()
 
@@ -209,6 +210,9 @@ class JavacordExtension implements IGlobalExtension {
                                     new PermissionsBuilder().setAllDenied().build())
                             .addPermissionOverwrite(
                                     userDiscordApi.yourself,
+                                    new PermissionsBuilder().setAllAllowed().build())
+                            .addPermissionOverwrite(
+                                    botDiscordApi.getUserById(System.properties.testDiscordUserId).join(),
                                     new PermissionsBuilder().setAllAllowed().build())
                             .create()
                             .join()

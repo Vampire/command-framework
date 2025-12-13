@@ -26,11 +26,12 @@ import net.kautler.command.api.annotation.Description
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacordSlash
 import net.kautler.command.api.restriction.javacord.slash.BotOwnerJavacordSlash
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.javacord.PingSlashIntegTest.SlashCommandRegisterer
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
 import spock.lang.ResourceLock
-import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
@@ -42,7 +43,7 @@ import static net.kautler.command.integ.test.javacord.PingSlashIntegTest.Paramet
 @Subject(BotOwnerJavacordSlash)
 @Tag('manual')
 @AddBean(SlashCommandRegisterer)
-class BotOwnerJavacordSlashIntegTest extends Specification {
+class BotOwnerJavacordSlashIntegTest extends DiscordGebSpec {
     @AddBean(PingCommand)
     @AddBean(IgnoreOtherTestsTransformer)
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.slash.BotOwnerJavacordSlashIntegTest.PingCommand.alias')
@@ -53,28 +54,22 @@ class BotOwnerJavacordSlashIntegTest extends Specification {
             IgnoreOtherTestsTransformer.expectedContent = "/${PingCommand.alias}"
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
+            assert System.properties.testDiscordUserId != serverTextChannelAsBot.api.owner.get().join().idAsString
 
         and:
-            serverTextChannelAsBot
-                    .createUpdater()
-                    .removePermissionOverwrite(serverTextChannelAsBot.server.everyoneRole)
-                    .update()
-                    .join()
-
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
             def listenerManager = serverTextChannelAsBot.addSlashCommandCreateListener {
-                if ((it.slashCommandInteraction.user != owner) &&
-                        (it.slashCommandInteraction.channel.get() == serverTextChannelAsBot) &&
+                if ((it.slashCommandInteraction.user.idAsString == System.properties.testDiscordUserId) &&
                         (it.slashCommandInteraction.commandName == PingCommand.alias) &&
                         !it.slashCommandInteraction.arguments) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please make someone else send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendSlashCommand(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:

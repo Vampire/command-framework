@@ -23,11 +23,12 @@ import net.kautler.command.api.CommandContextTransformer
 import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.restriction.Everyone
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.entity.channel.ServerTextChannel
 import spock.lang.ResourceLock
-import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
@@ -36,7 +37,7 @@ import static java.util.UUID.randomUUID
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(Everyone)
-class EveryoneIntegTest extends Specification {
+class EveryoneIntegTest extends DiscordGebSpec {
     @AddBean(PingCommand)
     @AddBean(IgnoreOtherTestsTransformer)
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.EveryoneIntegTest.PingCommand.alias')
@@ -124,17 +125,19 @@ class EveryoneIntegTest extends Specification {
                     }
             ]
 
-        when:
-            def owner = serverTextChannelAsBot.api.owner.get().join()
+        and:
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            listenerManagers << owner.addMessageCreateListener {
-                if ((it.channel == serverTextChannelAsBot) && (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {
+            listenerManagers << serverTextChannelAsBot.addMessageCreateListener {
+                if ((it.messageAuthor.idAsString == System.properties.testDiscordUserId) &&
+                        (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)
                 }
             }
-            serverTextChannelAsBot
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            to(new ChannelPage(serverId: serverTextChannelAsBot.server.id, channelId: serverTextChannelAsBot.id)).with {
+                sendMessage(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:

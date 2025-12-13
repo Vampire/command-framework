@@ -87,6 +87,18 @@ java {
         usingSourceSet(sourceSets.create("integTestCommon"))
         disablePublication()
     }
+
+    registerFeature("discordIntegTestCommon") {
+        // work-around for https://youtrack.jetbrains.com/issue/IDEA-229618
+        usingSourceSet(sourceSets.create("discordIntegTestCommon"))
+        disablePublication()
+    }
+}
+
+val compileDiscordIntegTestCommonGroovy by tasks.existing(GroovyCompile::class) {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(libs.versions.test.integtest.java.get())
+    }
 }
 
 testing {
@@ -129,11 +141,21 @@ testing {
 
         val messageFrameworkTestDependencies: Map<String, JvmComponentDependencies.(String) -> Unit> = mapOf(
             "javacord" to { version ->
+                implementation(project()) {
+                    capabilities {
+                        requireFeature("discord-integ-test-common")
+                    }
+                }
                 implementation(libs.test.javacord.asProvider().map { "${it.group}:${it.name}:$version" }.get())
                 implementation(libs.test.discordWebhooks)
                 implementation(libs.test.log4j.slf4j2.impl)
             },
             "jda" to { version ->
+                implementation(project()) {
+                    capabilities {
+                        requireFeature("discord-integ-test-common")
+                    }
+                }
                 implementation(libs.jda.map { "${it.group}:${it.name}:$version" }.get()) {
                     exclude(libs.opus.java.get().group, libs.opus.java.get().name)
                     exclude(libs.tink.get().group, libs.tink.get().name)
@@ -160,6 +182,9 @@ testing {
         val testManualCommandTimeout by double(10 * 60.0)
         val testDiscordToken1 by optionalString()
         val testDiscordToken2 by optionalString()
+        val testDiscordUserId by optionalString()
+        val testDiscordUserEmail by optionalString()
+        val testDiscordUserPassword by optionalString()
         val testDiscordServerId by optionalString()
 
         val integTest by tasks.registering {
@@ -186,6 +211,19 @@ testing {
         integTestSourceSets.forEach { (testSourceSetName, messageFramework, version) ->
             register<JvmTestSuite>(testSourceSetName) {
                 useSpock(libs.versions.test.spock)
+
+                sources {
+                    tasks.named<JavaCompile>(compileJavaTaskName) {
+                        javaCompiler = javaToolchains.compilerFor {
+                            languageVersion = JavaLanguageVersion.of(libs.versions.test.integtest.java.get())
+                        }
+                    }
+                    tasks.named<GroovyCompile>(getCompileTaskName("groovy")) {
+                        javaLauncher = javaToolchains.launcherFor {
+                            languageVersion = JavaLanguageVersion.of(libs.versions.test.integtest.java.get())
+                        }
+                    }
+                }
 
                 dependencies {
                     implementation(project())
@@ -230,6 +268,7 @@ testing {
                         useJUnitPlatform {
                             includeTags("manual")
                         }
+                        systemProperty("testParallelism", 3)
                     }
                     manualIntegTestTasks.add(testTask)
 
@@ -248,6 +287,10 @@ testing {
                         testClassesDirs = referenceSourceSet.output.classesDirs
                         classpath = (sources.runtimeClasspath + referenceSourceSet.output)
 
+                        javaLauncher = javaToolchains.launcherFor {
+                            languageVersion = JavaLanguageVersion.of(libs.versions.test.integtest.java.get())
+                        }
+
                         configure<JacocoTaskExtension> {
                             // addPropertyAliases is already too big to be instrumented further
                             excludes!!.add("groovyjarjarantlr4.v4.unicode.UnicodeData")
@@ -259,16 +302,25 @@ testing {
                         if (messageFramework in listOf("javacord", "jda")) {
                             systemProperty("testDiscordToken1", testDiscordToken1 ?: "")
                             systemProperty("testDiscordToken2", testDiscordToken2 ?: "")
+                            systemProperty("testDiscordUserEmail", testDiscordUserEmail ?: "")
+                            systemProperty("testDiscordUserId", testDiscordUserId ?: "")
+                            systemProperty("testDiscordUserPassword", testDiscordUserPassword ?: "")
                             systemProperty("testDiscordServerId", testDiscordServerId ?: "")
 
                             val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
                             val rootProjectName = rootProject.name
                             val testDiscordToken1WithoutDelegate = testDiscordToken1
                             val testDiscordToken2WithoutDelegate = testDiscordToken2
+                            val testDiscordUserEmailWithoutDelegate = testDiscordUserEmail
+                            val testDiscordUserIdWithoutDelegate = testDiscordUserId
+                            val testDiscordUserPasswordWithoutDelegate = testDiscordUserPassword
                             val testDiscordServerIdWithoutDelegate = testDiscordServerId
                             doFirst("verify Discord tokens and server id are set") {
                                 testDiscordToken1WithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordToken1", rootProjectName)
                                 testDiscordToken2WithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordToken2", rootProjectName)
+                                testDiscordUserIdWithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordUserId", rootProjectName)
+                                testDiscordUserEmailWithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordUserEmail", rootProjectName)
+                                testDiscordUserPasswordWithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordUserPassword", rootProjectName)
                                 testDiscordServerIdWithoutDelegate.verifyPropertyIsSet(problemReporter, "testDiscordServerId", rootProjectName)
                             }
                         }
@@ -340,6 +392,13 @@ dependencies {
     integTestCommonRuntimeOnly(libs.test.weld.se.core) {
         because("CDI implementation")
     }
+
+    val discordIntegTestCommonApi by configurations.existing
+    discordIntegTestCommonApi(libs.test.geb.core)
+    discordIntegTestCommonApi(libs.test.geb.spock)
+
+    val discordIntegTestCommonRuntimeOnly by configurations.existing
+    discordIntegTestCommonRuntimeOnly(libs.test.selenium.firefoxDriver)
 }
 
 tasks.withType<GroovyCompile>().configureEach {

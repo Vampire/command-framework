@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 Björn Kautler
+ * Copyright 2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-runner {
-    parallel {
-        enabled true
+package net.kautler.command.integ.test.discord
 
-        if (System.properties.testParallelism) {
-            fixed(System.properties.testParallelism as int)
-        }
+import geb.Page
+
+class AppPage extends Page {
+    static url = 'app'
+
+    static at = {
+        $('nav')
     }
 }

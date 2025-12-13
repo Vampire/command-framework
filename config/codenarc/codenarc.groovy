@@ -221,9 +221,18 @@ ruleset {
 
     // rulesets/dry.xml
     DuplicateListLiteral
-    DuplicateMapLiteral
+    DuplicateMapLiteral {
+        doNotApplyToClassNames = [
+            'net.kautler.command.integ.test.discord.LoginPage'
+        ].join(', ')
+    }
     DuplicateNumberLiteral
-    DuplicateStringLiteral
+    DuplicateStringLiteral {
+        doNotApplyToClassNames = [
+            'net.kautler.command.integ.test.discord.ChannelPage',
+            'net.kautler.command.integ.test.discord.LoginPage'
+        ].join(', ')
+    }
 
     // rulesets/enhanced.xml
     CloneWithoutCloneable
@@ -366,7 +375,9 @@ ruleset {
     ExplicitTreeSetInstantiation
     GStringAsMapKey
     GStringExpressionWithinString
-    GetterMethodCouldBeProperty
+    GetterMethodCouldBeProperty {
+        ignoreMethodsWithOverrideAnnotation = true
+    }
     GroovyLangImmutable
     UseCollectMany
     UseCollectNested

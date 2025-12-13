@@ -100,14 +100,23 @@ class JdaExtension implements IGlobalExtension {
             throw new IllegalArgumentException('Bot with testDiscordToken1 must have higher role than highest role of bot with testDiscordToken2')
         }
 
-        threadPool = Executors.newFixedThreadPool(runnerConfiguration.parallel.parallelExecutionConfiguration.parallelism)
+        def manualUserRoles = guildAsBot.retrieveMemberById(System.properties.testDiscordUserId).complete().roles
+        if (!manualUserRoles.empty && (guildAsBot.selfMember.roles.first() <= manualUserRoles.first())) {
+            throw new IllegalArgumentException('Bot with testDiscordToken1 must have higher role than highest role of user with testDiscordUserId')
+        }
+
+        if (runnerConfiguration.parallel.enabled) {
+            threadPool = Executors.newFixedThreadPool(runnerConfiguration.parallel.parallelExecutionConfiguration.parallelism)
+        }
     }
 
     @Override
     void visitSpec(SpecInfo spec) {
         // work-around for https://github.com/junit-team/junit5/issues/3108
-        spec.allFeatures*.addIterationInterceptor {
-            threadPool.submit(it::proceed).get()
+        if (runnerConfiguration.parallel.enabled) {
+            spec.allFeatures*.addIterationInterceptor {
+                threadPool.submit(it::proceed).get()
+            }
         }
 
         (spec.setupSpecMethods + spec.cleanupSpecMethods)*.addInterceptor { invocation ->
@@ -137,16 +146,39 @@ class JdaExtension implements IGlobalExtension {
         spec.allFeatures.featureMethod*.addInterceptor { invocation ->
             def rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             def subscription = botJda
-                .listenOnce(GuildMemberRoleRemoveEvent)
-                .filter { guildAsBot.retrieveMember(userJda.selfUser).complete().roles.empty }
-                .subscribe { rolesUpdateReceived.set(true) }
+                    .listenOnce(GuildMemberRoleRemoveEvent)
+                    .filter { it.guild == guildAsBot }
+                    .filter { guildAsBot.retrieveMember(userJda.selfUser).complete().roles.empty }
+                    .subscribe { rolesUpdateReceived.set(true) }
             try {
                 if (guildAsBot.retrieveMember(userJda.selfUser).complete().roles.empty) {
                     rolesUpdateReceived.set(true)
                 }
 
                 guildAsBot
-                        .modifyMemberRoles(guildAsBot.retrieveMember(userJda.selfUser).complete())
+                        .retrieveMember(userJda.selfUser)
+                        .flatMap { guildAsBot.modifyMemberRoles(it) }
+                        .complete()
+
+                rolesUpdateReceived.get()
+            } finally {
+                subscription.cancel()
+            }
+
+            rolesUpdateReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
+            subscription = botJda
+                    .listenOnce(GuildMemberRoleRemoveEvent)
+                    .filter { it.guild == guildAsBot }
+                    .filter { guildAsBot.retrieveMemberById(System.properties.testDiscordUserId).complete().roles.empty }
+                    .subscribe { rolesUpdateReceived.set(true) }
+            try {
+                if (guildAsBot.retrieveMemberById(System.properties.testDiscordUserId).complete().roles.empty) {
+                    rolesUpdateReceived.set(true)
+                }
+
+                guildAsBot
+                        .retrieveMemberById(System.properties.testDiscordUserId)
+                        .flatMap { guildAsBot.modifyMemberRoles(it) }
                         .complete()
 
                 rolesUpdateReceived.get()
@@ -159,9 +191,14 @@ class JdaExtension implements IGlobalExtension {
                 def parameterNames = invocation.feature.parameterNames
                 if (['textChannelAsBot', 'textChannelAsUser'].any { it in parameterNames }) {
                     textChannelAsBot = guildAsBot
-                            .createTextChannel("command-framework integration test ${randomUUID()}")
-                            .addPermissionOverride(guildAsBot.publicRole, noneOf(Permission), allOf(Permission))
-                            .addPermissionOverride(guildAsUser.selfMember, allOf(Permission), noneOf(Permission))
+                            .retrieveMemberById(System.properties.testDiscordUserId)
+                            .flatMap { testDiscordUser ->
+                                guildAsBot
+                                        .createTextChannel("command-framework integration test ${randomUUID()}")
+                                        .addPermissionOverride(guildAsBot.publicRole, noneOf(Permission), allOf(Permission))
+                                        .addPermissionOverride(guildAsUser.selfMember, allOf(Permission), noneOf(Permission))
+                                        .addPermissionOverride(testDiscordUser, allOf(Permission), noneOf(Permission))
+                            }
                             .complete()
                 }
 

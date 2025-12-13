@@ -25,12 +25,13 @@ import net.kautler.command.api.CommandContextTransformer.InPhase
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.javacord.NsfwChannelJavacord
+import net.kautler.command.integ.test.discord.ChannelPage
+import net.kautler.command.integ.test.discord.DiscordGebSpec
 import net.kautler.command.integ.test.javacord.PingIntegTest
 import net.kautler.command.integ.test.spock.AddBean
 import org.javacord.api.DiscordApi
 import org.javacord.api.entity.channel.ServerTextChannel
 import spock.lang.ResourceLock
-import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Tag
 import spock.util.concurrent.BlockingVariable
@@ -39,7 +40,7 @@ import static java.util.UUID.randomUUID
 import static net.kautler.command.api.CommandContextTransformer.Phase.BEFORE_PREFIX_COMPUTATION
 
 @Subject(NsfwChannelJavacord)
-class NsfwChannelJavacordIntegTest extends Specification {
+class NsfwChannelJavacordIntegTest extends DiscordGebSpec {
     @AddBean(PingCommand)
     @AddBean(IgnoreOtherTestsTransformer)
     @ResourceLock('net.kautler.command.integ.test.javacord.restriction.NsfwChannelJavacordIntegTest.PingCommand.alias')
@@ -123,17 +124,20 @@ class NsfwChannelJavacordIntegTest extends Specification {
             def commandNotAllowedEventReceived = new BlockingVariable<Boolean>(System.properties.testResponseTimeout as double)
             PingCommand.commandNotAllowedEventReceived = commandNotAllowedEventReceived
 
-        when:
-            def owner = botDiscordApi.owner.get().join()
+        and:
+            def user = botDiscordApi.getUserById(System.properties.testDiscordUserId).join()
             def commandReceived = new BlockingVariable<Boolean>(System.properties.testManualCommandTimeout as double)
-            def listenerManager = owner.addMessageCreateListener {
+            def listenerManager = user.addMessageCreateListener {
                 if (it.privateMessage && (it.message.content == IgnoreOtherTestsTransformer.expectedContent)) {
                     commandReceived.set(true)
                 }
             }
-            owner
-                    .sendMessage("$owner.mentionTag please send `${IgnoreOtherTestsTransformer.expectedContent}` in this channel")
-                    .join()
+
+        when:
+            user.sendMessage('ensure channel is present for user').thenCompose { it.delete() }.join()
+            to(new ChannelPage(channelId: user.openPrivateChannel().join().id)).with {
+                sendMessage(IgnoreOtherTestsTransformer.expectedContent)
+            }
             commandReceived.get()
 
         then:
