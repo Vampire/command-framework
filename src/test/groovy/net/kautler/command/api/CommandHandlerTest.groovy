@@ -342,7 +342,7 @@ class CommandHandlerTest extends Specification {
     def 'shutting down the container should shut down an existing executor service'() {
         given:
             ExecutorService executorService = Mock()
-            LazyReferenceBySupplier<ExecutorService> executorServiceReference = Mock {
+            LazyReferenceBySupplier<ExecutorService> executorServiceReference = Stub {
                 it.set >> true
                 get() >> executorService
             }
@@ -360,7 +360,7 @@ class CommandHandlerTest extends Specification {
     def 'shutting down the container should not shut down an executor service if not previously created'() {
         given:
             ExecutorService executorService = Mock()
-            LazyReferenceBySupplier<ExecutorService> executorServiceReference = Mock {
+            LazyReferenceBySupplier<ExecutorService> executorServiceReference = Stub {
                 it.set >> false
                 get() >> executorService
             }

@@ -37,19 +37,19 @@ import static org.javacord.api.interaction.SlashCommandOptionType.SUB_COMMAND_GR
 @EnableWeld
 @Subject(SlashCommandBuilderProducer)
 class SlashCommandBuilderProducerTest extends Specification {
-    SlashCommandJavacord command1 = Mock()
+    SlashCommandJavacord command1 = Stub()
 
-    SlashCommandJavacord command2 = Mock()
+    SlashCommandJavacord command2 = Stub()
 
-    SlashCommandJavacord command3 = Mock()
+    SlashCommandJavacord command3 = Stub()
 
-    SlashCommandJavacord command4 = Mock()
+    SlashCommandJavacord command4 = Stub()
 
-    SlashCommandJavacord command5 = Mock()
+    SlashCommandJavacord command5 = Stub()
 
-    SlashCommandJavacord command6 = Mock()
+    SlashCommandJavacord command6 = Stub()
 
-    SlashCommandJavacord command7 = Mock()
+    SlashCommandJavacord command7 = Stub()
 
     @WeldSetup
     def weld = WeldInitiator

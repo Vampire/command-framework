@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Björn Kautler
+ * Copyright 2020-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,7 +128,7 @@ class UserMentionConverterJavacordTest extends Specification {
                 it.message >> Stub(Message) {
                     it.api >> Mock(DiscordApi) {
                         getUserById(1) >> new CompletableFuture().with(true) {
-                            it.completeExceptionally(new NotFoundException(null, null, null, Mock(RestRequestResponseInformation) {
+                            it.completeExceptionally(new NotFoundException(null, null, null, Stub(RestRequestResponseInformation) {
                                 it.code >> 404
                             }))
                         }
