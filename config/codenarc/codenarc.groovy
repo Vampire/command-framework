@@ -58,7 +58,10 @@ ruleset {
     EmptyIfStatement
     EmptyInstanceInitializer
     EmptyMethod {
-        doNotApplyToClassNames = 'net.kautler.command.integ.test.VersionIntegTest$VersionHolder'
+        doNotApplyToClassNames = [
+                'net.kautler.command.integ.test.javacord.VersionIntegTest$VersionHolder',
+                'net.kautler.command.integ.test.jda.VersionIntegTest$VersionHolder'
+        ].join(', ')
     }
     EmptyStaticInitializer
     EmptySwitchStatement
@@ -571,10 +574,11 @@ ruleset {
     UnusedArray
     UnusedMethodParameter {
         doNotApplyToClassNames = [
-                'net.kautler.command.integ.test.VersionIntegTest$VersionHolder',
                 'net.kautler.command.integ.test.javacord.PingSlashIntegTest$SlashCommandRegisterer',
+                'net.kautler.command.integ.test.javacord.VersionIntegTest$VersionHolder',
                 'net.kautler.command.integ.test.javacord.event.CommandNotFoundEventJavacordSlashIntegTest$SlashCommandRegisterer',
                 'net.kautler.command.integ.test.jda.PingSlashIntegTest$SlashCommandRegisterer',
+                'net.kautler.command.integ.test.jda.VersionIntegTest$VersionHolder',
                 'net.kautler.command.integ.test.jda.event.CommandNotFoundEventJdaSlashIntegTest$SlashCommandRegisterer'
         ].join(', ')
     }
