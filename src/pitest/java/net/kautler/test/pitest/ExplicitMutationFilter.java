@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,14 +99,14 @@ public class ExplicitMutationFilter implements MutationInterceptor {
             //        "()Lnet/kautler/command/api/restriction/RestrictionChainElement;",
             //        "org.pitest.mutationtest.engine.gregor.mutators.rv.UOI4Mutator",
             //        "Decremented (--a) integer array field"),
-            // giving a 3 instead of 2 element array to logger.info cannot be killed
+            // giving a 3 instead of 2 element array to LogBuilder.log cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
                     "lambda$doSetAvailableRestrictions",
                     "(Ljakarta/enterprise/inject/Instance;)Ljava/util/Map;",
                     "org.pitest.mutationtest.engine.gregor.mutators.InlineConstantMutator",
                     "Substituted 2 with 3"),
-            // giving a 3 instead of 2 element array to logger.info cannot be killed
+            // giving a 3 instead of 2 element array to LogBuilder.log cannot be killed
             new ExplicitMutationFilterDetails(
                     "net.kautler.command.api.CommandHandler",
                     "lambda$doSetCommands",

@@ -144,9 +144,9 @@ class CommandHandlerJda extends CommandHandler<Message> implements EventListener
     void addListener() {
         if (jdas.isUnsatisfied() && jdaCollections.isUnsatisfied()
                 && shardManagers.isUnsatisfied() && shardManagerCollections.isUnsatisfied()) {
-            logger.info("No JDA, Collection<JDA>, ShardManager or Collection<ShardManager> injected, CommandHandlerJda will not be used.");
+            logger.atInfo().log("No JDA, Collection<JDA>, ShardManager or Collection<ShardManager> injected, CommandHandlerJda will not be used.");
         } else {
-            logger.info(this::constructWillBeUsedLogMessage);
+            logger.atInfo().log("{}", this::constructWillBeUsedLogMessage);
             Stream.concat(
                     jdas.stream(),
                     jdaCollections.stream().flatMap(Collection::stream)

@@ -95,7 +95,7 @@ public abstract class CommandHandler<M> {
      */
     private LazyReferenceBySupplier<Map<String, Command<? super M>>> commandByAlias =
             new LazyReferenceBySupplier<>(() -> {
-                logger.info("Got no commands injected");
+                logger.atInfo().log("Got no commands injected");
                 return emptyMap();
             });
 
@@ -110,7 +110,7 @@ public abstract class CommandHandler<M> {
      */
     private LazyReferenceBySupplier<Map<Class<?>, Restriction<? super M>>> availableRestrictions =
             new LazyReferenceBySupplier<>(() -> {
-                logger.info("Got no restrictions injected");
+                logger.atInfo().log("Got no restrictions injected");
                 return emptyMap();
             });
 
@@ -177,9 +177,9 @@ public abstract class CommandHandler<M> {
             Map<Class<?>, Restriction<? super M>> result = availableRestrictions
                     .stream()
                     .peek(restriction ->
-                            logger.debug("Got restriction {} injected", () -> restriction.getRealClass().getName()))
+                            logger.atDebug().log("Got restriction {} injected", () -> restriction.getRealClass().getName()))
                     .collect(toMap(Restriction::getRealClass, identity()));
-            logger.info("Got {} restriction{} injected",
+            logger.atInfo().log("Got {} restriction{} injected",
                     result::size,
                     () -> result.size() == 1 ? "" : 's');
             return result;
@@ -205,9 +205,9 @@ public abstract class CommandHandler<M> {
         commandByAlias = new LazyReferenceBySupplier<>(() -> {
             Map<String, Command<? super M>> result = new ConcurrentHashMap<>();
             Collection<Command<? super M>> actualCommands = commands.stream().peek(command ->
-                    logger.debug("Got command {} injected", () -> command.getClass().getName())
+                    logger.atDebug().log("Got command {} injected", () -> command.getClass().getName())
             ).collect(toList());
-            logger.info("Got {} command{} injected",
+            logger.atInfo().log("Got {} command{} injected",
                     actualCommands::size,
                     () -> actualCommands.size() == 1 ? "" : 's');
 
@@ -277,7 +277,7 @@ public abstract class CommandHandler<M> {
      * @see Phase
      */
     protected void doHandleMessage(CommandContext<M> commandContext) {
-        logger.trace("Handle message for {}", commandContext);
+        logger.atTrace().log("Handle message for {}", commandContext);
         if (!fastForward(commandContext, BEFORE_PREFIX_COMPUTATION)) {
             computePrefix(commandContext);
         }
@@ -311,17 +311,17 @@ public abstract class CommandHandler<M> {
     private void computePrefix(CommandContext<M> commandContext) {
         CommandContext<M> localCommandContext = commandContext;
 
-        logger.trace("Entering prefix computation phase for {}", localCommandContext);
+        logger.atTrace().log("Entering prefix computation phase for {}", localCommandContext);
 
         Optional<CommandContextTransformer<? super M>> commandContextTransformer =
                 getCommandContextTransformer(BEFORE_PREFIX_COMPUTATION);
         if (commandContextTransformer.isPresent()) {
-            logger.trace("Calling before prefix computation transformer for {}", localCommandContext);
+            logger.atTrace().log("Calling before prefix computation transformer for {}", localCommandContext);
 
             localCommandContext = commandContextTransformer.get()
                     .transform(localCommandContext, BEFORE_PREFIX_COMPUTATION);
 
-            logger.trace("Before prefix computation transformer result is {}", localCommandContext);
+            logger.atTrace().log("Before prefix computation transformer result is {}", localCommandContext);
 
             if (fastForward(localCommandContext, BEFORE_PREFIX_COMPUTATION)) {
                 return;
@@ -331,12 +331,12 @@ public abstract class CommandHandler<M> {
         localCommandContext = localCommandContext.withPrefix("!").build();
         commandContextTransformer = getCommandContextTransformer(AFTER_PREFIX_COMPUTATION);
         if (commandContextTransformer.isPresent()) {
-            logger.trace("Calling after prefix computation transformer for {}", localCommandContext);
+            logger.atTrace().log("Calling after prefix computation transformer for {}", localCommandContext);
 
             localCommandContext = commandContextTransformer.get()
                     .transform(localCommandContext, AFTER_PREFIX_COMPUTATION);
 
-            logger.trace("After prefix computation transformer result is {}", localCommandContext);
+            logger.atTrace().log("After prefix computation transformer result is {}", localCommandContext);
         }
 
         if (!fastForward(localCommandContext, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION)) {
@@ -382,29 +382,29 @@ public abstract class CommandHandler<M> {
         CommandContext<M> localCommandContext = commandContext;
 
         if (!localCommandContext.getPrefix().isPresent()) {
-            logger.trace("No matching command found (prefix missing)");
+            logger.atTrace().log("No matching command found (prefix missing)");
             fireCommandNotFoundEvent(localCommandContext);
             return;
         }
 
-        logger.trace("Entering alias and parameter string computation phase for {}", localCommandContext);
+        logger.atTrace().log("Entering alias and parameter string computation phase for {}", localCommandContext);
 
         Optional<CommandContextTransformer<? super M>> commandContextTransformer =
                 getCommandContextTransformer(BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION);
         if (commandContextTransformer.isPresent()) {
-            logger.trace("Calling before alias and parameter string computation transformer for {}", localCommandContext);
+            logger.atTrace().log("Calling before alias and parameter string computation transformer for {}", localCommandContext);
 
             localCommandContext = commandContextTransformer.get()
                     .transform(localCommandContext, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION);
 
-            logger.trace("Before alias and parameter string computation transformer result is {}", localCommandContext);
+            logger.atTrace().log("Before alias and parameter string computation transformer result is {}", localCommandContext);
 
             if (fastForward(localCommandContext, BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION)) {
                 return;
             }
 
             if (!localCommandContext.getPrefix().isPresent()) {
-                logger.trace("No matching command found (prefix missing)");
+                logger.atTrace().log("No matching command found (prefix missing)");
                 fireCommandNotFoundEvent(localCommandContext);
                 return;
             }
@@ -415,17 +415,17 @@ public abstract class CommandHandler<M> {
 
         String messageContent = localCommandContext.getMessageContent();
         if (!messageContent.startsWith(prefix)) {
-            logger.trace("Message content does not start with prefix, ignoring message");
+            logger.atTrace().log("Message content does not start with prefix, ignoring message");
             return;
         }
-        logger.trace("Message content starts with prefix");
+        logger.atTrace().log("Message content starts with prefix");
 
         String messageContentWithoutPrefix = messageContent.substring(prefix.length()).trim();
         Matcher commandMatcher = commandPattern.get().matcher(messageContentWithoutPrefix);
 
-        logger.trace("Searching for alias and parameter string with command matcher");
+        logger.atTrace().log("Searching for alias and parameter string with command matcher");
         if (commandMatcher.find()) {
-            logger.trace("Command matcher found alias and parameter string");
+            logger.atTrace().log("Command matcher found alias and parameter string");
             localCommandContext = localCommandContext
                     .withAlias(commandMatcher.group("alias"))
                     .withParameterString(commandMatcher.group("parameterString"))
@@ -434,10 +434,10 @@ public abstract class CommandHandler<M> {
 
         commandContextTransformer = getCommandContextTransformer(AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION);
         if (commandContextTransformer.isPresent()) {
-            logger.debug("Calling after alias and parameter string computation transformer for {}", localCommandContext);
+            logger.atDebug().log("Calling after alias and parameter string computation transformer for {}", localCommandContext);
             localCommandContext = commandContextTransformer.get()
                     .transform(localCommandContext, AFTER_ALIAS_AND_PARAMETER_STRING_COMPUTATION);
-            logger.debug("After alias and parameter string computation transformer result is {}", localCommandContext);
+            logger.atDebug().log("After alias and parameter string computation transformer result is {}", localCommandContext);
         }
 
         if (!fastForward(localCommandContext, BEFORE_COMMAND_COMPUTATION)) {
@@ -452,11 +452,12 @@ public abstract class CommandHandler<M> {
      */
     private void warnAboutEmptyPrefix(String prefix) {
         if (prefix.length() == 0) {
-            logger.warn("The command prefix is empty, this means that every message will be checked against a " +
-                        "regular expression and that for every non-matching message an event will be sent. It is better " +
-                        "for the performance if you set a command prefix instead of including it in the aliases " +
-                        "directly. If you do not care, just configure your logging framework to ignore this warning, " +
-                        "as it also costs additional performance and might hide other important log messages. ;-)");
+            logger.atWarn().log("The command prefix is empty, this means that every message will be checked against " +
+                                "a regular expression and that for every non-matching message an event will be sent. " +
+                                "It is better for the performance if you set a command prefix instead of including " +
+                                "it in the aliases directly. If you do not care, just configure your logging " +
+                                "framework to ignore this warning, as it also costs additional performance " +
+                                "and might hide other important log messages. ;-)");
         }
     }
 
@@ -488,29 +489,29 @@ public abstract class CommandHandler<M> {
         CommandContext<M> localCommandContext = commandContext;
 
         if (!localCommandContext.getAlias().isPresent()) {
-            logger.debug("No matching command found (alias missing)");
+            logger.atDebug().log("No matching command found (alias missing)");
             fireCommandNotFoundEvent(localCommandContext);
             return;
         }
 
-        logger.debug("Entering command computation phase for {}", localCommandContext);
+        logger.atDebug().log("Entering command computation phase for {}", localCommandContext);
 
         Optional<CommandContextTransformer<? super M>> commandContextTransformer =
                 getCommandContextTransformer(BEFORE_COMMAND_COMPUTATION);
         if (commandContextTransformer.isPresent()) {
-            logger.debug("Calling before command computation transformer for {}", localCommandContext);
+            logger.atDebug().log("Calling before command computation transformer for {}", localCommandContext);
 
             localCommandContext = commandContextTransformer.get()
                     .transform(localCommandContext, BEFORE_COMMAND_COMPUTATION);
 
-            logger.debug("Before command computation transformer result is {}", localCommandContext);
+            logger.atDebug().log("Before command computation transformer result is {}", localCommandContext);
 
             if (fastForward(localCommandContext, BEFORE_COMMAND_COMPUTATION)) {
                 return;
             }
 
             if (!localCommandContext.getAlias().isPresent()) {
-                logger.debug("No matching command found (alias missing)");
+                logger.atDebug().log("No matching command found (alias missing)");
                 fireCommandNotFoundEvent(localCommandContext);
                 return;
             }
@@ -521,10 +522,10 @@ public abstract class CommandHandler<M> {
                 .build();
         commandContextTransformer = getCommandContextTransformer(AFTER_COMMAND_COMPUTATION);
         if (commandContextTransformer.isPresent()) {
-            logger.debug("Calling after command computation transformer for {}", localCommandContext);
+            logger.atDebug().log("Calling after command computation transformer for {}", localCommandContext);
             localCommandContext = commandContextTransformer.get()
                     .transform(localCommandContext, AFTER_COMMAND_COMPUTATION);
-            logger.debug("After command computation transformer result is {}", localCommandContext);
+            logger.atDebug().log("After command computation transformer result is {}", localCommandContext);
         }
 
         executeCommand(localCommandContext);
@@ -569,21 +570,21 @@ public abstract class CommandHandler<M> {
      */
     private boolean fastForward(CommandContext<M> commandContext, Phase phase) {
         if (commandContext.getCommand().isPresent()) {
-            logger.debug("Fast forwarding {} to command execution", commandContext);
+            logger.atDebug().log("Fast forwarding {} to command execution", commandContext);
             executeCommand(commandContext);
             return true;
         }
 
         if (((phase == BEFORE_PREFIX_COMPUTATION) || (phase == BEFORE_ALIAS_AND_PARAMETER_STRING_COMPUTATION))
             && commandContext.getAlias().isPresent()) {
-            logger.debug("Fast forwarding {} to command computation", commandContext);
+            logger.atDebug().log("Fast forwarding {} to command computation", commandContext);
             computeCommand(commandContext);
             return true;
         }
 
         if ((phase == BEFORE_PREFIX_COMPUTATION)
             && commandContext.getPrefix().isPresent()) {
-            logger.debug("Fast forwarding {} to alias and parameter string computation", commandContext);
+            logger.atDebug().log("Fast forwarding {} to alias and parameter string computation", commandContext);
             computeAliasAndParameterString(commandContext);
             return true;
         }
@@ -608,16 +609,16 @@ public abstract class CommandHandler<M> {
     private void executeCommand(CommandContext<M> commandContext) {
         Optional<Command<? super M>> optionalCommand = commandContext.getCommand();
         if (!optionalCommand.isPresent()) {
-            logger.debug("No matching command found (command missing)");
+            logger.atDebug().log("No matching command found (command missing)");
             fireCommandNotFoundEvent(commandContext);
             return;
         }
 
-        logger.debug("Entering command execution phase for {}", commandContext);
+        logger.atDebug().log("Entering command execution phase for {}", commandContext);
 
         Command<? super M> command = optionalCommand.orElseThrow(AssertionError::new);
         if (!isCommandAllowed(command, commandContext)) {
-            logger.debug("Command {} was not allowed by restrictions", command);
+            logger.atDebug().log("Command {} was not allowed by restrictions", command);
             fireCommandNotAllowedEvent(commandContext);
             return;
         }
@@ -675,7 +676,7 @@ public abstract class CommandHandler<M> {
         runAsync(commandExecutor, executorService.get())
                 .whenComplete((nothing, throwable) -> {
                     if (throwable != null) {
-                        logger.error("Exception while executing command asynchronously", throwable);
+                        logger.atError().withThrowable(throwable).log("Exception while executing command asynchronously");
                     }
                 });
     }

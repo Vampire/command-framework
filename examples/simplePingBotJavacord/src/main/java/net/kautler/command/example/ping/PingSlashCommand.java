@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,10 @@ class PingSlashCommand implements SlashCommandJavacord {
                 .respond()
                 .whenComplete((sentMessage, throwable) -> {
                     if (throwable != null) {
-                        logger.error("Exception while executing ping command", throwable);
+                        logger
+                            .atError()
+                            .withThrowable(throwable)
+                            .log("Exception while executing ping command");
                     }
                 });
     }

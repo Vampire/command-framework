@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,14 +131,14 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
     @PostConstruct
     void addListener() {
         if (discordApis.isUnsatisfied() && discordApiCollections.isUnsatisfied()) {
-            logger.info("No DiscordApi or Collection<DiscordApi> injected, CommandHandlerJavacord will not be used.");
+            logger.atInfo().log("No DiscordApi or Collection<DiscordApi> injected, CommandHandlerJavacord will not be used.");
         } else {
             if (discordApis.isUnsatisfied()) {
-                logger.info("Collection<DiscordApi> injected, CommandHandlerJavacord will be used.");
+                logger.atInfo().log("Collection<DiscordApi> injected, CommandHandlerJavacord will be used.");
             } else if (discordApiCollections.isUnsatisfied()) {
-                logger.info("DiscordApi injected, CommandHandlerJavacord will be used.");
+                logger.atInfo().log("DiscordApi injected, CommandHandlerJavacord will be used.");
             } else {
-                logger.info("DiscordApi and Collection<DiscordApi> injected, CommandHandlerJavacord will be used.");
+                logger.atInfo().log("DiscordApi and Collection<DiscordApi> injected, CommandHandlerJavacord will be used.");
             }
 
             listenerManagers = Stream.concat(
@@ -183,7 +183,7 @@ class CommandHandlerJavacord extends CommandHandler<Message> {
         runAsync(commandExecutor, commandContext.getMessage().getApi().getThreadPool().getExecutorService())
                 .whenComplete((__, throwable) -> {
                     if (throwable != null) {
-                        logger.error("Exception while executing command asynchronously", throwable);
+                        logger.atError().withThrowable(throwable).log("Exception while executing command asynchronously");
                     }
                 });
     }

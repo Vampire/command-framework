@@ -346,4 +346,129 @@
     <rule ref="category/java/performance.xml"/>
 
     <rule ref="category/java/security.xml"/>
+
+    <rule name="UseLogBuilderStyle"
+          language="java"
+          message="Use log builder style consistently"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            <![CDATA[
+                Use log builder style consistently.
+                For example
+                - instead of "catching(...)", use "at<Level>().withThrowable(...).log()"
+                - instead of "<level>(...)" or "log(<level>, ...)", use "at<Level>().log(...)"
+                - instead of "atLevel(<level>)", use "at<Level>()"
+                - do not use "is<level>Enabled()" or "isEnabled(<level>) at all,
+                  instead use "Supplier" variants of the "log" method to only do costly
+                  message calculation if the message is actually going to be logged
+            ]]>
+        </description>
+        <priority>4</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                        //MethodCall
+                        [not(@MethodName = ("atTrace", "atDebug", "atInfo", "atWarn", "atError", "atFatal"))]
+                        [VariableAccess[pmd-java:typeIs("org.apache.logging.log4j.Logger")]]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="UseStringLiteralAsFirstArgumentToLogMethod"
+          language="java"
+          message="Use a String literal as first argument to log() method"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            <![CDATA[
+                Use a String literal as first argument to log() method,
+                not for example a concatenation or a method call
+                (except if it is a compile-time constant),
+                use placeholders and arguments instead.
+            ]]>
+        </description>
+        <priority>4</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                        //MethodCall
+                        [@MethodName = "log"]
+                        [
+                            head(*)/descendant::VariableAccess[pmd-java:typeIs("org.apache.logging.log4j.Logger")]
+                            or head(*)/descendant-or-self::VariableAccess[pmd-java:typeIs("org.apache.logging.log4j.LogBuilder")]
+                        ]
+                        [
+                            not(head(ArgumentList/*)[
+                                self::StringLiteral
+                                or ((@CompileTimeConstant = true()) and pmd-java:typeIs("java.lang.String"))
+                            ])
+                        ]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="UseAsManyArgumentsAsPlaceholdersInLogMethod"
+          language="java"
+          message="Use as many arguments as placeholders in log() method"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            <![CDATA[
+                Use as many arguments as placeholders in log() method,
+                a mismatch in amount is usually a bug.
+            ]]>
+        </description>
+        <priority>4</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                        //MethodCall
+                        [@MethodName = "log"]
+                        [
+                            head(*)/descendant::VariableAccess[pmd-java:typeIs("org.apache.logging.log4j.Logger")]
+                            or head(*)/descendant-or-self::VariableAccess[pmd-java:typeIs("org.apache.logging.log4j.LogBuilder")]
+                        ]
+                        [
+                            head(ArgumentList/*)[self::StringLiteral]
+                            and (count(tokenize(head(ArgumentList/*)[self::StringLiteral]/@LiteralText, "\{\}")) != count(ArgumentList/*))
+                        ]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="UseOnlySimpleAccessesOrSuppliersAsArgumentsForLogMethod"
+          language="java"
+          message="Use only simple accesses or Suppliers as arguments for log() method"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            <![CDATA[
+                Use only simple accesses or Suppliers as arguments for log() method.
+                Ternaries or method calls are wasted time if the message is not going to be logged,
+                String literals should be part of the message in the first argument.
+            ]]>
+        </description>
+        <priority>4</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+                        //MethodCall
+                        [@MethodName = "log"]
+                        [
+                            head(*)/descendant::VariableAccess[pmd-java:typeIs("org.apache.logging.log4j.Logger")]
+                            or head(*)/descendant-or-self::VariableAccess[pmd-java:typeIs("org.apache.logging.log4j.LogBuilder")]
+                        ]
+                        [tail(ArgumentList/*)/self::*[not(self::VariableAccess or self::LambdaExpression or self::MethodReference)]]
+                    ]]>
+                </value>
+            </property>
+        </properties>
+    </rule>
 </ruleset>

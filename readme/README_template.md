@@ -272,7 +272,10 @@ class JdaProducer {
                     .build()
                     .awaitReady();
         } catch (InterruptedException e) {
-            logger.error("Exception while logging in to Discord", e);
+            logger
+                .atError()
+                .withThrowable(e)
+                .log("Exception while logging in to Discord");
             return null;
         }
     }
