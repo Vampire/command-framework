@@ -16,6 +16,9 @@
 
 package net.kautler
 
+import info.solidsoft.gradle.pitest.PitestPlugin
+import info.solidsoft.gradle.pitest.PitestPlugin.PITEST_TASK_GROUP
+import info.solidsoft.gradle.pitest.PitestTask
 import net.kautler.util.LogLevelInfoEnabled
 import net.kautler.util.ProblemsProvider
 import net.kautler.util.Property.Companion.double
@@ -363,6 +366,8 @@ dependencies {
     pitestImplementation(libs.test.pitest.entry)
     pitestImplementation(platform(libs.test.junit.bom))
     pitestImplementation(libs.test.junit.platform.launcher)
+    val pitestRuntimeOnly by configurations.existing
+    pitestRuntimeOnly(libs.test.pitest.descartes)
 
     val spockCompileOnly by configurations.existing
     spockCompileOnly(libs.test.groovy)
@@ -456,6 +461,61 @@ val compilePitestJava by tasks.existing(JavaCompile::class) {
 
 pitest {
     pitestVersion = libs.versions.test.pitest.asProvider()
+    targetTests = listOf("net.kautler.*Test")
+    verbosity = providers
+        .of(LogLevelInfoEnabled::class) { }
+        .map { "${if (it) VERBOSE_NO_SPINNER else NO_SPINNER}" }
+    outputFormats = listOf(
+        "HTML",
+        "XML",
+        "NON_KILLED_SURVIVOR_DETECTOR"
+    )
+    features = listOf("-FLOGCALL")
+    timeoutFactor = 3.toBigDecimal()
+    timeoutConstInMillis = SECONDS.toMillis(30).toInt()
+    mutationThreshold = 100
+    maxSurviving = 0
+    inputCharset = UTF_8
+    outputCharset = UTF_8
+}
+
+val pitestLaunchDependencies = configurations.dependencyScope("pitestLaunchDependencies")
+val pitestLaunchClasspath = configurations.resolvable("pitestLaunchClasspath") {
+    extendsFrom(pitestLaunchDependencies)
+}
+
+dependencies {
+    pitestLaunchDependencies(project(":")) {
+        capabilities {
+            requireFeature("pitest")
+        }
+    }
+}
+
+val pitestDescartes by tasks.registering(PitestTask::class) {
+    description = "Run PIT analysis for java classes with descartes engine"
+    group = PITEST_TASK_GROUP
+
+    project.plugins.findPlugin(PitestPlugin::class)!!.invokeMethod("configureTaskDefault", this)
+    shouldRunAfter(tasks.test)
+
+    reportDir = reporting.baseDirectory.dir("pitestDescartes")
+    mutationEngine = "descartes"
+
+    // work-around for https://github.com/STAMP-project/pitest-descartes/issues/156
+    features.add("-MUTATION_FILTER")
+}
+
+tasks.withType<PitestTask>().configureEach {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(libs.versions.test.pitest.java.get())
+    }
+    launchClasspath.from(pitestLaunchClasspath)
+}
+
+tasks.pitest {
+    shouldRunAfter(pitestDescartes)
+
     mutators = listOf(
         "INVERT_NEGS",
         "MATH",
@@ -489,42 +549,7 @@ pitest {
         //"OBBN",
         //"UOI3", "UOI4"
     )
-    targetTests = listOf("net.kautler.*Test")
-    verbosity = providers
-        .of(LogLevelInfoEnabled::class) { }
-        .map { "${if (it) VERBOSE_NO_SPINNER else NO_SPINNER}" }
-    outputFormats = listOf(
-        "HTML",
-        "XML",
-        "NON_KILLED_SURVIVOR_DETECTOR"
-    )
-    features = listOf("-FLOGCALL")
-    timeoutFactor = 3.toBigDecimal()
-    timeoutConstInMillis = SECONDS.toMillis(30).toInt()
-    mutationThreshold = 100
-    maxSurviving = 0
-    inputCharset = UTF_8
-    outputCharset = UTF_8
-}
-
-val pitestLaunchDependencies = configurations.dependencyScope("pitestLaunchDependencies")
-val pitestLaunchClasspath = configurations.resolvable("pitestLaunchClasspath") {
-    extendsFrom(pitestLaunchDependencies)
-}
-
-dependencies {
-    pitestLaunchDependencies(project(":")) {
-        capabilities {
-            requireFeature("pitest")
-        }
-    }
-}
-
-tasks.pitest {
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(libs.versions.test.pitest.java.get())
-    }
-    launchClasspath.from(pitestLaunchClasspath)
+    features.add("+MUTATION_FILTER(additional[explicit])")
 
     val problemReporter = objects.newInstance<ProblemsProvider>().problems.reporter
     doFirst("validate configured mutators") {

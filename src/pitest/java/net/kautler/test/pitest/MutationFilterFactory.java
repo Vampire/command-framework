@@ -22,10 +22,12 @@ import org.pitest.mutationtest.build.InterceptorType;
 import org.pitest.mutationtest.build.MutationInterceptor;
 import org.pitest.mutationtest.build.MutationInterceptorFactory;
 import org.pitest.plugin.Feature;
+import org.pitest.plugin.FeatureParameter;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static java.lang.Boolean.FALSE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.pitest.mutationtest.build.InterceptorType.FILTER;
@@ -35,19 +37,31 @@ import static org.pitest.mutationtest.build.InterceptorType.FILTER;
  * that delegates to all custom mutation filters in the correct order.
  */
 public class MutationFilterFactory implements MutationInterceptorFactory {
+    /**
+     * A parameter to specify the additional filters to apply besides the duplicates filter.
+     */
+    private static final FeatureParameter ADDITIONAL = FeatureParameter
+            .named("additional")
+            .withDescription("Additional filters to apply.");
+
     @Override
     public MutationInterceptor createInterceptor(InterceptorParameters params) {
-        return new CompoundMutationFilter(
-                new DuplicateMutationFilter(),
-                new ExplicitMutationFilter()
-        );
+        if (params.getString(ADDITIONAL).map("explicit"::equals).orElse(FALSE)) {
+            return new CompoundMutationFilter(
+                    new DuplicateMutationFilter(),
+                    new ExplicitMutationFilter()
+            );
+        } else {
+            return new DuplicateMutationFilter();
+        }
     }
 
     @Override
     public Feature provides() {
         return Feature.named("MUTATION_FILTER")
                 .withDescription(description())
-                .withOnByDefault(true);
+                .withOnByDefault(true)
+                .withParameter(ADDITIONAL);
     }
 
     @Override

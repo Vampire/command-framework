@@ -273,6 +273,7 @@ val finishMilestone by tasks.registering(Github::class) {
 tasks.beforeReleaseBuild {
     dependsOn(tasks.named("manualIntegTest"))
     dependsOn(tasks.named("integTest"))
+    dependsOn(tasks.named("pitestDescartes"))
     dependsOn(tasks.named("pitest"))
 }
 
