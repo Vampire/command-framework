@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -271,6 +271,8 @@ class GuildJdaIntegTest extends Specification {
             }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @RestrictedTo(Guild)
     static class PingCommand extends PingIntegTest.PingCommand {
         static commandNotAllowedEventReceived
@@ -290,6 +292,8 @@ class GuildJdaIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @RestrictedTo(GuildCaseInsensitive)
     static class PingCommandCaseInsensitive extends PingIntegTest.PingCommand {

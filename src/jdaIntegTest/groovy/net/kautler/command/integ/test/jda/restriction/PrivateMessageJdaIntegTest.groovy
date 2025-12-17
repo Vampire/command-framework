@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package net.kautler.command.integ.test.jda.restriction
 
+import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
+import jakarta.enterprise.inject.Vetoed
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
@@ -98,6 +100,8 @@ class PrivateMessageJdaIntegTest extends Specification {
             }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @RestrictedTo(PrivateMessageJda)
     static class PingCommand extends PingIntegTest.PingCommand {
         static commandNotAllowedEventReceived

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,6 +109,8 @@ class AnyOfIntegTest extends Specification {
             textChannelAsUser = null
     }
 
+    @Vetoed
+    @ApplicationScoped
     @RestrictedTo(Either)
     static class PingCommand extends PingIntegTest.PingCommand {
         static commandNotAllowedEventReceived

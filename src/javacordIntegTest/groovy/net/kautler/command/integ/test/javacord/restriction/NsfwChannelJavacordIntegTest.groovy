@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package net.kautler.command.integ.test.javacord.restriction
 
+import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.ObservesAsync
+import jakarta.enterprise.inject.Vetoed
 import net.kautler.command.api.annotation.RestrictedTo
 import net.kautler.command.api.event.javacord.CommandNotAllowedEventJavacord
 import net.kautler.command.api.restriction.javacord.NsfwChannelJavacord
@@ -116,6 +118,8 @@ class NsfwChannelJavacordIntegTest extends Specification {
             listenerManager?.remove()
     }
 
+    @Vetoed
+    @ApplicationScoped
     @RestrictedTo(NsfwChannelJavacord)
     static class PingCommand extends PingIntegTest.PingCommand {
         static commandNotAllowedEventReceived

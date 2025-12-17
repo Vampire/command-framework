@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1261,6 +1261,8 @@ class RoleJavacordSlashIntegTest extends Specification {
             listenerManagers*.remove()
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Description('Ping back an optional nonce')
     @RestrictedTo(RoleRestriction)
     static class PingCommand extends PingSlashIntegTest.PingCommand {
@@ -1281,6 +1283,8 @@ class RoleJavacordSlashIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @Description('Ping back an optional nonce')
     @RestrictedTo(RoleCaseInsensitive)
@@ -1302,6 +1306,8 @@ class RoleJavacordSlashIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @Description('Ping back an optional nonce')
     @RestrictedTo(RoleOrHigher)
@@ -1323,6 +1329,8 @@ class RoleJavacordSlashIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @Description('Ping back an optional nonce')
     @RestrictedTo(RoleOrHigherCaseInsensitive)

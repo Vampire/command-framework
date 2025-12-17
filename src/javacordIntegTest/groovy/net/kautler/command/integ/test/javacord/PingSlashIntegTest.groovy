@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -291,6 +291,8 @@ class PingSlashIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Description('Ping back an nonce')
     static class PingCommand extends ParameterlessPingCommand {
         @Override
@@ -299,6 +301,8 @@ class PingSlashIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('foo/ping')
     @Description('Ping back an nonce')
     static class FooPingCommand extends PingCommand {
@@ -308,6 +312,8 @@ class PingSlashIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('foo/bar/ping')
     @Description('Ping back an nonce')
     static class FooBarPingCommand extends PingCommand {
@@ -317,6 +323,8 @@ class PingSlashIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Asynchronous
     @Alias('ping')
     @Description('Ping back an nonce')

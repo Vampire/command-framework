@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -278,6 +278,8 @@ class RestrictionPolicyIntegTest extends Specification {
             listenerManager?.remove()
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @RestrictedTo(Boolean1)
     @RestrictedTo(Boolean2)
@@ -290,6 +292,8 @@ class RestrictionPolicyIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @RestrictedTo(Boolean1)
     @RestrictedTo(Boolean2)
@@ -302,6 +306,8 @@ class RestrictionPolicyIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @RestrictedTo(Boolean1)
     @RestrictedTo(Boolean2)
@@ -314,6 +320,8 @@ class RestrictionPolicyIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @RestrictedTo(Boolean1)
     @RestrictionPolicy(NONE_OF)

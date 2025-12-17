@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 Björn Kautler
+ * Copyright 2019-2025 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1012,6 +1012,8 @@ class RoleJdaIntegTest extends Specification {
             }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @RestrictedTo(RoleRestriction)
     static class PingCommand extends PingIntegTest.PingCommand {
         static commandNotAllowedEventReceived
@@ -1031,6 +1033,8 @@ class RoleJdaIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @RestrictedTo(RoleCaseInsensitive)
     static class PingCommandCaseInsensitive extends PingIntegTest.PingCommand {
@@ -1051,6 +1055,8 @@ class RoleJdaIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @RestrictedTo(RoleOrHigher)
     static class PingCommandInexact extends PingIntegTest.PingCommand {
@@ -1071,6 +1077,8 @@ class RoleJdaIntegTest extends Specification {
         }
     }
 
+    @Vetoed
+    @ApplicationScoped
     @Alias('ping')
     @RestrictedTo(RoleOrHigherCaseInsensitive)
     static class PingCommandInexactCaseInsensitive extends PingIntegTest.PingCommand {
