@@ -125,10 +125,6 @@ dependencies {
         @Suppress("UnstableApiUsage")
         because("CDI implementation")
     }
-    integTestCommonRuntimeOnly("org.jboss:jandex:${versions["jandex"]}") {
-        @Suppress("UnstableApiUsage")
-        because("faster CDI bean scanning")
-    }
     integTestCommonRuntimeOnly("org.fusesource.jansi:jansi:${versions["jansi"]}") {
         @Suppress("UnstableApiUsage")
         because("ANSI colors on Windows")

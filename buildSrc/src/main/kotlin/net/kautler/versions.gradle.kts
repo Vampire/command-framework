@@ -66,7 +66,6 @@ val versions by extra(mapOf(
         "objenesis" to "3.1",
         "weld-junit" to "3.0.0.Final",
         "weld-se" to "4.0.3.Final",
-        "jandex" to "2.1.1.Final",
         "jansi" to "1.18",
         "discordWebhooks" to "0.8.4"
 ))
