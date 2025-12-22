@@ -32,6 +32,7 @@ dependencies {
     implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
     // Enforce the embedded Kotlin version for build logic
     implementation(enforcedPlatform(kotlin("bom")))
+    implementation(plugin(libs.plugins.jvm.dependency.conflict.resolution))
     implementation(plugin(libs.plugins.versions))
     implementation(plugin(libs.plugins.grgit))
     implementation(plugin(libs.plugins.spotbugs))

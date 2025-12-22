@@ -26,6 +26,7 @@ build-codenarc = "3.7.0-groovy-4.0"
 build-gradle-plugin-bndBuilder = "7.2.3"
 # fix or remove component metadata rule in gradle/build-logic/settings.gradle.kts on update
 build-gradle-plugin-github = "4.0.0"
+build-gradle-plugin-jvm-dependency-conflict-resolution = "2.5"
 build-gradle-plugin-nexus-publish = "2.0.0"
 build-gradle-plugin-pitest = "1.19.0"
 build-gradle-plugin-release = "3.1.0"
@@ -89,6 +90,7 @@ test-discordWebhooks = { module = "club.minnced:discord-webhooks", version.ref =
 test-geb-core = { module = "org.apache.groovy.geb:geb-core", version.ref = "test-geb" }
 test-geb-spock = { module = "org.apache.groovy.geb:geb-spock", version.ref = "test-geb" }
 test-groovy = { module = "org.apache.groovy:groovy", version.ref = "test-groovy" }
+test-groovy-bom = { module = "org.apache.groovy:groovy-bom" }
 test-javacord = { module = "org.javacord:javacord", version.ref = "javacord" }
 test-javacord-core = { module = "org.javacord:javacord-core", version.ref = "javacord" }
 test-junit-bom = { module = "org.junit:junit-bom", version.ref = "test-junit" }
@@ -129,6 +131,7 @@ convention-publishing = { id = "net.kautler.publishing" }
 bndBuilder = { id = "biz.aQute.bnd.builder", version.ref = "build-gradle-plugin-bndBuilder" }
 github = { id = "net.wooga.github", version.ref = "build-gradle-plugin-github" }
 grgit = { id = "org.ajoberstar.grgit.service", version.ref = "build-grgit" }
+jvm-dependency-conflict-resolution = { id = "org.gradlex.jvm-dependency-conflict-resolution", version.ref = "build-gradle-plugin-jvm-dependency-conflict-resolution" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "build-gradle-plugin-nexus-publish" }
 pitest = { id = "info.solidsoft.pitest", version.ref = "build-gradle-plugin-pitest" }
 release = { id = "net.researchgate.release", version.ref = "build-gradle-plugin-release" }

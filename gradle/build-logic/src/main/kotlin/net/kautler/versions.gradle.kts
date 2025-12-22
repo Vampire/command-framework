@@ -20,6 +20,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
+import net.kautler.util.AddBomDependencyByGroupMetadataRule
 import net.kautler.util.CommitId
 import net.kautler.util.NullOutputStream
 import net.kautler.util.PreliminaryReleaseFilter
@@ -35,6 +36,7 @@ import java.time.Instant.now
 plugins {
     java
     id("net.kautler.dependency-updates-report-aggregator")
+    id("org.gradlex.jvm-dependency-conflict-resolution")
 }
 
 val libs = the<LibrariesForLibs>()
@@ -65,12 +67,10 @@ normalization {
     }
 }
 
-configurations.configureEach {
-    resolutionStrategy {
-        eachDependency {
-            if (requested.group == libs.test.groovy.get().group) {
-                useVersion(libs.versions.test.groovy.get())
-            }
+dependencies {
+    components {
+        all<AddBomDependencyByGroupMetadataRule> {
+            params(libs.test.groovy.bom.get().let { "${it.group}:${it.name}" }, libs.test.groovy.bom.get().group)
         }
     }
 }
@@ -159,8 +159,8 @@ tasks.dependencyUpdates {
             reject("preliminary release")
         }
 
-        if ((candidate.group == libs.test.groovy.get().group) &&
-            (candidate.module == libs.test.groovy.get().name) &&
+        if ((candidate.group == libs.test.groovy.asProvider().get().group) &&
+            (candidate.module == libs.test.groovy.asProvider().get().name) &&
             (candidate.version.substringBefore(".").toInt() > 4)
         ) {
             reject("Minimum supported version is Java 11")
