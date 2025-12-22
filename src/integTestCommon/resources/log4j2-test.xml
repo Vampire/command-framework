@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2019-2023 Björn Kautler
+  ~ Copyright 2019-2025 Björn Kautler
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -32,5 +32,10 @@
             <AppenderRef ref="Test Appender"/>
         </Root>
         <Logger name="net.kautler" level="ALL"/>
+        <Logger name="org.javacord.core.util.ratelimit.RatelimitManager" level="DEBUG">
+            <Filters>
+                <StringMatchFilter text="Calculated an offset of" onMatch="DENY" onMismatch="NEUTRAL"/>
+            </Filters>
+        </Logger>
     </Loggers>
 </Configuration>
