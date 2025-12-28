@@ -16,11 +16,16 @@
 
 package net.kautler.command.api.restriction.jda
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.Role
 import net.kautler.command.api.CommandContext
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -40,6 +45,15 @@ class RoleJdaTest extends Specification {
     static higherRoleName = 'higher'
 
     static lowerRoleName = 'lower'
+
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestRoleJda)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestRoleJda roleJda
 
     CommandContext<Message> commandContext = Stub {
         it.message >> Stub(Message) {
@@ -81,6 +95,12 @@ class RoleJdaTest extends Specification {
     def setup() {
         higherRole.compareTo(lowerRole) >> 1
         lowerRole.compareTo(higherRole) >> -1
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            roleJda != null
     }
 
     def 'exact role with ID "#expectedRoleId" should #be allowed for roles #actualRoles'() {
@@ -325,7 +345,12 @@ class RoleJdaTest extends Specification {
             ; { new TestRoleJda(true, null as Pattern) } | 'boolean and Pattern'         || ~/One of roleId, roleName and rolePattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestRoleJda extends RoleJda {
+        TestRoleJda() {
+            super(-1)
+        }
+
         TestRoleJda(long roleId) {
             super(roleId)
         }

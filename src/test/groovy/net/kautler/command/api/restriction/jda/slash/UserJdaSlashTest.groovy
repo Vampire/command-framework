@@ -16,9 +16,14 @@
 
 package net.kautler.command.api.restriction.jda.slash
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction
 import net.kautler.command.api.CommandContext
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -28,10 +33,25 @@ import java.util.regex.Pattern
 
 @Subject(UserJdaSlash)
 class UserJdaSlashTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestUserJdaSlash)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestUserJdaSlash userJdaSlash
+
     CommandContext<SlashCommandInteraction> commandContext = Stub {
         it.message >> Stub(SlashCommandInteraction) {
             it.user >> Stub(User)
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            userJdaSlash != null
     }
 
     def 'user with ID "#expectedUserId" should #be allowed for user with ID "#actualUserId"'() {
@@ -162,7 +182,12 @@ class UserJdaSlashTest extends Specification {
             ; { new TestUserJdaSlash(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestUserJdaSlash extends UserJdaSlash {
+        TestUserJdaSlash() {
+            super(-1)
+        }
+
         TestUserJdaSlash(long userId) {
             super(userId)
         }

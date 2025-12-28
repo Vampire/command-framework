@@ -16,9 +16,14 @@
 
 package net.kautler.command.api.restriction.jda.slash
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction
 import net.kautler.command.api.CommandContext
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -31,6 +36,15 @@ import static net.dv8tion.jda.api.entities.channel.ChannelType.TEXT
 
 @Subject(GuildJdaSlash)
 class GuildJdaSlashTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestGuildJdaSlash)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestGuildJdaSlash guildJdaSlash
+
     CommandContext<SlashCommandInteraction> commandContext = Stub {
         it.message >> Stub(SlashCommandInteraction) {
             it.channelType >> PRIVATE
@@ -43,6 +57,12 @@ class GuildJdaSlashTest extends Specification {
             it.channelType >> TEXT
             it.guild >> Stub(Guild)
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            guildJdaSlash != null
     }
 
     def 'guild with ID "#expectedGuildId" should #be allowed in guild with ID "#actualGuildId"'() {
@@ -177,7 +197,12 @@ class GuildJdaSlashTest extends Specification {
             ; { new TestGuildJdaSlash(null as Pattern) } | 'Pattern'            || ~/One of guildId, guildName and guildPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestGuildJdaSlash extends GuildJdaSlash {
+        TestGuildJdaSlash() {
+            super(-1)
+        }
+
         TestGuildJdaSlash(long guildId) {
             super(guildId)
         }

@@ -16,11 +16,16 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.permission.Role
 import org.javacord.api.entity.server.Server
 import org.javacord.api.entity.user.User
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -37,6 +42,15 @@ class RoleJavacordTest extends Specification {
     static higherRoleName = 'higher'
 
     static lowerRoleName = 'lower'
+
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestRoleJavacord)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestRoleJavacord roleJavacord
 
     User author = Stub()
 
@@ -76,6 +90,12 @@ class RoleJavacordTest extends Specification {
     def setup() {
         higherRole.compareTo(lowerRole) >> 1
         lowerRole.compareTo(higherRole) >> -1
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            roleJavacord != null
     }
 
     def 'exact role with ID "#expectedRoleId" should #be allowed for roles #actualRoles'() {
@@ -321,7 +341,12 @@ class RoleJavacordTest extends Specification {
             ; { new TestRoleJavacord(true, null as Pattern) } | 'boolean and Pattern'         || ~/One of roleId, roleName and rolePattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestRoleJavacord extends RoleJavacord {
+        TestRoleJavacord() {
+            super(-1)
+        }
+
         TestRoleJavacord(long roleId) {
             super(roleId)
         }

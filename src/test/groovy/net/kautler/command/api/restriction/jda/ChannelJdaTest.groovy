@@ -16,9 +16,14 @@
 
 package net.kautler.command.api.restriction.jda
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
 import net.kautler.command.api.CommandContext
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -28,10 +33,25 @@ import java.util.regex.Pattern
 
 @Subject(ChannelJda)
 class ChannelJdaTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestChannelJda)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestChannelJda channelJda
+
     CommandContext<Message> commandContext = Stub {
         it.message >> Stub(Message) {
             it.channel >> Stub(MessageChannelUnion)
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            channelJda != null
     }
 
     def 'channel with ID "#expectedChannelId" should #be allowed in channel with ID "#actualChannelId"'() {
@@ -162,7 +182,12 @@ class ChannelJdaTest extends Specification {
             ; { new TestChannelJda(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestChannelJda extends ChannelJda {
+        TestChannelJda() {
+            super(-1)
+        }
+
         TestChannelJda(long channelId) {
             super(channelId)
         }

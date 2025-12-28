@@ -16,11 +16,16 @@
 
 package net.kautler.command.api.restriction.jda.slash
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction
 import net.kautler.command.api.CommandContext
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -40,6 +45,15 @@ class RoleJdaSlashTest extends Specification {
     static higherRoleName = 'higher'
 
     static lowerRoleName = 'lower'
+
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestRoleJdaSlash)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestRoleJdaSlash roleJdaSlash
 
     CommandContext<SlashCommandInteraction> commandContext = Stub {
         it.message >> Stub(SlashCommandInteraction) {
@@ -81,6 +95,12 @@ class RoleJdaSlashTest extends Specification {
     def setup() {
         higherRole.compareTo(lowerRole) >> 1
         lowerRole.compareTo(higherRole) >> -1
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            roleJdaSlash != null
     }
 
     def 'exact role with ID "#expectedRoleId" should #be allowed for roles #actualRoles'() {
@@ -325,7 +345,12 @@ class RoleJdaSlashTest extends Specification {
             ; { new TestRoleJdaSlash(true, null as Pattern) } | 'boolean and Pattern'         || ~/One of roleId, roleName and rolePattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestRoleJdaSlash extends RoleJdaSlash {
+        TestRoleJdaSlash() {
+            super(-1)
+        }
+
         TestRoleJdaSlash(long roleId) {
             super(roleId)
         }

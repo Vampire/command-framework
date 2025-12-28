@@ -16,9 +16,14 @@
 
 package net.kautler.command.api.restriction.javacord.slash
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.user.User
 import org.javacord.api.interaction.SlashCommandInteraction
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -28,10 +33,25 @@ import java.util.regex.Pattern
 
 @Subject(UserJavacordSlash)
 class UserJavacordSlashTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestUserJavacordSlash)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestUserJavacordSlash userJavacordSlash
+
     CommandContext<SlashCommandInteraction> commandContext = Stub {
         it.message >> Stub(SlashCommandInteraction) {
             it.user >> Stub(User)
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            userJavacordSlash != null
     }
 
     def 'user with ID "#expectedUserId" should #be allowed for user with ID "#actualUserId"'() {
@@ -162,7 +182,12 @@ class UserJavacordSlashTest extends Specification {
             ; { new TestUserJavacordSlash(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestUserJavacordSlash extends UserJavacordSlash {
+        TestUserJavacordSlash() {
+            super(-1)
+        }
+
         TestUserJavacordSlash(long userId) {
             super(userId)
         }

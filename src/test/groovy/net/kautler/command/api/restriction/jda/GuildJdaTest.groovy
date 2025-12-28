@@ -16,9 +16,14 @@
 
 package net.kautler.command.api.restriction.jda
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
 import net.kautler.command.api.CommandContext
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -31,6 +36,15 @@ import static net.dv8tion.jda.api.entities.channel.ChannelType.TEXT
 
 @Subject(GuildJda)
 class GuildJdaTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestGuildJda)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestGuildJda guildJda
+
     CommandContext<Message> commandContext = Stub {
         it.message >> Stub(Message) {
             it.channelType >> PRIVATE
@@ -43,6 +57,12 @@ class GuildJdaTest extends Specification {
             it.channelType >> TEXT
             it.guild >> Stub(Guild)
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            guildJda != null
     }
 
     def 'guild with ID "#expectedGuildId" should #be allowed in guild with ID "#actualGuildId"'() {
@@ -177,7 +197,12 @@ class GuildJdaTest extends Specification {
             ; { new TestGuildJda(null as Pattern) } | 'Pattern'            || ~/One of guildId, guildName and guildPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestGuildJda extends GuildJda {
+        TestGuildJda() {
+            super(-1)
+        }
+
         TestGuildJda(long guildId) {
             super(guildId)
         }

@@ -16,10 +16,15 @@
 
 package net.kautler.command.api.restriction.javacord.slash
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.channel.TextChannel
 import org.javacord.api.interaction.SlashCommandInteraction
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -29,6 +34,15 @@ import java.util.regex.Pattern
 
 @Subject(ChannelJavacordSlash)
 class ChannelJavacordSlashTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+            .from(TestChannelJavacordSlash)
+            .inject(this)
+            .build()
+
+    @Inject
+    TestChannelJavacordSlash channelJavacordSlash
+
     CommandContext<SlashCommandInteraction> commandContext = Stub {
         it.message >> Stub(SlashCommandInteraction) {
             it.channel >> Optional.of(Stub(TextChannel) {
@@ -45,6 +59,12 @@ class ChannelJavacordSlashTest extends Specification {
                 asServerTextChannel() >> Optional.of(it)
             })
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            channelJavacordSlash != null
     }
 
     def 'channel with ID "#expectedChannelId" should #be allowed in channel with ID "#actualChannelId"'() {
@@ -178,7 +198,12 @@ class ChannelJavacordSlashTest extends Specification {
             ; { new TestChannelJavacordSlash(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestChannelJavacordSlash extends ChannelJavacordSlash {
+        TestChannelJavacordSlash() {
+            super(-1)
+        }
+
         TestChannelJavacordSlash(long channelId) {
             super(channelId)
         }

@@ -16,9 +16,14 @@
 
 package net.kautler.command.api.restriction.jda
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
 import net.kautler.command.api.CommandContext
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -28,10 +33,25 @@ import java.util.regex.Pattern
 
 @Subject(UserJda)
 class UserJdaTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestUserJda)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestUserJda userJda
+
     CommandContext<Message> commandContext = Stub {
         it.message >> Stub(Message) {
             it.author >> Stub(User)
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            userJda != null
     }
 
     def 'user with ID "#expectedUserId" should #be allowed for user with ID "#actualUserId"'() {
@@ -162,7 +182,12 @@ class UserJdaTest extends Specification {
             ; { new TestUserJda(null as Pattern) } | 'Pattern'            || ~/One of userId, userName and userPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestUserJda extends UserJda {
+        TestUserJda() {
+            super(-1)
+        }
+
         TestUserJda(long userId) {
             super(userId)
         }

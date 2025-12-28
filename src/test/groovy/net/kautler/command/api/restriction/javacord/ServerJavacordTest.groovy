@@ -16,9 +16,14 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.server.Server
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -28,6 +33,15 @@ import java.util.regex.Pattern
 
 @Subject(ServerJavacord)
 class ServerJavacordTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestServerJavacord)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestServerJavacord serverJavacord
+
     CommandContext<Message> commandContext = Stub {
         it.message >> Stub(Message)
     }
@@ -36,6 +50,12 @@ class ServerJavacordTest extends Specification {
         it.message >> Stub(Message) {
             it.server >> Optional.of(Stub(Server))
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            serverJavacord != null
     }
 
     def 'server with ID "#expectedServerId" should #be allowed in server with ID "#actualServerId"'() {
@@ -170,7 +190,12 @@ class ServerJavacordTest extends Specification {
             ; { new TestServerJavacord(null as Pattern) } | 'Pattern'            || ~/One of serverId, serverName and serverPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestServerJavacord extends ServerJavacord {
+        TestServerJavacord() {
+            super(-1)
+        }
+
         TestServerJavacord(long serverId) {
             super(serverId)
         }

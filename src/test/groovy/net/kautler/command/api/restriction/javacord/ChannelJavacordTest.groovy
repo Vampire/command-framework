@@ -16,10 +16,15 @@
 
 package net.kautler.command.api.restriction.javacord
 
+import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import net.kautler.command.api.CommandContext
 import org.javacord.api.entity.channel.ServerTextChannel
 import org.javacord.api.entity.channel.TextChannel
 import org.javacord.api.entity.message.Message
+import org.jboss.weld.spock.EnableWeld
+import org.jboss.weld.spock.WeldInitiator
+import org.jboss.weld.spock.WeldSetup
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 import spock.lang.Subject
@@ -29,6 +34,15 @@ import java.util.regex.Pattern
 
 @Subject(ChannelJavacord)
 class ChannelJavacordTest extends Specification {
+    @WeldSetup
+    def weld = WeldInitiator
+        .from(TestChannelJavacord)
+        .inject(this)
+        .build()
+
+    @Inject
+    TestChannelJavacord channelJavacord
+
     CommandContext<Message> commandContext = Stub {
         it.message >> Stub(Message) {
             it.channel >> Stub(TextChannel) {
@@ -45,6 +59,12 @@ class ChannelJavacordTest extends Specification {
                 asServerTextChannel() >> Optional.of(it)
             }
         }
+    }
+
+    @EnableWeld
+    def 'an instance should be injected properly'() {
+        expect:
+            channelJavacord != null
     }
 
     def 'channel with ID "#expectedChannelId" should #be allowed in channel with ID "#actualChannelId"'() {
@@ -178,7 +198,12 @@ class ChannelJavacordTest extends Specification {
             ; { new TestChannelJavacord(null as Pattern) } | 'Pattern'            || ~/One of channelId, channelName and channelPattern should be given/
     }
 
+    @ApplicationScoped
     private static class TestChannelJavacord extends ChannelJavacord {
+        TestChannelJavacord() {
+            super(-1)
+        }
+
         TestChannelJavacord(long channelId) {
             super(channelId)
         }
