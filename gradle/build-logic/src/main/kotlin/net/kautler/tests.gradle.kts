@@ -104,6 +104,12 @@ val compileDiscordIntegTestCommonGroovy by tasks.existing(GroovyCompile::class) 
     }
 }
 
+val checkAll by tasks.registering {
+    group = VERIFICATION_GROUP
+    description = "Runs all checks, including slow and manual ones."
+    dependsOn(tasks.check)
+}
+
 testing {
     suites {
         named<JvmTestSuite>("test") {
@@ -196,6 +202,11 @@ testing {
 
         val manualIntegTest by tasks.registering {
             group = VERIFICATION_GROUP
+        }
+
+        checkAll {
+            dependsOn(integTest)
+            dependsOn(manualIntegTest)
         }
 
         val integTestReport by tasks.registering(TestReport::class) {
@@ -504,6 +515,11 @@ val pitestDescartes by tasks.registering(PitestTask::class) {
 
     // work-around for https://github.com/STAMP-project/pitest-descartes/issues/156
     features.add("-MUTATION_FILTER")
+}
+
+checkAll {
+    dependsOn(tasks.pitest)
+    dependsOn(pitestDescartes)
 }
 
 tasks.withType<PitestTask>().configureEach {
