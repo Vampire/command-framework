@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -264,7 +264,7 @@ public class SpockTestUnitFinder implements TestUnitFinder {
          * @param testClass                 the test class as given to the test unit finder for forwarding to the result collector
          * @param testUnitExecutionListener the test unit execution listener to notify during test execution
          */
-        public TestIdentifierListener(Class<?> testClass, TestUnitExecutionListener testUnitExecutionListener) {
+        private TestIdentifierListener(Class<?> testClass, TestUnitExecutionListener testUnitExecutionListener) {
             this.testClass = testClass;
             this.testUnitExecutionListener = testUnitExecutionListener;
             // PIT gives a coverage recording listener here during coverage recording
@@ -357,7 +357,7 @@ public class SpockTestUnitFinder implements TestUnitFinder {
          *
          * @param testIdentifier the test identifier to lock for
          */
-        public void lock(TestIdentifier testIdentifier) {
+        private void lock(TestIdentifier testIdentifier) {
             coverageSerializers.compute(testIdentifier.getUniqueIdObject(), (uniqueId, lock) -> {
                 if (lock != null) {
                     throw new AssertionError("No lock should be present");
@@ -380,7 +380,7 @@ public class SpockTestUnitFinder implements TestUnitFinder {
          *
          * @param testIdentifier the test identifier to unlock for
          */
-        public void unlock(TestIdentifier testIdentifier) {
+        private void unlock(TestIdentifier testIdentifier) {
             ReentrantLock lock = coverageSerializers.remove(testIdentifier.getUniqueIdObject());
             if (lock != null) {
                 lock.unlock();

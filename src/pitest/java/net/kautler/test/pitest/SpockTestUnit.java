@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Björn Kautler
+ * Copyright 2023-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ public class SpockTestUnit extends AbstractTestUnit implements ExecutedInDiscove
          * @param resultCollector the result collector to be notified about executed tests
          * @param testClass       the test class to be used for the created {@code Description}s
          */
-        public ResultCollectorNotifier(ResultCollector resultCollector, Class<?> testClass) {
+        private ResultCollectorNotifier(ResultCollector resultCollector, Class<?> testClass) {
             this.resultCollector = resultCollector;
             this.testClass = testClass;
         }
