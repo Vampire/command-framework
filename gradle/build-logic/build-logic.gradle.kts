@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Björn Kautler
+ * Copyright 2019-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ dependencies {
     implementation(plugin(libs.plugins.jvm.dependency.conflict.resolution))
     implementation(plugin(libs.plugins.versions))
     implementation(plugin(libs.plugins.grgit))
+    implementation(plugin(libs.plugins.idea.ext))
     implementation(plugin(libs.plugins.spotbugs))
     implementation(plugin(libs.plugins.bndBuilder))
     implementation(plugin(libs.plugins.nexus.publish))

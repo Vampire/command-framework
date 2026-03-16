@@ -30,6 +30,7 @@ build-gradle-plugin-jvm-dependency-conflict-resolution = "2.5"
 build-gradle-plugin-nexus-publish = "2.0.0"
 build-gradle-plugin-pitest = "1.19.0"
 build-gradle-plugin-release = "3.1.0"
+build-gradle-plugin-idea-ext = "1.4.1"
 build-gradle-plugin-spotbugs = "6.4.8"
 build-gradle-plugin-versions = "0.53.0"
 build-gradle-plugin-refresh-versions = "0.60.6"
@@ -131,6 +132,7 @@ convention-publishing = { id = "net.kautler.publishing" }
 bndBuilder = { id = "biz.aQute.bnd.builder", version.ref = "build-gradle-plugin-bndBuilder" }
 github = { id = "net.wooga.github", version.ref = "build-gradle-plugin-github" }
 grgit = { id = "org.ajoberstar.grgit.service", version.ref = "build-grgit" }
+idea-ext = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "build-gradle-plugin-idea-ext" }
 jvm-dependency-conflict-resolution = { id = "org.gradlex.jvm-dependency-conflict-resolution", version.ref = "build-gradle-plugin-jvm-dependency-conflict-resolution" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "build-gradle-plugin-nexus-publish" }
 pitest = { id = "info.solidsoft.pitest", version.ref = "build-gradle-plugin-pitest" }
