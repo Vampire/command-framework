@@ -904,7 +904,7 @@ limitations under the License.
 [Mutant Coverage Badge]:
     https://shields.io/badge/PIT%20Mutant%20Coverage-100%25-brightgreen.svg?style=flat
 [Integration Test Coverage Badge]:
-    https://shields.io/badge/Integration%20Test%20Coverage-~70%25-brightgreen.svg?style=flat
+    https://shields.io/badge/Integration%20Test%20Coverage-~75%25-brightgreen.svg?style=flat
 [Supported Java Versions Badge]:
     https://shields.io/badge/Supported%20Java%20Versions-Java8+-lightgrey.svg
 [Supported Message Frameworks Badge]:
