@@ -23,6 +23,7 @@ jda = "6.4.0"
 log4j = "2.25.4"
 
 build-codenarc = "3.7.0-groovy-4.0"
+build-github-api = "1.330"
 build-gradle-plugin-bndBuilder = "7.2.3"
 # fix or remove component metadata rule in gradle/build-logic/settings.gradle.kts on update
 build-gradle-plugin-github = "4.0.0"
@@ -68,7 +69,7 @@ antlr-runtime = { module = "org.antlr:antlr4-runtime", version.ref = "antlr" }
 build-antlr = { module = "org.antlr:antlr4", version.ref = "antlr" }
 build-codenarc = { module = "org.codenarc:CodeNarc", version.ref = "build-codenarc" }
 build-grgit-core = { module = "org.ajoberstar.grgit:grgit-core", version.ref = "build-grgit" }
-build-github-api = { module = "org.kohsuke:github-api" }
+build-github-api = { module = "org.kohsuke:github-api", version.ref = "build-github-api" }
 build-jacoco = { module = "org.jacoco:jacoco", version.ref = "build-jacoco" }
 build-javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "build-javaparser" }
 build-kotlinx-serialization-bom = { module = "org.jetbrains.kotlinx:kotlinx-serialization-bom", version.ref = "build-kotlinx-serialization" }

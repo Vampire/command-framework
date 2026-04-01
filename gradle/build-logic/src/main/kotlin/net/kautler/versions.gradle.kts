@@ -249,7 +249,5 @@ tasks.dependencyUpdates {
         add(group = "org.jetbrains.kotlin", name = "kotlin-sam-with-receiver-compiler-plugin-embeddable")
         add(group = "org.jetbrains.kotlin", name = "kotlin-scripting-compiler-embeddable")
         add(group = "org.jetbrains.kotlin", name = "kotlin-stdlib")
-        // should be the one used by the Wooga GitHub Gradle plugin
-        add(group = "org.kohsuke", name = "github-api")
     }
 }
