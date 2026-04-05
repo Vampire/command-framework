@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Björn Kautler
+ * Copyright 2025-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,24 +98,36 @@ class SlashCommandDatasProducer {
      */
     private SlashCommandData createSlashCommandDataForCommand(
             String command, Map<String, List<Entry<AliasParts, SlashCommandJda>>> aggregationMap) {
-        Entry<String, List<Entry<AliasParts, SlashCommandJda>>> firstEntry = aggregationMap
-                .entrySet()
-                .iterator()
-                .next();
-        if (firstEntry.getKey().isEmpty()) {
-            SlashCommandJda slashCommand = firstEntry
-                    .getValue()
-                    .get(0)
-                    .getValue();
-            String commandDescription = slashCommand
-                    .getDescription()
-                    .orElseThrow(() -> new IllegalStateException(format(
-                            "Descriptions are mandatory for slash commands, but command '%s' does not have one",
-                            command)));
-            return slashCommand.prepareSlashCommandData(Commands.slash(command, commandDescription));
+        if (aggregationMap.size() == 1) {
+            Entry<String, List<Entry<AliasParts, SlashCommandJda>>> firstEntry = aggregationMap
+                    .entrySet()
+                    .iterator()
+                    .next();
+            if (firstEntry.getKey().isEmpty()) {
+                SlashCommandJda slashCommand = firstEntry
+                        .getValue()
+                        .get(0)
+                        .getValue();
+                String commandDescription = slashCommand
+                        .getDescription()
+                        .orElseThrow(() -> new IllegalStateException(format(
+                                "Descriptions are mandatory for slash commands, but command '%s' does not have one",
+                                command)));
+                return slashCommand.prepareSlashCommandData(Commands.slash(command, commandDescription));
+            }
         }
 
-        SlashCommandData result = Commands.slash(command, "If you see this, please inform the developer");
+        SlashCommandData result;
+        if (aggregationMap.containsKey("")) {
+            SlashCommandJda slashCommand = aggregationMap
+                .remove("")
+                .get(0)
+                .getValue();
+            result = slashCommand.prepareSlashCommandData(Commands.slash(
+                command, slashCommand.getDescription().orElse("If you see this, please inform the developer")));
+        } else {
+            result = Commands.slash(command, "If you see this, please inform the developer");
+        }
         aggregationMap.forEach((subcommandOrGroup, aliasPartsWithCommands) -> {
             Entry<AliasParts, SlashCommandJda> firstAliasPartsWithCommand = aliasPartsWithCommands.get(0);
             AliasParts firstAliasParts = firstAliasPartsWithCommand.getKey();

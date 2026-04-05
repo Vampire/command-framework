@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 Björn Kautler
+ * Copyright 2022-2026 Björn Kautler
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,8 @@ class SlashCommandBuilderProducerTest extends Specification {
 
     SlashCommandJavacord command7 = Stub()
 
+    SlashCommandJavacord command8 = Stub()
+
     @WeldSetup
     def weld = WeldInitiator
             .from(SlashCommandBuilderProducer)
@@ -89,6 +91,11 @@ class SlashCommandBuilderProducerTest extends Specification {
                             .scope(ApplicationScoped)
                             .types(SlashCommandJavacord)
                             .creating(command7)
+                            .build(),
+                    MockBean.builder()
+                            .scope(ApplicationScoped)
+                            .types(SlashCommandJavacord)
+                            .creating(command8)
                             .build()
             )
             .inject(this)
@@ -100,34 +107,39 @@ class SlashCommandBuilderProducerTest extends Specification {
     def prepareCommands() {
         command1.with {
             it.aliases >> ['foo/bar1/test1']
-            it.description >> ['The command foo/bar1/test1']
+            it.description >> Optional.of('The command foo/bar1/test1')
             it.options >> [createStringOption('foo-bar1-test1-option', 'The foo/bar1/test1 option', false)]
         }
         command2.with {
             it.aliases >> ['foo/bar1/test2']
-            it.description >> ['The command foo/bar1/test2']
+            it.description >> Optional.of('The command foo/bar1/test2')
         }
         command3.with {
             it.aliases >> ['foo/bar2/test1']
-            it.description >> ['The command foo/bar2/test1']
+            it.description >> Optional.of('The command foo/bar2/test1')
         }
         command4.with {
             it.aliases >> ['foo/bar2/test2']
-            it.description >> ['The command foo/bar2/test2']
+            it.description >> Optional.of('The command foo/bar2/test2')
         }
         command5.with {
             it.aliases >> ['foo/test1']
-            it.description >> ['The command foo/test1']
+            it.description >> Optional.of('The command foo/test1')
             it.options >> [createStringOption('foo-test1-option', 'The foo/test1 option', true)]
         }
         command6.with {
             it.aliases >> ['foo/test2']
-            it.description >> ['The command foo/test2']
+            it.description >> Optional.of('The command foo/test2')
         }
         command7.with {
-            it.aliases >> ['bar']
-            it.description >> ['The command bar']
-            it.options >> [createStringOption('bar-option', 'The bar option', false)]
+            it.aliases >> ['bar/baz']
+            it.description >> Optional.of('The command bar/baz')
+            it.options >> [createStringOption('bar-baz-option', 'The bar/baz option', false)]
+        }
+        command8.with {
+            it.aliases >> ['bam']
+            it.description >> Optional.of('The command bam')
+            it.options >> [createStringOption('bam-option', 'The bam option', false)]
         }
     }
 
@@ -139,8 +151,8 @@ class SlashCommandBuilderProducerTest extends Specification {
             def slashCommandBuilders = slashCommandBuilders.get()
 
         then:
-            slashCommandBuilders.size() == 2
-            slashCommandBuilders*.delegate*.name ==~ ['bar', 'foo']
+            slashCommandBuilders.size() == 3
+            slashCommandBuilders*.delegate*.name ==~ ['bar', 'bam', 'foo']
             with(slashCommandBuilders.find { it.delegate.name == 'foo' }) {
                 with(it.delegate) {
                     it.options.size() == 4
@@ -199,11 +211,27 @@ class SlashCommandBuilderProducerTest extends Specification {
             }
             with(slashCommandBuilders.find { it.delegate.name == 'bar' }) {
                 with(it.delegate) {
-                    it.description == 'The command bar'
+                    it.options.size() == 1
+                    it.options*.name == ['baz']
+                    with(it.options.find { it.name == 'baz' }) {
+                        it.type == SUB_COMMAND
+                        it.description == 'The command bar/baz'
+                        it.options.size() == 1
+                        with(it.options.first()) {
+                            it.name == 'bar-baz-option'
+                            it.description == 'The bar/baz option'
+                            !it.required
+                        }
+                    }
+                }
+            }
+            with(slashCommandBuilders.find { it.delegate.name == 'bam' }) {
+                with(it.delegate) {
+                    it.description == 'The command bam'
                     it.options.size() == 1
                     with(it.options.first()) {
-                        it.name == 'bar-option'
-                        it.description == 'The bar option'
+                        it.name == 'bam-option'
+                        it.description == 'The bam option'
                         !it.required
                     }
                 }
@@ -232,7 +260,8 @@ class SlashCommandBuilderProducerTest extends Specification {
             'command4' | '''subcommand 'foo/bar2/test2\''''
             'command5' | '''subcommand 'foo/test1\''''
             'command6' | '''subcommand 'foo/test2\''''
-            'command7' | '''command 'bar\''''
+            'command7' | '''subcommand 'bar/baz\''''
+            'command8' | '''command 'bam\''''
     }
 
     @Use(ContextualInstanceCategory)
@@ -248,5 +277,19 @@ class SlashCommandBuilderProducerTest extends Specification {
             IllegalStateException ise = thrown()
             ise.message == 'Alias must be one, two, or three slash-separated parts for command, ' +
                     '''subcommand group and subcommand, but alias 'a/b/c/d' has 4 parts'''
+    }
+
+    @Use(ContextualInstanceCategory)
+    def 'should throw exception if top-level command has also subcommands'() {
+        given:
+            command8.aliases >> ['bar']
+            prepareCommands()
+
+        when:
+            slashCommandBuilders.get().ci()
+
+        then:
+            IllegalStateException ise = thrown()
+            ise.message == '''Top-level command 'bar' cannot have subcommands / subcommand groups'''
     }
 }

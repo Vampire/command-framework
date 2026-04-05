@@ -302,7 +302,9 @@ If your command needs parameters or you want to do other customizations of the `
 `SlashCommandJda#prepareSlashCommandData` method, which just returns the argument in its default implementation.
 In the implementation of the method you can then use the full API for JDA slash commands. For subcommands you instead
 overwrite the `SlashCommandJda#prepareSubcommandData` method, which has the same default implementation and customizes
-a `SubcommandData`.
+a `SubcommandData`. When having subcommands, Discord does not allow to have the top-level command as actual command
+itself. In this framework you can though still have that top-level command to customize the `SlashCommandData` for that
+parent of the subcommands, for example to set the integration types or contexts.
 
 When using [command context transformers](#customizing-the-command-recognition-and-resolution-process) with slash
 commands, all phases before `BEFORE_COMMAND_COMPUTATION` are skipped by the command handler already.

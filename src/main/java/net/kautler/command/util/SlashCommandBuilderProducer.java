@@ -103,21 +103,29 @@ class SlashCommandBuilderProducer {
      */
     private SlashCommandBuilder createSlashCommandBuilderForCommand(
             String command, Map<String, List<Entry<AliasParts, SlashCommandJavacord>>> aggregationMap) {
-        Entry<String, List<Entry<AliasParts, SlashCommandJavacord>>> firstEntry = aggregationMap
-                .entrySet()
-                .iterator()
-                .next();
-        if (firstEntry.getKey().isEmpty()) {
-            SlashCommandJavacord slashCommand = firstEntry
-                    .getValue()
-                    .get(0)
-                    .getValue();
-            String commandDescription = slashCommand
-                    .getDescription()
-                    .orElseThrow(() -> new IllegalStateException(format(
-                            "Descriptions are mandatory for slash commands, but command '%s' does not have one",
-                            command)));
-            return SlashCommand.with(command, commandDescription, slashCommand.getOptions());
+        if (aggregationMap.size() == 1) {
+            Entry<String, List<Entry<AliasParts, SlashCommandJavacord>>> firstEntry = aggregationMap
+                    .entrySet()
+                    .iterator()
+                    .next();
+            if (firstEntry.getKey().isEmpty()) {
+                SlashCommandJavacord slashCommand = firstEntry
+                        .getValue()
+                        .get(0)
+                        .getValue();
+                String commandDescription = slashCommand
+                        .getDescription()
+                        .orElseThrow(() -> new IllegalStateException(format(
+                                "Descriptions are mandatory for slash commands, but command '%s' does not have one",
+                                command)));
+                return SlashCommand.with(command, commandDescription, slashCommand.getOptions());
+            }
+        }
+
+        if (aggregationMap.containsKey("")) {
+            throw new IllegalStateException(format(
+                "Top-level command '%s' cannot have subcommands / subcommand groups",
+                command));
         }
 
         return SlashCommand.with(
